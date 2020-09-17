@@ -12,17 +12,29 @@ type SimpleValueFormatter struct {
 
 func (instance *SimpleValueFormatter) FormatValue(v interface{}, _ log.Provider) ([]byte, error) {
 	if instance.QuoteType == QuoteTypeMinimal {
-		switch str := v.(type) {
+		switch vs := v.(type) {
 		case string:
+			if stringNeedsQuoting(vs) {
+				return json.Marshal(vs)
+			}
+			return []byte(vs), nil
+		case *string:
+			if stringNeedsQuoting(*vs) {
+				return json.Marshal(*vs)
+			}
+			return []byte(*vs), nil
+		case fmt.Stringer:
+			str := vs.String()
 			if stringNeedsQuoting(str) {
 				return json.Marshal(str)
 			}
 			return []byte(str), nil
-		case *string:
-			if stringNeedsQuoting(*str) {
-				return json.Marshal(*str)
+		case fmt.Formatter:
+			str := fmt.Sprint(vs)
+			if stringNeedsQuoting(str) {
+				return json.Marshal(str)
 			}
-			return []byte(*str), nil
+			return []byte(str), nil
 		}
 		return json.Marshal(v)
 	}
