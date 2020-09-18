@@ -1,5 +1,24 @@
 package fields
 
+func AsMap(f Fields) Map {
+	switch v := f.(type) {
+	case Map:
+		return v
+	case *Map:
+		return *v
+	}
+
+	result := Map{}
+	if err := f.ForEach(func(key string, value interface{}) error {
+		result[key] = value
+		return nil
+	}); err != nil {
+		panic(err)
+	}
+
+	return result
+}
+
 type Map map[string]interface{}
 
 func (instance Map) ForEach(consumer Consumer) error {

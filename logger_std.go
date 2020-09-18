@@ -57,8 +57,8 @@ type Writer struct {
 func (instance *Writer) Write(p []byte) (n int, err error) {
 	instance.LogEvent(NewEvent(
 		instance.LogAs,
-		fields.With(GetProvider().GetFieldKeys().GetMessage(), string(p)),
-		4,
+		fields.With(GetProvider().GetFieldKeySpec().GetMessage(), string(p)),
+		3,
 	))
 	return len(p), nil
 }

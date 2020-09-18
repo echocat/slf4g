@@ -10,7 +10,7 @@ func GetMessageOf(fields fields.Fields, using Provider) *string {
 	if fields == nil {
 		return nil
 	}
-	pv := fields.Get(using.GetFieldKeys().GetMessage())
+	pv := fields.Get(using.GetFieldKeySpec().GetMessage())
 	if pv == nil {
 		return nil
 	}
@@ -29,7 +29,7 @@ func GetErrorOf(fields fields.Fields, using Provider) error {
 	if fields == nil {
 		return nil
 	}
-	pv := fields.Get(using.GetFieldKeys().GetError())
+	pv := fields.Get(using.GetFieldKeySpec().GetError())
 	switch v := pv.(type) {
 	case error:
 		return v
@@ -42,7 +42,7 @@ func GetTimestampOf(fields fields.Fields, using Provider) *time.Time {
 	if fields == nil {
 		return nil
 	}
-	pv := fields.Get(using.GetFieldKeys().GetTimestamp())
+	pv := fields.Get(using.GetFieldKeySpec().GetTimestamp())
 	switch v := pv.(type) {
 	case time.Time:
 		return &v
@@ -60,7 +60,7 @@ func GetLoggerOf(fields fields.Fields, using Provider) *string {
 	if fields == nil {
 		return nil
 	}
-	pv := fields.Get(using.GetFieldKeys().GetLogger())
+	pv := fields.Get(using.GetFieldKeySpec().GetLogger())
 	if pv == nil {
 		return nil
 	}

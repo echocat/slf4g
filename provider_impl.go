@@ -70,8 +70,8 @@ func (instance *providerImpl) GetLogger(name string) Logger {
 	return l
 }
 
-func (instance *providerImpl) GetFieldKeys() fields.Keys {
-	return fields.DefaultKeys
+func (instance *providerImpl) GetFieldKeySpec() fields.KeysSpec {
+	return fields.DefaultKeysSpec
 }
 
 func (instance *providerImpl) GetLevelNames() LevelNames {

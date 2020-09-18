@@ -9,7 +9,7 @@ type Provider interface {
 
 	GetAllLevels() []Level
 
-	GetFieldKeys() fields.Keys
+	GetFieldKeySpec() fields.KeysSpec
 
 	GetLevelNames() LevelNames
 }

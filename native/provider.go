@@ -3,9 +3,11 @@ package native
 import (
 	"fmt"
 	"github.com/echocat/slf4g"
+	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/native/consumer"
 	"github.com/echocat/slf4g/native/formatter"
 	"github.com/echocat/slf4g/native/interceptor"
+	"github.com/echocat/slf4g/native/location"
 	"os"
 )
 
@@ -18,14 +20,18 @@ type Provider struct {
 	Level         log.Level
 	LevelProvider log.LevelProvider
 
-	EventFormatter formatter.Formatter
-	Interceptor    interceptor.Interceptor
-	Consumer       consumer.Consumer
+	Formatter       formatter.Formatter
+	Interceptor     interceptor.Interceptor
+	Consumer        consumer.Consumer
+	LocationFactory location.Factory
+	FieldsKeysSpec  FieldsKeysSpec
 }
 
 func NewProvider(name string) *Provider {
 	result := &Provider{
-		Level: log.LevelInfo,
+		Level:           log.LevelInfo,
+		LocationFactory: location.DefaultFactory,
+		FieldsKeysSpec:  DefaultFieldsKeySpec,
 	}
 	result.Provider = log.NewProvider(name, result.factory, result.provideLevels)
 	result.Consumer = consumer.NewWritingConsumer(result, os.Stderr)
@@ -89,11 +95,11 @@ func (instance *Provider) getConsumer() consumer.Consumer {
 }
 
 func (instance *Provider) GetFormatter() formatter.Formatter {
-	return instance.EventFormatter
+	return instance.Formatter
 }
 
 func (instance *Provider) SetFormatter(v formatter.Formatter) {
-	instance.EventFormatter = v
+	instance.Formatter = v
 }
 
 func (instance *Provider) provideLevels() []log.Level {
@@ -101,4 +107,26 @@ func (instance *Provider) provideLevels() []log.Level {
 		return p()
 	}
 	return log.DefaultLevelProvider()
+}
+
+func (instance *Provider) GetLocationFactory() location.Factory {
+	return instance.LocationFactory
+}
+
+func (instance *Provider) SetLocationFactory(v location.Factory) {
+	instance.LocationFactory = v
+}
+
+func (instance *Provider) getLocationFactory() location.Factory {
+	if f := instance.GetLocationFactory(); f != nil {
+		return f
+	}
+	if f := location.DefaultFactory; f != nil {
+		return f
+	}
+	return location.NoopFactory
+}
+
+func (instance *Provider) GetFieldKeySpec() fields.KeysSpec {
+	return instance.FieldsKeysSpec
 }

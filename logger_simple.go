@@ -25,10 +25,10 @@ func (instance *simpleCoreLogger) LogEvent(event Event) {
 	}
 
 	if v := GetTimestampOf(event, instance); v == nil {
-		event = event.WithField(instance.GetFieldKeys().GetTimestamp(), time.Now())
+		event = event.WithField(instance.GetFieldKeySpec().GetTimestamp(), time.Now())
 	}
 	if v := GetLoggerOf(event, instance); v == nil {
-		event = event.WithField(instance.GetFieldKeys().GetLogger(), instance.name)
+		event = event.WithField(instance.GetFieldKeySpec().GetLogger(), instance.name)
 	}
 
 	s, err := instance.format(event)
@@ -65,9 +65,9 @@ func (instance *simpleCoreLogger) format(event Event) ([]byte, error) {
 		}
 	}
 
-	messageKey := instance.GetFieldKeys().GetMessage()
-	loggerKey := instance.GetFieldKeys().GetLogger()
-	timestampKey := instance.GetFieldKeys().GetTimestamp()
+	messageKey := instance.GetFieldKeySpec().GetMessage()
+	loggerKey := instance.GetFieldKeySpec().GetLogger()
+	timestampKey := instance.GetFieldKeySpec().GetTimestamp()
 	if err := event.ForEach(func(key string, value interface{}) error {
 		if key == loggerKey && value == GlobalLoggerName {
 			return nil

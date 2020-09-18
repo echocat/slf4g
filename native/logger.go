@@ -3,12 +3,14 @@ package native
 import (
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/native/consumer"
+	"github.com/echocat/slf4g/native/location"
 	"time"
 )
 
 type CoreLogger struct {
-	Level    *log.Level
-	Consumer consumer.Consumer
+	Level           *log.Level
+	Consumer        consumer.Consumer
+	LocationFactory location.Factory
 
 	provider *Provider
 	name     string
@@ -20,14 +22,17 @@ func (instance *CoreLogger) LogEvent(event log.Event) {
 	}
 
 	if v := log.GetTimestampOf(event, instance.provider); v == nil {
-		event = event.WithField(instance.provider.GetFieldKeys().GetTimestamp(), time.Now())
+		event = event.WithField(instance.provider.GetFieldKeySpec().GetTimestamp(), time.Now())
 	}
 	if v := log.GetLoggerOf(event, instance.provider); v == nil {
-		event = event.WithField(instance.provider.GetFieldKeys().GetLogger(), instance.name)
+		event = event.WithField(instance.provider.GetFieldKeySpec().GetLogger(), instance.name)
 	}
-
 	if !instance.IsLevelEnabled(event.GetLevel()) {
 		return
+	}
+
+	if v := instance.getLocationFactory()(event, event.GetCallDepth()+1); v != nil {
+		event = event.WithField(instance.provider.FieldsKeysSpec.GetLocation(), v)
 	}
 
 	instance.getConsumer().Consume(event, instance)
@@ -69,4 +74,19 @@ func (instance *CoreLogger) getConsumer() consumer.Consumer {
 		return c
 	}
 	return instance.provider.getConsumer()
+}
+
+func (instance *CoreLogger) GetLocationFactory() location.Factory {
+	return instance.LocationFactory
+}
+
+func (instance *CoreLogger) SetLocationFactory(v location.Factory) {
+	instance.LocationFactory = v
+}
+
+func (instance *CoreLogger) getLocationFactory() location.Factory {
+	if f := instance.GetLocationFactory(); f != nil {
+		return f
+	}
+	return instance.provider.getLocationFactory()
 }

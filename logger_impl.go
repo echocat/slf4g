@@ -21,7 +21,7 @@ type loggerImpl struct {
 func (instance *loggerImpl) logM(level Level, message *string) {
 	f := instance.fields
 	if message != nil {
-		f = f.With(instance.GetProvider().GetFieldKeys().GetMessage(), *message)
+		f = f.With(instance.GetProvider().GetFieldKeySpec().GetMessage(), *message)
 	}
 	instance.LogEvent(NewEvent(level, f, 3))
 }
@@ -51,7 +51,7 @@ func (instance *loggerImpl) Logf(level Level, format string, args ...interface{}
 }
 
 func (instance *loggerImpl) getMessageKey() string {
-	return instance.GetProvider().GetFieldKeys().GetMessage()
+	return instance.GetProvider().GetFieldKeySpec().GetMessage()
 }
 
 func (instance *loggerImpl) Trace(args ...interface{}) {
@@ -176,7 +176,7 @@ func (instance *loggerImpl) Withf(name string, format string, args ...interface{
 }
 
 func (instance *loggerImpl) WithError(err error) Logger {
-	return instance.With(instance.GetProvider().GetFieldKeys().GetError(), err)
+	return instance.With(instance.GetProvider().GetFieldKeySpec().GetError(), err)
 }
 
 func (instance *loggerImpl) WithFields(fields fields.Fields) Logger {

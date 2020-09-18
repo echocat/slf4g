@@ -12,7 +12,7 @@ func GetLogger(name string) Logger {
 func logM(level Level, message *string) {
 	f := fields.Empty()
 	if message != nil {
-		f = f.With(GetProvider().GetFieldKeys().GetMessage(), *message)
+		f = f.With(GetProvider().GetFieldKeySpec().GetMessage(), *message)
 	}
 
 	getGlobalLogger().LogEvent(NewEvent(level, f, 3))
