@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/echocat/slf4g"
+	"github.com/echocat/slf4g/value"
 )
 
 type SimpleValueFormatter struct {
@@ -11,6 +12,10 @@ type SimpleValueFormatter struct {
 }
 
 func (instance *SimpleValueFormatter) FormatValue(v interface{}, _ log.Provider) ([]byte, error) {
+	if vl, ok := v.(value.Lazy); ok {
+		v = vl.Get()
+	}
+
 	if instance.QuoteType == QuoteTypeMinimal {
 		switch vs := v.(type) {
 		case string:

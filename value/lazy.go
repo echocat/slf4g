@@ -19,3 +19,7 @@ type lazyFormat struct {
 func (instance *lazyFormat) Get() Value {
 	return fmt.Sprintf(instance.format, instance.args...)
 }
+
+func (instance *lazyFormat) String() string {
+	return instance.Get().(string)
+}
