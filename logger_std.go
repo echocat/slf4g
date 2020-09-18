@@ -1,5 +1,10 @@
 package log
 
+import (
+	"github.com/echocat/slf4g/fields"
+	stdlog "log"
+)
+
 type StdLogger interface {
 	CoreLogger
 
@@ -16,9 +21,44 @@ type StdLogger interface {
 	Panicln(...interface{})
 }
 
-func AsStdLogger(in CoreLogger) StdLogger {
+func AsStdInterfacingLogger(in CoreLogger) StdLogger {
 	if v, ok := in.(StdLogger); ok {
 		return v
 	}
 	return &loggerImpl{CoreLogger: in}
+}
+
+func AsStdLogger(in CoreLogger, logAs Level) *stdlog.Logger {
+	return stdlog.New(&Writer{
+		CoreLogger: in,
+		LogAs:      logAs,
+	}, "", 0)
+}
+
+func ConfigureStd() {
+	ConfigureStdWith(getGlobalLogger(), LevelInfo)
+}
+
+func ConfigureStdWith(in CoreLogger, logAs Level) {
+	w := &Writer{
+		CoreLogger: in,
+		LogAs:      logAs,
+	}
+	stdlog.SetOutput(w)
+	stdlog.SetPrefix("")
+	stdlog.SetFlags(0)
+}
+
+type Writer struct {
+	CoreLogger
+	LogAs Level
+}
+
+func (instance *Writer) Write(p []byte) (n int, err error) {
+	instance.LogEvent(NewEvent(
+		instance.LogAs,
+		fields.With(GetProvider().GetFieldKeys().GetMessage(), string(p)),
+		4,
+	))
+	return len(p), nil
 }

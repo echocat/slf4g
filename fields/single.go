@@ -1,7 +1,13 @@
 package fields
 
+import "github.com/echocat/slf4g/value"
+
 func With(key string, value interface{}) Fields {
 	return &single{key: key, value: value}
+}
+
+func Withf(key string, format string, args ...interface{}) Fields {
+	return With(key, value.Format(format, args...))
 }
 
 type single struct {
@@ -26,6 +32,13 @@ func (instance *single) Get(key string) interface{} {
 func (instance *single) With(key string, value interface{}) Fields {
 	return &lineage{
 		fields: &single{key: key, value: value},
+		parent: instance,
+	}
+}
+
+func (instance *single) Withf(key string, format string, args ...interface{}) Fields {
+	return &lineage{
+		fields: Withf(key, format, args...),
 		parent: instance,
 	}
 }

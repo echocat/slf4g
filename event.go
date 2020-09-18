@@ -12,10 +12,13 @@ type Event interface {
 	WithField(key string, value interface{}) Event
 }
 
-func NewEvent(level Level, fields fields.Fields, callDepth int) *EventImpl {
+func NewEvent(level Level, f fields.Fields, callDepth int) *EventImpl {
+	if f == nil {
+		f = fields.Empty()
+	}
 	return &EventImpl{
 		Level:     level,
-		Fields:    fields,
+		Fields:    f,
 		CallDepth: callDepth,
 	}
 }

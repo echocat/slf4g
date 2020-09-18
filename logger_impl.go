@@ -3,6 +3,7 @@ package log
 import (
 	"fmt"
 	"github.com/echocat/slf4g/fields"
+	"github.com/echocat/slf4g/value"
 )
 
 func NewLogger(cl CoreLogger) Logger {
@@ -168,6 +169,10 @@ func (instance *loggerImpl) With(name string, value interface{}) Logger {
 		CoreLogger: instance.CoreLogger,
 		fields:     targetFields,
 	}
+}
+
+func (instance *loggerImpl) Withf(name string, format string, args ...interface{}) Logger {
+	return instance.With(name, value.Format(format, args...))
 }
 
 func (instance *loggerImpl) WithError(err error) Logger {

@@ -28,6 +28,13 @@ func (instance Map) With(key string, value interface{}) Fields {
 	}
 }
 
+func (instance Map) Withf(key string, format string, args ...interface{}) Fields {
+	return &lineage{
+		fields: Withf(key, format, args...),
+		parent: instance,
+	}
+}
+
 func (instance Map) WithFields(fields Fields) Fields {
 	return &lineage{
 		fields: fields,

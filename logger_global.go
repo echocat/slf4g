@@ -138,6 +138,10 @@ func With(name string, value interface{}) Logger {
 	return getGlobalLogger().With(name, value)
 }
 
+func Withf(name string, format string, args ...interface{}) Logger {
+	return getGlobalLogger().Withf(name, format, args...)
+}
+
 func WithError(err error) Logger {
 	return getGlobalLogger().WithError(err)
 }

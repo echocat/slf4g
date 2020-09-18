@@ -5,6 +5,7 @@ type Fields interface {
 	Get(key string) interface{}
 
 	With(key string, value interface{}) Fields
+	Withf(key string, format string, args ...interface{}) Fields
 	Without(keys ...string) Fields
 	WithFields(Fields) Fields
 }

@@ -22,6 +22,12 @@ func (instance *empty) With(key string, value interface{}) Fields {
 	}
 }
 
+func (instance *empty) Withf(key string, format string, args ...interface{}) Fields {
+	return &lineage{
+		fields: Withf(key, format, args...),
+	}
+}
+
 func (instance *empty) WithFields(fields Fields) Fields {
 	return &lineage{
 		fields: fields,

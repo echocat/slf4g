@@ -63,6 +63,13 @@ func (instance *without) With(key string, value interface{}) Fields {
 	}
 }
 
+func (instance *without) Withf(key string, format string, args ...interface{}) Fields {
+	return &lineage{
+		fields: Withf(key, format, args...),
+		parent: instance,
+	}
+}
+
 func (instance *without) WithFields(fields Fields) Fields {
 	return &lineage{
 		fields: fields,
