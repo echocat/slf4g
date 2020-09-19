@@ -8,14 +8,30 @@ import (
 
 func NewLogger(cl CoreLogger) Logger {
 	return &loggerImpl{
-		CoreLogger: cl,
-		fields:     fields.Empty(),
+		getCoreLogger: func() CoreLogger { return cl },
+		fields:        fields.Empty(),
 	}
 }
 
 type loggerImpl struct {
-	CoreLogger
-	fields fields.Fields
+	getCoreLogger func() CoreLogger
+	fields        fields.Fields
+}
+
+func (instance *loggerImpl) GetName() string {
+	return instance.getCoreLogger().GetName()
+}
+
+func (instance *loggerImpl) LogEvent(event Event) {
+	instance.getCoreLogger().LogEvent(event)
+}
+
+func (instance *loggerImpl) IsLevelEnabled(level Level) bool {
+	return instance.getCoreLogger().IsLevelEnabled(level)
+}
+
+func (instance *loggerImpl) GetProvider() Provider {
+	return instance.getCoreLogger().GetProvider()
 }
 
 func (instance *loggerImpl) logM(level Level, message *string) {
@@ -166,8 +182,8 @@ func (instance *loggerImpl) With(name string, value interface{}) Logger {
 		targetFields = fields.With(name, value)
 	}
 	return &loggerImpl{
-		CoreLogger: instance.CoreLogger,
-		fields:     targetFields,
+		getCoreLogger: instance.getCoreLogger,
+		fields:        targetFields,
 	}
 }
 
@@ -187,7 +203,7 @@ func (instance *loggerImpl) WithFields(fields fields.Fields) Logger {
 		targetFields = fields
 	}
 	return &loggerImpl{
-		CoreLogger: instance.CoreLogger,
-		fields:     targetFields,
+		getCoreLogger: instance.getCoreLogger,
+		fields:        targetFields,
 	}
 }

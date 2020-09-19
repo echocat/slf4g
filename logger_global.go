@@ -10,7 +10,7 @@ func GetLogger(name string) Logger {
 }
 
 func GetGlobalLogger() Logger {
-	return GetLogger(GlobalLoggerName)
+	return globalLoggerFacadeV
 }
 
 func logM(level Level, message *string) {
