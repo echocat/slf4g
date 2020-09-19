@@ -36,7 +36,7 @@ func AsStdLogger(in CoreLogger, logAs Level) *stdlog.Logger {
 }
 
 func ConfigureStd() {
-	ConfigureStdWith(getGlobalLogger(), LevelInfo)
+	ConfigureStdWith(GetGlobalLogger(), LevelInfo)
 }
 
 func ConfigureStdWith(in CoreLogger, logAs Level) {

@@ -9,17 +9,17 @@ func GetLogger(name string) Logger {
 	return GetProvider().GetLogger(name)
 }
 
+func GetGlobalLogger() Logger {
+	return GetLogger(GlobalLoggerName)
+}
+
 func logM(level Level, message *string) {
 	f := fields.Empty()
 	if message != nil {
 		f = f.With(GetProvider().GetFieldKeySpec().GetMessage(), *message)
 	}
 
-	getGlobalLogger().LogEvent(NewEvent(level, f, 3))
-}
-
-func getGlobalLogger() Logger {
-	return GetLogger(GlobalLoggerName)
+	GetGlobalLogger().LogEvent(NewEvent(level, f, 3))
 }
 
 func log(level Level, args ...interface{}) {
@@ -47,7 +47,7 @@ func Logf(level Level, format string, args ...interface{}) {
 }
 
 func IsLevelEnabled(level Level) bool {
-	return GetLogger(GlobalLoggerName).IsLevelEnabled(level)
+	return GetGlobalLogger().IsLevelEnabled(level)
 }
 
 func Trace(args ...interface{}) {
@@ -135,17 +135,17 @@ func IsPanicEnabled() bool {
 }
 
 func With(name string, value interface{}) Logger {
-	return getGlobalLogger().With(name, value)
+	return GetGlobalLogger().With(name, value)
 }
 
 func Withf(name string, format string, args ...interface{}) Logger {
-	return getGlobalLogger().Withf(name, format, args...)
+	return GetGlobalLogger().Withf(name, format, args...)
 }
 
 func WithError(err error) Logger {
-	return getGlobalLogger().WithError(err)
+	return GetGlobalLogger().WithError(err)
 }
 
 func WithFields(fields fields.Fields) Logger {
-	return getGlobalLogger().WithFields(fields)
+	return GetGlobalLogger().WithFields(fields)
 }
