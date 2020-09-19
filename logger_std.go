@@ -25,7 +25,9 @@ func AsStdInterfacingLogger(in CoreLogger) StdLogger {
 	if v, ok := in.(StdLogger); ok {
 		return v
 	}
-	return &loggerImpl{CoreLogger: in}
+	return &loggerImpl{getCoreLogger: func() CoreLogger {
+		return in
+	}}
 }
 
 func AsStdLogger(in CoreLogger, logAs Level) *stdlog.Logger {

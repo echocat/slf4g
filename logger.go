@@ -57,5 +57,7 @@ func AsLogger(in CoreLogger) Logger {
 	if v, ok := in.(Logger); ok {
 		return v
 	}
-	return &loggerImpl{CoreLogger: in}
+	return &loggerImpl{getCoreLogger: func() CoreLogger {
+		return in
+	}}
 }
