@@ -6,13 +6,16 @@ import (
 	"time"
 )
 
-func GetMessageOf(fields fields.Fields, using Provider) *string {
-	if fields == nil {
+func GetMessageOf(f fields.Fields, using Provider) *string {
+	if f == nil {
 		return nil
 	}
-	pv := fields.Get(using.GetFieldKeySpec().GetMessage())
+	pv := f.Get(using.GetFieldKeySpec().GetMessage())
 	if pv == nil {
 		return nil
+	}
+	if lv, ok := pv.(fields.Lazy); ok {
+		pv = lv.Get()
 	}
 	switch v := pv.(type) {
 	case string:
@@ -25,11 +28,14 @@ func GetMessageOf(fields fields.Fields, using Provider) *string {
 	}
 }
 
-func GetErrorOf(fields fields.Fields, using Provider) error {
-	if fields == nil {
+func GetErrorOf(f fields.Fields, using Provider) error {
+	if f == nil {
 		return nil
 	}
-	pv := fields.Get(using.GetFieldKeySpec().GetError())
+	pv := f.Get(using.GetFieldKeySpec().GetError())
+	if lv, ok := pv.(fields.Lazy); ok {
+		pv = lv.Get()
+	}
 	switch v := pv.(type) {
 	case error:
 		return v
@@ -38,11 +44,14 @@ func GetErrorOf(fields fields.Fields, using Provider) error {
 	}
 }
 
-func GetTimestampOf(fields fields.Fields, using Provider) *time.Time {
-	if fields == nil {
+func GetTimestampOf(f fields.Fields, using Provider) *time.Time {
+	if f == nil {
 		return nil
 	}
-	pv := fields.Get(using.GetFieldKeySpec().GetTimestamp())
+	pv := f.Get(using.GetFieldKeySpec().GetTimestamp())
+	if lv, ok := pv.(fields.Lazy); ok {
+		pv = lv.Get()
+	}
 	switch v := pv.(type) {
 	case time.Time:
 		return &v
@@ -53,14 +62,17 @@ func GetTimestampOf(fields fields.Fields, using Provider) *time.Time {
 	}
 }
 
-func GetLoggerOf(fields fields.Fields, using Provider) *string {
+func GetLoggerOf(f fields.Fields, using Provider) *string {
 	type getNameAware interface {
 		GetName() string
 	}
-	if fields == nil {
+	if f == nil {
 		return nil
 	}
-	pv := fields.Get(using.GetFieldKeySpec().GetLogger())
+	pv := f.Get(using.GetFieldKeySpec().GetLogger())
+	if lv, ok := pv.(fields.Lazy); ok {
+		pv = lv.Get()
+	}
 	if pv == nil {
 		return nil
 	}

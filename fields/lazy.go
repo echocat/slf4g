@@ -1,10 +1,15 @@
-package value
+package fields
 
 import "fmt"
 
 type Lazy interface {
-	Value
-	Get() Value
+	Get() interface{}
+}
+
+type LazyFunc func() interface{}
+
+func (instance LazyFunc) Get() interface{} {
+	return instance()
 }
 
 func Format(format string, args ...interface{}) Lazy {
@@ -16,7 +21,7 @@ type lazyFormat struct {
 	args   []interface{}
 }
 
-func (instance *lazyFormat) Get() Value {
+func (instance *lazyFormat) Get() interface{} {
 	return fmt.Sprintf(instance.format, instance.args...)
 }
 

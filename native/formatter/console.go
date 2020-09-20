@@ -6,7 +6,6 @@ import (
 	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/native/color"
 	"github.com/echocat/slf4g/native/formatter/hints"
-	"github.com/echocat/slf4g/value"
 	"strings"
 	"time"
 	"unicode"
@@ -156,7 +155,7 @@ func (instance *Console) printFields(event log.Event, buf *bytes.Buffer, using l
 	timestampKey := using.GetFieldKeySpec().GetTimestamp()
 
 	err = fields.Sort(event, instance.FieldSorter).ForEach(func(k string, v interface{}) error {
-		if vl, ok := v.(value.Lazy); ok {
+		if vl, ok := v.(fields.Lazy); ok {
 			v = vl.Get()
 		}
 		if v == nil {

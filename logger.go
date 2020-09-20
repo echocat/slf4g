@@ -6,13 +6,6 @@ const (
 	GlobalLoggerName = "global"
 )
 
-type CoreLogger interface {
-	GetName() string
-	LogEvent(Event)
-	IsLevelEnabled(Level) bool
-	GetProvider() Provider
-}
-
 type Logger interface {
 	CoreLogger
 
@@ -43,21 +36,15 @@ type Logger interface {
 	Fatalf(string, ...interface{})
 	IsFatalEnabled() bool
 
-	Panic(...interface{})
-	Panicf(string, ...interface{})
-	IsPanicEnabled() bool
-
 	With(name string, value interface{}) Logger
 	Withf(name string, format string, args ...interface{}) Logger
 	WithError(error) Logger
 	WithFields(fields.Fields) Logger
 }
 
-func AsLogger(in CoreLogger) Logger {
-	if v, ok := in.(Logger); ok {
-		return v
+func NewLogger(cl CoreLogger) Logger {
+	return &loggerImpl{
+		coreProvider: func() CoreLogger { return cl },
+		fields:       fields.Empty(),
 	}
-	return &loggerImpl{getCoreLogger: func() CoreLogger {
-		return in
-	}}
 }

@@ -29,8 +29,6 @@ func (instance *defaultLevelNames) FromOrdinal(ordinal uint16) (string, error) {
 		return "ERROR", nil
 	case LevelFatal:
 		return "FATAL", nil
-	case LevelPanic:
-		return "PANIC", nil
 	default:
 		return fmt.Sprintf("%d", ordinal), nil
 	}
@@ -50,8 +48,6 @@ func (instance *defaultLevelNames) ToOrdinal(name string) (uint16, error) {
 		return uint16(LevelError), nil
 	case "FATAL":
 		return uint16(LevelFatal), nil
-	case "PANIC":
-		return uint16(LevelPanic), nil
 	default:
 		if result, err := strconv.ParseUint(name, 10, 16); err != nil {
 			return 0, fmt.Errorf("%w: %s", ErrIllegalLevel, name)

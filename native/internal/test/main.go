@@ -2,13 +2,12 @@ package main
 
 import (
 	log "github.com/echocat/slf4g"
+	_ "github.com/echocat/slf4g/bridge-std/hook"
 	_ "github.com/echocat/slf4g/native"
 	stdlog "log"
 )
 
 func main() {
-	log.ConfigureStd()
-
 	log.With("foo", "bar").Debug("hello, debug")
 	log.With("a", "foo").
 		With("c", "xyz").

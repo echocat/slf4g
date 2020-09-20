@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/echocat/slf4g"
-	"github.com/echocat/slf4g/value"
+	"github.com/echocat/slf4g/fields"
 )
 
 type SimpleValueFormatter struct {
@@ -12,7 +12,7 @@ type SimpleValueFormatter struct {
 }
 
 func (instance *SimpleValueFormatter) FormatValue(v interface{}, _ log.Provider) ([]byte, error) {
-	if vl, ok := v.(value.Lazy); ok {
+	if vl, ok := v.(fields.Lazy); ok {
 		v = vl.Get()
 	}
 

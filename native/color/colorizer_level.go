@@ -11,7 +11,6 @@ var DefaultLevelBasedColorizer LevelBasedColorizer = LevelColorizerMap{
 	log.LevelWarn: `[33;1m`,
 	log.LevelError: `[31;1m`,
 	log.LevelFatal: `[35;1m`,
-	log.LevelPanic: `[35;1m`,
 }
 
 type LevelBasedColorizer interface {

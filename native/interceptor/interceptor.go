@@ -2,10 +2,7 @@ package interceptor
 
 import log "github.com/echocat/slf4g"
 
-var Default Interceptor = Interceptors{
-	DefaultFatal,
-	DefaultPanics,
-}
+var Default Interceptor = Interceptors{}
 
 type Interceptor interface {
 	OnBeforeLog(log.Event, log.Provider) (intercepted log.Event)

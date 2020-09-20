@@ -8,7 +8,7 @@ import (
 var (
 	ErrIllegalLevel = errors.New("illegal level")
 
-	defaultLevels = []Level{LevelTrace, LevelDebug, LevelInfo, LevelWarn, LevelError, LevelFatal, LevelPanic}
+	defaultLevels = []Level{LevelTrace, LevelDebug, LevelInfo, LevelWarn, LevelError, LevelFatal}
 )
 
 const (
@@ -18,7 +18,6 @@ const (
 	LevelWarn  = Level(4000)
 	LevelError = Level(5000)
 	LevelFatal = Level(6000)
-	LevelPanic = Level(7000)
 )
 
 type Level uint16

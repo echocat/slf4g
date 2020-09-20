@@ -5,38 +5,38 @@ import (
 	"os"
 )
 
-type SimpleProvider struct {
+type simpleProvider struct {
 	Provider
 
 	Level Level
 	Out   io.Writer
 }
 
-func NewSimpleProvider(name string) *SimpleProvider {
-	result := &SimpleProvider{
+var simpleProviderV = func() *simpleProvider {
+	result := &simpleProvider{
 		Level: LevelInfo,
 		Out:   os.Stderr,
 	}
-	result.Provider = NewProvider(name, result.factory, DefaultLevelProvider)
+	result.Provider = NewProvider("simple", result.factory, DefaultLevelProvider)
 	return result
-}
+}()
 
-func (instance *SimpleProvider) factory(name string) Logger {
+func (instance *simpleProvider) factory(name string) Logger {
 	prefix := name
 	if prefix == GlobalLoggerName {
 		prefix = ""
 	}
 	cl := &simpleCoreLogger{
-		SimpleProvider: instance,
+		simpleProvider: instance,
 		name:           name,
 	}
 	return NewLogger(cl)
 }
 
-func (instance *SimpleProvider) SetLevel(level Level) {
+func (instance *simpleProvider) SetLevel(level Level) {
 	instance.Level = level
 }
 
-func (instance *SimpleProvider) GetLevel() Level {
+func (instance *simpleProvider) GetLevel() Level {
 	return instance.Level
 }

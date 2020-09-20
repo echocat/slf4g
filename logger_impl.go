@@ -3,59 +3,44 @@ package log
 import (
 	"fmt"
 	"github.com/echocat/slf4g/fields"
-	"github.com/echocat/slf4g/value"
 )
 
-func NewLogger(cl CoreLogger) Logger {
-	return &loggerImpl{
-		getCoreLogger: func() CoreLogger { return cl },
-		fields:        fields.Empty(),
-	}
-}
-
 type loggerImpl struct {
-	getCoreLogger func() CoreLogger
-	fields        fields.Fields
+	coreProvider func() CoreLogger
+	fields       fields.Fields
 }
 
 func (instance *loggerImpl) GetName() string {
-	return instance.getCoreLogger().GetName()
+	return instance.coreProvider().GetName()
 }
 
 func (instance *loggerImpl) LogEvent(event Event) {
-	instance.getCoreLogger().LogEvent(event)
+	instance.coreProvider().LogEvent(event)
 }
 
 func (instance *loggerImpl) IsLevelEnabled(level Level) bool {
-	return instance.getCoreLogger().IsLevelEnabled(level)
+	return instance.coreProvider().IsLevelEnabled(level)
 }
 
 func (instance *loggerImpl) GetProvider() Provider {
-	return instance.getCoreLogger().GetProvider()
+	return instance.coreProvider().GetProvider()
 }
 
-func (instance *loggerImpl) logM(level Level, message *string) {
+func (instance *loggerImpl) log(level Level, args ...interface{}) {
 	f := instance.fields
-	if message != nil {
-		f = f.With(instance.GetProvider().GetFieldKeySpec().GetMessage(), *message)
+	if len(args) > 0 {
+		key := instance.GetProvider().GetFieldKeySpec().GetMessage()
+		f = f.With(key, fields.LazyFunc(func() interface{} {
+			return fmt.Sprint(args...)
+		}))
 	}
 	instance.LogEvent(NewEvent(level, f, 3))
 }
 
-func (instance *loggerImpl) log(level Level, args ...interface{}) {
-	var message *string
-	if len(args) > 0 {
-		str := fmt.Sprint(args...)
-		message = &str
-	}
-
-	instance.logM(level, message)
-}
-
 func (instance *loggerImpl) logf(level Level, format string, args ...interface{}) {
-	message := fmt.Sprintf(format, args...)
-
-	instance.logM(level, &message)
+	f := instance.fields.
+		Withf(instance.GetProvider().GetFieldKeySpec().GetMessage(), format, args...)
+	instance.LogEvent(NewEvent(level, f, 3))
 }
 
 func (instance *loggerImpl) Log(level Level, args ...interface{}) {
@@ -142,38 +127,6 @@ func (instance *loggerImpl) IsFatalEnabled() bool {
 	return instance.IsLevelEnabled(LevelFatal)
 }
 
-func (instance *loggerImpl) Panic(args ...interface{}) {
-	instance.log(LevelPanic, args...)
-}
-
-func (instance *loggerImpl) Panicf(format string, args ...interface{}) {
-	instance.logf(LevelPanic, format, args...)
-}
-
-func (instance *loggerImpl) IsPanicEnabled() bool {
-	return instance.IsLevelEnabled(LevelPanic)
-}
-
-func (instance *loggerImpl) Print(args ...interface{}) {
-	instance.log(LevelInfo, args...)
-}
-
-func (instance *loggerImpl) Printf(format string, args ...interface{}) {
-	instance.logf(LevelInfo, format, args...)
-}
-
-func (instance *loggerImpl) Println(args ...interface{}) {
-	instance.log(LevelInfo, args...)
-}
-
-func (instance *loggerImpl) Fatalln(args ...interface{}) {
-	instance.log(LevelFatal, args...)
-}
-
-func (instance *loggerImpl) Panicln(args ...interface{}) {
-	instance.log(LevelPanic, args...)
-}
-
 func (instance *loggerImpl) With(name string, value interface{}) Logger {
 	targetFields := instance.fields
 	if targetFields != nil {
@@ -182,13 +135,13 @@ func (instance *loggerImpl) With(name string, value interface{}) Logger {
 		targetFields = fields.With(name, value)
 	}
 	return &loggerImpl{
-		getCoreLogger: instance.getCoreLogger,
-		fields:        targetFields,
+		coreProvider: instance.coreProvider,
+		fields:       targetFields,
 	}
 }
 
 func (instance *loggerImpl) Withf(name string, format string, args ...interface{}) Logger {
-	return instance.With(name, value.Format(format, args...))
+	return instance.With(name, fields.Format(format, args...))
 }
 
 func (instance *loggerImpl) WithError(err error) Logger {
@@ -203,7 +156,7 @@ func (instance *loggerImpl) WithFields(fields fields.Fields) Logger {
 		targetFields = fields
 	}
 	return &loggerImpl{
-		getCoreLogger: instance.getCoreLogger,
-		fields:        targetFields,
+		coreProvider: instance.coreProvider,
+		fields:       targetFields,
 	}
 }

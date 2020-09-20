@@ -1,13 +1,11 @@
 package fields
 
-import "github.com/echocat/slf4g/value"
-
 func With(key string, value interface{}) Fields {
 	return &single{key: key, value: value}
 }
 
 func Withf(key string, format string, args ...interface{}) Fields {
-	return With(key, value.Format(format, args...))
+	return With(key, Format(format, args...))
 }
 
 type single struct {

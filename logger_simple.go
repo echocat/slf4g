@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
 	"time"
 )
 
@@ -13,7 +12,7 @@ const (
 )
 
 type simpleCoreLogger struct {
-	*SimpleProvider
+	*simpleProvider
 	name  string
 	level *Level
 }
@@ -37,13 +36,6 @@ func (instance *simpleCoreLogger) LogEvent(event Event) {
 	}
 
 	_, _ = instance.Out.Write(s)
-
-	if LevelPanic.CompareTo(level) <= 0 {
-		panic(string(s))
-	}
-	if LevelFatal.CompareTo(level) <= 0 {
-		os.Exit(1)
-	}
 }
 
 func (instance *simpleCoreLogger) format(event Event) ([]byte, error) {
@@ -110,7 +102,7 @@ func (instance *simpleCoreLogger) GetLevel() Level {
 	if v := instance.level; v != nil {
 		return *v
 	}
-	return instance.SimpleProvider.GetLevel()
+	return instance.simpleProvider.GetLevel()
 }
 
 func (instance *simpleCoreLogger) GetName() string {

@@ -9,8 +9,10 @@ func GetLogger(name string) Logger {
 	return GetProvider().GetLogger(name)
 }
 
+var globalLogger = GetLogger(GlobalLoggerName)
+
 func GetGlobalLogger() Logger {
-	return globalLoggerFacadeV
+	return globalLogger
 }
 
 func logM(level Level, message *string) {
@@ -120,18 +122,6 @@ func Fatalf(format string, args ...interface{}) {
 
 func IsFatalEnabled() bool {
 	return IsLevelEnabled(LevelFatal)
-}
-
-func Panic(args ...interface{}) {
-	log(LevelPanic, args...)
-}
-
-func Panicf(format string, args ...interface{}) {
-	logf(LevelPanic, format, args...)
-}
-
-func IsPanicEnabled() bool {
-	return IsLevelEnabled(LevelPanic)
 }
 
 func With(name string, value interface{}) Logger {

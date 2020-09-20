@@ -3,7 +3,6 @@ package location
 import (
 	"fmt"
 	log "github.com/echocat/slf4g"
-	"github.com/echocat/slf4g/value"
 	"os"
 	"runtime"
 )
@@ -15,7 +14,7 @@ const (
 	CallerAwareModePreferFunction CallerAwareMode = 1
 )
 
-func CallerAwareFactor(mode CallerAwareMode) Factory {
+func CallerAwareFactory(mode CallerAwareMode) Factory {
 	return func(event log.Event, callDepth int) Location {
 		if event == nil {
 			return nil
@@ -64,7 +63,7 @@ type CallerAwareImpl struct {
 	Mode CallerAwareMode
 }
 
-func (instance CallerAwareImpl) Get() value.Value {
+func (instance CallerAwareImpl) Get() interface{} {
 	if instance.Mode == CallerAwareModePreferFile && instance.File != "" {
 		return instance.formatFile()
 	}

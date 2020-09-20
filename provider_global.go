@@ -8,16 +8,17 @@ import (
 )
 
 var (
-	provider      Provider
-	allProviders  = map[string]Provider{}
-	providerMutex sync.RWMutex
+	globalProviderFacade = newProviderFacade(getProvider)
+	globalProvider       Provider
+	allProviders         = map[string]Provider{}
+	providerMutex        sync.RWMutex
 )
 
 func GetProvider() Provider {
 	// We're using this facade to deal with concurrency issues where someone already
 	// addresses the reference to the global available provider but afterwards
 	// the real provider is initiated.
-	return globalProviderFacadeV
+	return globalProviderFacade
 }
 
 func getProvider() Provider {
@@ -29,7 +30,7 @@ func getProvider() Provider {
 		}
 	}()
 
-	if p := provider; p != nil {
+	if p := globalProvider; p != nil {
 		return p
 	}
 
@@ -38,7 +39,7 @@ func getProvider() Provider {
 	providerMutex.Lock()
 	defer providerMutex.Unlock()
 
-	if p := provider; p != nil {
+	if p := globalProvider; p != nil {
 		return p
 	}
 
@@ -53,21 +54,20 @@ func getProvider() Provider {
 	}
 
 	for _, p := range allProviders {
-		provider = p
+		globalProvider = p
 		return p
 	}
 
 	// Everything failed, using a simple provider now...
-	p := NewSimpleProvider("simple")
-	provider = p
-	return p
+	globalProvider = simpleProviderV
+	return simpleProviderV
 }
 
 func SetProvider(p Provider) {
 	providerMutex.Lock()
 	defer providerMutex.Unlock()
 
-	provider = p
+	globalProvider = p
 }
 
 func RegisterProvider(p Provider) Provider {
