@@ -4,13 +4,13 @@ import (
 	"github.com/echocat/slf4g/fields"
 )
 
-type Writer struct {
+type LoggingWriter struct {
 	CoreLogger
 	LogAs Level
 }
 
-func (instance *Writer) Write(p []byte) (n int, err error) {
-	instance.LogEvent(NewEvent(
+func (instance *LoggingWriter) Write(p []byte) (n int, err error) {
+	instance.Log(NewEvent(
 		instance.LogAs,
 		fields.With(GetProvider().GetFieldKeySpec().GetMessage(), string(p)),
 		3,

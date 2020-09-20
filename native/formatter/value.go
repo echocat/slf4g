@@ -11,8 +11,3 @@ var (
 type ValueFormatter interface {
 	FormatValue(interface{}, log.Provider) ([]byte, error)
 }
-
-type FieldValueFormatterAware interface {
-	GetValueFormatter() ValueFormatter
-	SetValueFormatter(ValueFormatter)
-}

@@ -10,20 +10,24 @@ type loggerImpl struct {
 	fields       fields.Fields
 }
 
-func (instance *loggerImpl) GetName() string {
-	return instance.coreProvider().GetName()
+func (instance *loggerImpl) UnwrapCore() CoreLogger {
+	return instance.coreProvider()
 }
 
-func (instance *loggerImpl) LogEvent(event Event) {
-	instance.coreProvider().LogEvent(event)
+func (instance *loggerImpl) GetName() string {
+	return instance.UnwrapCore().GetName()
+}
+
+func (instance *loggerImpl) Log(event Event) {
+	instance.UnwrapCore().Log(event)
 }
 
 func (instance *loggerImpl) IsLevelEnabled(level Level) bool {
-	return instance.coreProvider().IsLevelEnabled(level)
+	return instance.UnwrapCore().IsLevelEnabled(level)
 }
 
 func (instance *loggerImpl) GetProvider() Provider {
-	return instance.coreProvider().GetProvider()
+	return instance.UnwrapCore().GetProvider()
 }
 
 func (instance *loggerImpl) log(level Level, args ...interface{}) {
@@ -34,21 +38,13 @@ func (instance *loggerImpl) log(level Level, args ...interface{}) {
 			return fmt.Sprint(args...)
 		}))
 	}
-	instance.LogEvent(NewEvent(level, f, 3))
+	instance.Log(NewEvent(level, f, 3))
 }
 
 func (instance *loggerImpl) logf(level Level, format string, args ...interface{}) {
 	f := instance.fields.
 		Withf(instance.GetProvider().GetFieldKeySpec().GetMessage(), format, args...)
-	instance.LogEvent(NewEvent(level, f, 3))
-}
-
-func (instance *loggerImpl) Log(level Level, args ...interface{}) {
-	instance.log(level, args...)
-}
-
-func (instance *loggerImpl) Logf(level Level, format string, args ...interface{}) {
-	instance.logf(level, format, args...)
+	instance.Log(NewEvent(level, f, 3))
 }
 
 func (instance *loggerImpl) getMessageKey() string {

@@ -1,8 +1,10 @@
 package log
 
-import "github.com/echocat/slf4g/fields"
+import (
+	"github.com/echocat/slf4g/fields"
+)
 
-func newProviderFacade(provider func() Provider) Provider {
+func NewProviderFacade(provider func() Provider) Provider {
 	return &providerFacade{
 		provider: provider,
 	}
@@ -17,7 +19,7 @@ func (instance *providerFacade) GetName() string {
 }
 
 func (instance *providerFacade) GetLogger(name string) Logger {
-	return newLoggerFacade(func() Logger {
+	return NewLoggerFacade(func() CoreLogger {
 		return getProvider().GetLogger(name)
 	})
 }
@@ -30,6 +32,6 @@ func (instance *providerFacade) GetFieldKeySpec() fields.KeysSpec {
 	return instance.provider().GetFieldKeySpec()
 }
 
-func (instance *providerFacade) GetLevelNames() LevelNames {
-	return instance.provider().GetLevelNames()
+func (instance *providerFacade) UnwrapProvider() Provider {
+	return instance.provider()
 }

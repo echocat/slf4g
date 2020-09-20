@@ -11,11 +11,6 @@ type Consumer interface {
 }
 
 type Owner interface {
-	formatter.Aware
-	interceptor.Aware
-}
-
-type Aware interface {
-	GetConsumer() Consumer
-	SetConsumer(Consumer)
+	GetFormatter() formatter.Formatter
+	GetInterceptor() interceptor.Interceptor
 }

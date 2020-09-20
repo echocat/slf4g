@@ -7,6 +7,7 @@ import (
 	"github.com/echocat/slf4g/native/consumer"
 	"github.com/echocat/slf4g/native/formatter"
 	"github.com/echocat/slf4g/native/interceptor"
+	"github.com/echocat/slf4g/native/level"
 	"github.com/echocat/slf4g/native/location"
 	"os"
 )
@@ -18,6 +19,7 @@ type Provider struct {
 	log.Provider
 
 	Level         log.Level
+	LevelNames    level.Names
 	LevelProvider log.LevelProvider
 
 	Formatter       formatter.Formatter
@@ -30,8 +32,10 @@ type Provider struct {
 func NewProvider(name string) *Provider {
 	result := &Provider{
 		Level:           log.LevelInfo,
+		LevelNames:      level.DefaultLevelNames,
 		LocationFactory: location.DefaultFactory,
 		FieldsKeysSpec:  DefaultFieldsKeySpec,
+		Formatter:       formatter.Default,
 	}
 	result.Provider = log.NewProvider(name, result.factory, result.provideLevels)
 	result.Consumer = consumer.NewWritingConsumer(result, os.Stderr)
@@ -129,4 +133,8 @@ func (instance *Provider) getLocationFactory() location.Factory {
 
 func (instance *Provider) GetFieldKeySpec() fields.KeysSpec {
 	return instance.FieldsKeysSpec
+}
+
+func (instance *Provider) GetLevelNames() level.Names {
+	return instance.LevelNames
 }

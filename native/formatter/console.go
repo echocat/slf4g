@@ -6,6 +6,7 @@ import (
 	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/native/color"
 	"github.com/echocat/slf4g/native/formatter/hints"
+	"github.com/echocat/slf4g/native/level"
 	"strings"
 	"time"
 	"unicode"
@@ -129,8 +130,8 @@ func (instance *Console) printTimestamp(event log.Event, buf *bytes.Buffer, usin
 	return
 }
 
-func (instance *Console) printLevel(event log.Event, buf *bytes.Buffer, _ log.Provider, h hints.Hints) (cn int, err error) {
-	v := instance.ensureLevelWidth(event.GetLevel())
+func (instance *Console) printLevel(event log.Event, buf *bytes.Buffer, using log.Provider, h hints.Hints) (cn int, err error) {
+	v := instance.ensureLevelWidth(event.GetLevel(), using)
 
 	_, err = buf.WriteString(`[` + instance.colorize(event, v, h) + `]`)
 	cn = 1 + len(v) + 1
@@ -250,8 +251,8 @@ func (instance *Console) printWithIdent(str string, firstLine, otherLines string
 	return nil
 }
 
-func (instance *Console) ensureLevelWidth(level log.Level) string {
-	str := level.String()
+func (instance *Console) ensureLevelWidth(l log.Level, using log.Provider) string {
+	str := level.AsSerializable(&l, using.(level.NamesAware)).String()
 	width := instance.LevelWidth
 	l2r := true
 	if width < 0 {

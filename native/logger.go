@@ -16,7 +16,7 @@ type CoreLogger struct {
 	name     string
 }
 
-func (instance *CoreLogger) LogEvent(event log.Event) {
+func (instance *CoreLogger) Log(event log.Event) {
 	if event == nil {
 		return
 	}

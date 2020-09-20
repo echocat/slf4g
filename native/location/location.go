@@ -13,8 +13,3 @@ type Factory func(event log.Event, callDepth int) Location
 func NoopFactory(log.Event, int) Location {
 	return nil
 }
-
-type FactoryAware interface {
-	GetLocationFactory() Factory
-	SetLocationFactory(Factory)
-}

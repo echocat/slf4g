@@ -9,11 +9,6 @@ type Interceptor interface {
 	OnAfterLog(log.Event, log.Provider) (canContinue bool)
 }
 
-type Aware interface {
-	GetInterceptor() Interceptor
-	SetInterceptor(Interceptor)
-}
-
 type Interceptors []Interceptor
 
 func (instance *Interceptors) With(v Interceptor) *Interceptors {

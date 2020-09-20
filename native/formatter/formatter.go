@@ -12,8 +12,3 @@ var (
 type Formatter interface {
 	Format(log.Event, log.Provider, hints.Hints) ([]byte, error)
 }
-
-type Aware interface {
-	GetFormatter() Formatter
-	SetFormatter(Formatter)
-}

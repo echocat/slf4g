@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	globalProviderFacade = newProviderFacade(getProvider)
+	globalProviderFacade = NewProviderFacade(getProvider)
 	globalProvider       Provider
 	allProviders         = map[string]Provider{}
 	providerMutex        sync.RWMutex

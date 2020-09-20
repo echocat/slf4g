@@ -34,14 +34,14 @@ func (instance *LoggerImpl) log(level log.Level, args ...interface{}) log.Event 
 		}))
 	}
 	e := log.NewEvent(level, f, 3)
-	instance.LogEvent(e)
+	instance.Log(e)
 	return e
 }
 
 func (instance *LoggerImpl) logf(level log.Level, format string, args ...interface{}) log.Event {
 	f := fields.Withf(instance.GetProvider().GetFieldKeySpec().GetMessage(), format, args...)
 	e := log.NewEvent(level, f, 3)
-	instance.LogEvent(e)
+	instance.Log(e)
 	return e
 }
 

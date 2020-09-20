@@ -9,9 +9,6 @@ const (
 type Logger interface {
 	CoreLogger
 
-	Log(Level, ...interface{})
-	Logf(Level, string, ...interface{})
-
 	Trace(...interface{})
 	Tracef(string, ...interface{})
 	IsTraceEnabled() bool
@@ -43,8 +40,12 @@ type Logger interface {
 }
 
 func NewLogger(cl CoreLogger) Logger {
+	return NewLoggerFacade(func() CoreLogger { return cl })
+}
+
+func NewLoggerFacade(provider func() CoreLogger) Logger {
 	return &loggerImpl{
-		coreProvider: func() CoreLogger { return cl },
+		coreProvider: provider,
 		fields:       fields.Empty(),
 	}
 }

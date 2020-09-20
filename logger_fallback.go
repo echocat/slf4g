@@ -11,15 +11,14 @@ const (
 	simpleTimeLayout = "15:04:05.000"
 )
 
-type simpleCoreLogger struct {
-	*simpleProvider
+type fallbackCoreLogger struct {
+	*fallbackProvider
 	name  string
 	level *Level
 }
 
-func (instance *simpleCoreLogger) LogEvent(event Event) {
-	level := event.GetLevel()
-	if instance.GetLevel().CompareTo(level) > 0 {
+func (instance *fallbackCoreLogger) Log(event Event) {
+	if instance.level.CompareTo(event.GetLevel()) > 0 {
 		return
 	}
 
@@ -35,10 +34,10 @@ func (instance *simpleCoreLogger) LogEvent(event Event) {
 		s = []byte(fmt.Sprintf("ERR!! Cannot format event %v: %v", event, err))
 	}
 
-	_, _ = instance.Out.Write(s)
+	_, _ = instance.out.Write(s)
 }
 
-func (instance *simpleCoreLogger) format(event Event) ([]byte, error) {
+func (instance *fallbackCoreLogger) format(event Event) ([]byte, error) {
 	buf := new(bytes.Buffer)
 
 	if ts := GetTimestampOf(event, instance); ts != nil {
@@ -82,33 +81,22 @@ func (instance *simpleCoreLogger) format(event Event) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (instance *simpleCoreLogger) formatTime(time time.Time) string {
+func (instance *fallbackCoreLogger) formatTime(time time.Time) string {
 	return time.Format(simpleTimeLayout)
 }
 
-func (instance *simpleCoreLogger) formatValue(value interface{}) ([]byte, error) {
+func (instance *fallbackCoreLogger) formatValue(value interface{}) ([]byte, error) {
 	return json.Marshal(value)
 }
 
-func (instance *simpleCoreLogger) IsLevelEnabled(level Level) bool {
-	return instance.GetLevel().CompareTo(level) <= 0
+func (instance *fallbackCoreLogger) IsLevelEnabled(level Level) bool {
+	return instance.level.CompareTo(level) <= 0
 }
 
-func (instance *simpleCoreLogger) SetLevel(level Level) {
-	instance.level = &level
-}
-
-func (instance *simpleCoreLogger) GetLevel() Level {
-	if v := instance.level; v != nil {
-		return *v
-	}
-	return instance.simpleProvider.GetLevel()
-}
-
-func (instance *simpleCoreLogger) GetName() string {
+func (instance *fallbackCoreLogger) GetName() string {
 	return instance.name
 }
 
-func (instance *simpleCoreLogger) GetProvider() Provider {
+func (instance *fallbackCoreLogger) GetProvider() Provider {
 	return instance
 }

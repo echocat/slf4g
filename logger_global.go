@@ -21,7 +21,7 @@ func logM(level Level, message *string) {
 		f = f.With(GetProvider().GetFieldKeySpec().GetMessage(), *message)
 	}
 
-	GetGlobalLogger().LogEvent(NewEvent(level, f, 3))
+	GetGlobalLogger().Log(NewEvent(level, f, 3))
 }
 
 func log(level Level, args ...interface{}) {
@@ -38,14 +38,6 @@ func logf(level Level, format string, args ...interface{}) {
 	message := fmt.Sprintf(format, args...)
 
 	logM(level, &message)
-}
-
-func Log(level Level, args ...interface{}) {
-	log(level, args...)
-}
-
-func Logf(level Level, format string, args ...interface{}) {
-	logf(level, format, args...)
 }
 
 func IsLevelEnabled(level Level) bool {

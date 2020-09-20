@@ -73,7 +73,3 @@ func (instance *providerImpl) GetLogger(name string) Logger {
 func (instance *providerImpl) GetFieldKeySpec() fields.KeysSpec {
 	return fields.DefaultKeysSpec
 }
-
-func (instance *providerImpl) GetLevelNames() LevelNames {
-	return DefaultLevelNames
-}

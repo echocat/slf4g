@@ -2,7 +2,7 @@ package log
 
 type CoreLogger interface {
 	GetName() string
-	LogEvent(Event)
+	Log(Event)
 	IsLevelEnabled(Level) bool
 	GetProvider() Provider
 }

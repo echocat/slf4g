@@ -69,8 +69,3 @@ func (instance Mode) String() string {
 func (instance Mode) Set(plain string) error {
 	return instance.UnmarshalText([]byte(plain))
 }
-
-type ModeAware interface {
-	GetColorMode() Mode
-	SetColorMode(Mode)
-}
