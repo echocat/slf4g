@@ -1,7 +1,5 @@
 package fields
 
-var DefaultKeysSpec KeysSpec = &defaultFieldKeysSpec{}
-
 type KeysSpec interface {
 	GetTimestamp() string
 	GetMessage() string
@@ -9,20 +7,4 @@ type KeysSpec interface {
 	GetLogger() string
 }
 
-type defaultFieldKeysSpec struct{}
-
-func (instance *defaultFieldKeysSpec) GetTimestamp() string {
-	return "timestamp"
-}
-
-func (instance *defaultFieldKeysSpec) GetMessage() string {
-	return "message"
-}
-
-func (instance *defaultFieldKeysSpec) GetError() string {
-	return "error"
-}
-
-func (instance *defaultFieldKeysSpec) GetLogger() string {
-	return "logger"
-}
+type KeysSpecProvider func() KeysSpec

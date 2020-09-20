@@ -2,8 +2,6 @@ package location
 
 import log "github.com/echocat/slf4g"
 
-const Field = "location"
-
 var DefaultFactory Factory = nil
 
 type Location interface{}

@@ -5,6 +5,16 @@ type lineage struct {
 	parent Fields
 }
 
+func newLineage(fields Fields, parent Fields) Fields {
+	if parent == nil {
+		return fields
+	}
+	if _, ok := parent.(*empty); ok {
+		return fields
+	}
+	return &lineage{fields, parent}
+}
+
 func (instance *lineage) ForEach(consumer Consumer) error {
 	if instance == nil {
 		return nil
@@ -49,25 +59,21 @@ func (instance *lineage) Get(key string) interface{} {
 	}
 	return nil
 }
+
 func (instance *lineage) With(key string, value interface{}) Fields {
-	return &lineage{
-		fields: With(key, value),
-		parent: instance,
-	}
+	return instance.asParentOf(With(key, value))
 }
 
 func (instance *lineage) Withf(key string, format string, args ...interface{}) Fields {
-	return &lineage{
-		fields: Withf(key, format, args...),
-		parent: instance,
-	}
+	return instance.asParentOf(Withf(key, format, args...))
 }
 
 func (instance *lineage) WithFields(fields Fields) Fields {
-	return &lineage{
-		fields: fields,
-		parent: instance,
-	}
+	return instance.asParentOf(fields)
+}
+
+func (instance *lineage) asParentOf(fields Fields) Fields {
+	return newLineage(fields, instance)
 }
 
 func (instance *lineage) Without(keys ...string) Fields {

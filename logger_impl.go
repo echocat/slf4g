@@ -137,7 +137,7 @@ func (instance *loggerImpl) With(name string, value interface{}) Logger {
 }
 
 func (instance *loggerImpl) Withf(name string, format string, args ...interface{}) Logger {
-	return instance.With(name, fields.Format(format, args...))
+	return instance.With(name, fields.LazyFormat(format, args...))
 }
 
 func (instance *loggerImpl) WithError(err error) Logger {

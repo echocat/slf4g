@@ -3,13 +3,15 @@ package log
 import "github.com/echocat/slf4g/fields"
 
 type Event interface {
-	fields.Fields
-
 	GetLevel() Level
 	GetCallDepth() int
 	GetContext() interface{}
+	GetFields() fields.Fields
 
-	WithField(key string, value interface{}) Event
+	With(key string, value interface{}) Event
+	Withf(key string, format string, args ...interface{}) Event
+	Without(keys ...string) Event
+	WithFields(f fields.Fields) Event
 }
 
 func NewEvent(level Level, f fields.Fields, callDepth int) *EventImpl {
@@ -24,10 +26,14 @@ func NewEvent(level Level, f fields.Fields, callDepth int) *EventImpl {
 }
 
 type EventImpl struct {
-	fields.Fields
+	Fields    fields.Fields
 	Level     Level
 	CallDepth int
 	Context   interface{}
+}
+
+func (instance *EventImpl) GetFields() fields.Fields {
+	return instance.Fields
 }
 
 func (instance *EventImpl) GetLevel() Level {
@@ -42,9 +48,33 @@ func (instance *EventImpl) GetContext() interface{} {
 	return instance.Context
 }
 
-func (instance *EventImpl) WithField(key string, value interface{}) Event {
+func (instance *EventImpl) With(key string, value interface{}) Event {
+	return instance.with(func(s fields.Fields) fields.Fields {
+		return s.With(key, value)
+	})
+}
+
+func (instance *EventImpl) Withf(key string, format string, args ...interface{}) Event {
+	return instance.with(func(s fields.Fields) fields.Fields {
+		return s.Withf(key, format, args...)
+	})
+}
+
+func (instance *EventImpl) WithFields(f fields.Fields) Event {
+	return instance.with(func(s fields.Fields) fields.Fields {
+		return s.WithFields(f)
+	})
+}
+
+func (instance *EventImpl) Without(keys ...string) Event {
+	return instance.with(func(s fields.Fields) fields.Fields {
+		return s.Without(keys...)
+	})
+}
+
+func (instance *EventImpl) with(mod func(fields.Fields) fields.Fields) Event {
 	return &EventImpl{
-		Fields:    instance.Fields.With(key, value),
+		Fields:    mod(instance.Fields),
 		Level:     instance.Level,
 		CallDepth: instance.CallDepth,
 		Context:   instance.Context,

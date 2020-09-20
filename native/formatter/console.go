@@ -155,7 +155,7 @@ func (instance *Console) printFields(event log.Event, buf *bytes.Buffer, using l
 	loggerKey := using.GetFieldKeySpec().GetLogger()
 	timestampKey := using.GetFieldKeySpec().GetTimestamp()
 
-	err = fields.Sort(event, instance.FieldSorter).ForEach(func(k string, v interface{}) error {
+	err = fields.Sort(event.GetFields(), instance.FieldSorter).ForEach(func(k string, v interface{}) error {
 		if vl, ok := v.(fields.Lazy); ok {
 			v = vl.Get()
 		}

@@ -48,9 +48,9 @@ func (instance *WritingConsumer) Consume(event log.Event, source log.CoreLogger)
 
 	out := instance.getOut()
 
-	formatter := instance.getEventFormatter()
-	hints := instance.provideHints(event, source)
-	content, err := formatter.Format(event, source.GetProvider(), hints)
+	f := instance.getEventFormatter()
+	h := instance.provideHints(event, source)
+	content, err := f.Format(event, source.GetProvider(), h)
 	if err != nil {
 		content = []byte(fmt.Sprintf("ERR: Cannot format event %v: %v", event, err))
 	}

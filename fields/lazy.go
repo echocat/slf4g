@@ -12,7 +12,7 @@ func (instance LazyFunc) Get() interface{} {
 	return instance()
 }
 
-func Format(format string, args ...interface{}) Lazy {
+func LazyFormat(format string, args ...interface{}) Lazy {
 	return &lazyFormat{format, args}
 }
 

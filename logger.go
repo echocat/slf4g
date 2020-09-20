@@ -49,3 +49,5 @@ func NewLoggerFacade(provider func() CoreLogger) Logger {
 		fields:       fields.Empty(),
 	}
 }
+
+type LoggerFactory func(name string) Logger

@@ -15,21 +15,21 @@ type providerFacade struct {
 }
 
 func (instance *providerFacade) GetName() string {
-	return instance.provider().GetName()
+	return instance.UnwrapProvider().GetName()
 }
 
 func (instance *providerFacade) GetLogger(name string) Logger {
 	return NewLoggerFacade(func() CoreLogger {
-		return getProvider().GetLogger(name)
+		return instance.UnwrapProvider().GetLogger(name)
 	})
 }
 
 func (instance *providerFacade) GetAllLevels() []Level {
-	return instance.provider().GetAllLevels()
+	return instance.UnwrapProvider().GetAllLevels()
 }
 
 func (instance *providerFacade) GetFieldKeySpec() fields.KeysSpec {
-	return instance.provider().GetFieldKeySpec()
+	return instance.UnwrapProvider().GetFieldKeySpec()
 }
 
 func (instance *providerFacade) UnwrapProvider() Provider {

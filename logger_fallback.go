@@ -23,10 +23,10 @@ func (instance *fallbackCoreLogger) Log(event Event) {
 	}
 
 	if v := GetTimestampOf(event, instance); v == nil {
-		event = event.WithField(instance.GetFieldKeySpec().GetTimestamp(), time.Now())
+		event = event.With(instance.GetFieldKeySpec().GetTimestamp(), time.Now())
 	}
 	if v := GetLoggerOf(event, instance); v == nil {
-		event = event.WithField(instance.GetFieldKeySpec().GetLogger(), instance.name)
+		event = event.With(instance.GetFieldKeySpec().GetLogger(), instance.name)
 	}
 
 	s, err := instance.format(event)
@@ -59,7 +59,7 @@ func (instance *fallbackCoreLogger) format(event Event) ([]byte, error) {
 	messageKey := instance.GetFieldKeySpec().GetMessage()
 	loggerKey := instance.GetFieldKeySpec().GetLogger()
 	timestampKey := instance.GetFieldKeySpec().GetTimestamp()
-	if err := event.ForEach(func(key string, value interface{}) error {
+	if err := event.GetFields().ForEach(func(key string, value interface{}) error {
 		if key == loggerKey && value == GlobalLoggerName {
 			return nil
 		}

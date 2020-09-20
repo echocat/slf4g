@@ -22,17 +22,17 @@ func (instance *CoreLogger) Log(event log.Event) {
 	}
 
 	if v := log.GetTimestampOf(event, instance.provider); v == nil {
-		event = event.WithField(instance.provider.GetFieldKeySpec().GetTimestamp(), time.Now())
+		event = event.With(instance.provider.GetFieldKeySpec().GetTimestamp(), time.Now())
 	}
 	if v := log.GetLoggerOf(event, instance.provider); v == nil {
-		event = event.WithField(instance.provider.GetFieldKeySpec().GetLogger(), instance.name)
+		event = event.With(instance.provider.GetFieldKeySpec().GetLogger(), instance.name)
 	}
 	if !instance.IsLevelEnabled(event.GetLevel()) {
 		return
 	}
 
 	if v := instance.getLocationFactory()(event, event.GetCallDepth()+1); v != nil {
-		event = event.WithField(instance.provider.FieldsKeysSpec.GetLocation(), v)
+		event = event.With(instance.provider.FieldsKeysSpec.GetLocation(), v)
 	}
 
 	instance.getConsumer().Consume(event, instance)

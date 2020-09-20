@@ -42,7 +42,7 @@ func (instance *Json) Format(event log.Event, using log.Provider, _ hints.Hints)
 	}
 
 	loggerKey := using.GetFieldKeySpec().GetLogger()
-	if err := event.ForEach(func(key string, value interface{}) error {
+	if err := event.GetFields().ForEach(func(key string, value interface{}) error {
 		if !instance.PrintGlobalLogger && key == loggerKey && value == log.GlobalLoggerName {
 			return nil
 		}

@@ -1,41 +1,30 @@
 package log
 
 import (
-	"github.com/echocat/slf4g/fields"
 	"sync"
 )
 
-func NewProvider(name string, factory ProviderFactory, levels LevelProvider) Provider {
-	return &providerImpl{
-		name:    name,
+type LoggerCache interface {
+	GetLogger(name string) Logger
+}
+
+func NewLoggerCache(factory LoggerFactory) LoggerCache {
+	return &loggerCache{
 		factory: factory,
-		levels:  levels,
 		global:  factory(GlobalLoggerName),
 		loggers: make(map[string]Logger),
 	}
 }
 
-type providerImpl struct {
-	name    string
-	factory ProviderFactory
-	levels  LevelProvider
+type loggerCache struct {
+	factory LoggerFactory
 
 	global  Logger
 	loggers map[string]Logger
 	mutex   sync.RWMutex
 }
 
-type ProviderFactory func(name string) Logger
-
-func (instance *providerImpl) GetName() string {
-	return instance.name
-}
-
-func (instance *providerImpl) GetAllLevels() []Level {
-	return instance.levels()
-}
-
-func (instance *providerImpl) GetLogger(name string) Logger {
+func (instance *loggerCache) GetLogger(name string) Logger {
 	if name == GlobalLoggerName {
 		return instance.global
 	}
@@ -68,8 +57,4 @@ func (instance *providerImpl) GetLogger(name string) Logger {
 	instance.loggers[name] = l
 
 	return l
-}
-
-func (instance *providerImpl) GetFieldKeySpec() fields.KeysSpec {
-	return fields.DefaultKeysSpec
 }

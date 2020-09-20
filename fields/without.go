@@ -57,24 +57,19 @@ func (instance *without) Get(key string) interface{} {
 }
 
 func (instance *without) With(key string, value interface{}) Fields {
-	return &lineage{
-		fields: With(key, value),
-		parent: instance,
-	}
+	return instance.asParentOf(With(key, value))
 }
 
 func (instance *without) Withf(key string, format string, args ...interface{}) Fields {
-	return &lineage{
-		fields: Withf(key, format, args...),
-		parent: instance,
-	}
+	return instance.asParentOf(Withf(key, format, args...))
 }
 
 func (instance *without) WithFields(fields Fields) Fields {
-	return &lineage{
-		fields: fields,
-		parent: instance,
-	}
+	return instance.asParentOf(fields)
+}
+
+func (instance *without) asParentOf(fields Fields) Fields {
+	return newLineage(fields, instance)
 }
 
 func (instance *without) Without(keys ...string) Fields {

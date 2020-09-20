@@ -16,7 +16,8 @@ var DefaultProvider = NewProvider("native")
 var _ = log.RegisterProvider(DefaultProvider)
 
 type Provider struct {
-	log.Provider
+	Cache log.LoggerCache
+	Name  string
 
 	Level         log.Level
 	LevelNames    level.Names
@@ -31,15 +32,24 @@ type Provider struct {
 
 func NewProvider(name string) *Provider {
 	result := &Provider{
+		Name:            name,
 		Level:           log.LevelInfo,
 		LevelNames:      level.DefaultLevelNames,
 		LocationFactory: location.DefaultFactory,
 		FieldsKeysSpec:  DefaultFieldsKeySpec,
 		Formatter:       formatter.Default,
 	}
-	result.Provider = log.NewProvider(name, result.factory, result.provideLevels)
+	result.Cache = log.NewLoggerCache(result.factory)
 	result.Consumer = consumer.NewWritingConsumer(result, os.Stderr)
 	return result
+}
+
+func (instance *Provider) GetName() string {
+	return instance.Name
+}
+
+func (instance *Provider) GetLogger(name string) log.Logger {
+	return instance.Cache.GetLogger(name)
 }
 
 func (instance *Provider) factory(name string) log.Logger {
@@ -106,7 +116,7 @@ func (instance *Provider) SetFormatter(v formatter.Formatter) {
 	instance.Formatter = v
 }
 
-func (instance *Provider) provideLevels() []log.Level {
+func (instance *Provider) GetAllLevels() []log.Level {
 	if p := instance.LevelProvider; p != nil {
 		return p()
 	}

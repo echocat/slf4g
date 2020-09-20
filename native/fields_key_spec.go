@@ -2,37 +2,39 @@ package native
 
 import (
 	"github.com/echocat/slf4g/fields"
-	"github.com/echocat/slf4g/native/location"
 )
 
 var DefaultFieldsKeySpec = NewFieldsKeySpec()
 
 type FieldsKeysSpec interface {
 	fields.KeysSpec
-
 	GetLocation() string
 }
 
 func NewFieldsKeySpec() FieldsKeysSpec {
-	def := fields.DefaultKeysSpec
 	return &FieldsKeySpecImpl{
-		KeysSpec: def,
-		Location: location.Field,
-		Logger:   def.GetLogger(),
-		Error:    def.GetError(),
+		Timestamp: "timestamp",
+		Message:   "message",
+		Logger:    "logger",
+		Error:     "error",
+		Location:  "location",
 	}
 }
 
 type FieldsKeySpecImpl struct {
-	fields.KeysSpec
-
-	Location string
-	Logger   string
-	Error    string
+	Timestamp string
+	Message   string
+	Logger    string
+	Error     string
+	Location  string
 }
 
-func (instance *FieldsKeySpecImpl) GetLocation() string {
-	return instance.Location
+func (instance *FieldsKeySpecImpl) GetTimestamp() string {
+	return instance.Timestamp
+}
+
+func (instance *FieldsKeySpecImpl) GetMessage() string {
+	return instance.Message
 }
 
 func (instance *FieldsKeySpecImpl) GetLogger() string {
@@ -41,4 +43,8 @@ func (instance *FieldsKeySpecImpl) GetLogger() string {
 
 func (instance *FieldsKeySpecImpl) GetError() string {
 	return instance.Error
+}
+
+func (instance *FieldsKeySpecImpl) GetLocation() string {
+	return instance.Location
 }

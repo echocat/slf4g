@@ -41,24 +41,19 @@ func (instance Map) Get(key string) interface{} {
 }
 
 func (instance Map) With(key string, value interface{}) Fields {
-	return &lineage{
-		fields: &single{key: key, value: value},
-		parent: instance,
-	}
+	return instance.asParentOf(With(key, value))
 }
 
 func (instance Map) Withf(key string, format string, args ...interface{}) Fields {
-	return &lineage{
-		fields: Withf(key, format, args...),
-		parent: instance,
-	}
+	return instance.asParentOf(Withf(key, format, args...))
 }
 
 func (instance Map) WithFields(fields Fields) Fields {
-	return &lineage{
-		fields: fields,
-		parent: instance,
-	}
+	return instance.asParentOf(fields)
+}
+
+func (instance Map) asParentOf(fields Fields) Fields {
+	return newLineage(fields, instance)
 }
 
 func (instance Map) Without(keys ...string) Fields {
