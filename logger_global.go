@@ -15,29 +15,31 @@ func GetGlobalLogger() Logger {
 	return globalLogger
 }
 
-func logM(level Level, message *string) {
-	f := fields.Empty()
-	if message != nil {
-		f = f.With(GetProvider().GetFieldKeySpec().GetMessage(), *message)
-	}
-
-	GetGlobalLogger().Log(NewEvent(level, f, 3))
-}
-
 func log(level Level, args ...interface{}) {
-	var message *string
-	if len(args) > 0 {
-		str := fmt.Sprint(args...)
-		message = &str
+	if !IsLevelEnabled(level) {
+		return
 	}
 
-	logM(level, message)
+	var f fields.Fields
+	if len(args) == 1 {
+		f = fields.With(GetProvider().GetFieldKeySpec().GetMessage(), args[0])
+	} else if len(args) > 1 {
+		f = fields.With(GetProvider().GetFieldKeySpec().GetMessage(), fields.LazyFunc(func() interface{} {
+			return fmt.Sprint(args...)
+		}))
+	}
+
+	GetGlobalLogger().Log(NewEvent(level, f, 2))
 }
 
 func logf(level Level, format string, args ...interface{}) {
-	message := fmt.Sprintf(format, args...)
+	if !IsLevelEnabled(level) {
+		return
+	}
 
-	logM(level, &message)
+	f := fields.With(GetProvider().GetFieldKeySpec().GetMessage(), fields.LazyFormat(format, args...))
+
+	GetGlobalLogger().Log(NewEvent(level, f, 2))
 }
 
 func IsLevelEnabled(level Level) bool {

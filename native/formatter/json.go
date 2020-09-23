@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/echocat/slf4g"
+	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/native/formatter/hints"
 )
 
@@ -42,14 +43,18 @@ func (instance *Json) Format(event log.Event, using log.Provider, _ hints.Hints)
 	}
 
 	loggerKey := using.GetFieldKeySpec().GetLogger()
-	if err := event.GetFields().ForEach(func(key string, value interface{}) error {
-		if !instance.PrintGlobalLogger && key == loggerKey && value == log.GlobalLoggerName {
+	if err := event.GetFields().ForEach(func(k string, v interface{}) error {
+		if vl, ok := v.(fields.Lazy); ok {
+			v = vl.Get()
+		}
+
+		if !instance.PrintGlobalLogger && k == loggerKey && v == log.GlobalLoggerName {
 			return nil
 		}
 		if _, err := to.Write([]byte(",")); err != nil {
 			return err
 		}
-		return instance.encode(to, enc, key, value)
+		return instance.encode(to, enc, k, v)
 	}); err != nil {
 		return fail(err)
 	}

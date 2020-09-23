@@ -3,11 +3,14 @@ package main
 import (
 	log "github.com/echocat/slf4g"
 	_ "github.com/echocat/slf4g/native"
+	"github.com/echocat/slf4g/native/formatter"
 	_ "github.com/echocat/slf4g/std/bridge/hook"
 	stdlog "log"
 )
 
 func main() {
+	formatter.Default = formatter.DefaultJson
+
 	log.With("foo", "bar").Debug("hello, debug")
 	log.With("a", "foo").
 		With("c", "xyz").

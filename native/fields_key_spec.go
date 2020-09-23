@@ -4,7 +4,12 @@ import (
 	"github.com/echocat/slf4g/fields"
 )
 
-var DefaultFieldsKeySpec = NewFieldsKeySpec()
+var (
+	DefaultFieldsKeySpec       = NewFieldsKeySpec()
+	DefaultFieldsKeySpecFacade = NewFieldsKeySpecFacade(func() FieldsKeysSpec {
+		return DefaultFieldsKeySpec
+	})
+)
 
 type FieldsKeysSpec interface {
 	fields.KeysSpec
@@ -19,6 +24,10 @@ func NewFieldsKeySpec() FieldsKeysSpec {
 		Error:     "error",
 		Location:  "location",
 	}
+}
+
+func NewFieldsKeySpecFacade(provider func() FieldsKeysSpec) FieldsKeysSpec {
+	return fieldsKeySpecFacade(provider)
 }
 
 type FieldsKeySpecImpl struct {
@@ -47,4 +56,26 @@ func (instance *FieldsKeySpecImpl) GetError() string {
 
 func (instance *FieldsKeySpecImpl) GetLocation() string {
 	return instance.Location
+}
+
+type fieldsKeySpecFacade func() FieldsKeysSpec
+
+func (instance fieldsKeySpecFacade) GetTimestamp() string {
+	return instance().GetTimestamp()
+}
+
+func (instance fieldsKeySpecFacade) GetMessage() string {
+	return instance().GetMessage()
+}
+
+func (instance fieldsKeySpecFacade) GetError() string {
+	return instance().GetError()
+}
+
+func (instance fieldsKeySpecFacade) GetLogger() string {
+	return instance().GetLogger()
+}
+
+func (instance fieldsKeySpecFacade) GetLocation() string {
+	return instance().GetLocation()
 }

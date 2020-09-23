@@ -34,10 +34,10 @@ func NewProvider(name string) *Provider {
 	result := &Provider{
 		Name:            name,
 		Level:           log.LevelInfo,
-		LevelNames:      level.DefaultLevelNames,
-		LocationFactory: location.DefaultFactory,
-		FieldsKeysSpec:  DefaultFieldsKeySpec,
-		Formatter:       formatter.Default,
+		LevelNames:      level.DefaultLevelNamesFacade,
+		LocationFactory: location.DefaultFactoryFacade,
+		FieldsKeysSpec:  DefaultFieldsKeySpecFacade,
+		Formatter:       formatter.DefaultFacade,
 	}
 	result.Cache = log.NewLoggerCache(result.factory)
 	result.Consumer = consumer.NewWritingConsumer(result, os.Stderr)
@@ -133,9 +133,6 @@ func (instance *Provider) SetLocationFactory(v location.Factory) {
 
 func (instance *Provider) getLocationFactory() location.Factory {
 	if f := instance.GetLocationFactory(); f != nil {
-		return f
-	}
-	if f := location.DefaultFactory; f != nil {
 		return f
 	}
 	return location.NoopFactory

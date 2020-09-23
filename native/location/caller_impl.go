@@ -4,17 +4,23 @@ import (
 	"fmt"
 	log "github.com/echocat/slf4g"
 	"os"
+	"path"
 	"runtime"
+	"strconv"
 )
 
 type CallerAwareMode uint8
+type CallerAwareDetail uint8
 
 const (
 	CallerAwareModePreferFile     CallerAwareMode = 0
 	CallerAwareModePreferFunction CallerAwareMode = 1
+
+	CallerAwareDetailSimplified CallerAwareDetail = 0
+	CallerAwareDetailDetailed   CallerAwareDetail = 1
 )
 
-func CallerAwareFactory(mode CallerAwareMode) Factory {
+func NewCallerAwareFactory(mode CallerAwareMode, detail CallerAwareDetail) Factory {
 	return func(event log.Event, callDepth int) Location {
 		if event == nil {
 			return nil
@@ -28,8 +34,13 @@ func CallerAwareFactory(mode CallerAwareMode) Factory {
 
 		doDebugCallerAwareFactory(callDepth)
 
+		if frame.Line < 0 {
+			frame.Line = 0
+		}
+
 		return &CallerAwareImpl{
 			Mode:     mode,
+			Detail:   detail,
 			Function: frame.Function,
 			File:     frame.File,
 			Line:     frame.Line,
@@ -60,7 +71,8 @@ type CallerAwareImpl struct {
 	File     string
 	Line     int
 
-	Mode CallerAwareMode
+	Mode   CallerAwareMode
+	Detail CallerAwareDetail
 }
 
 func (instance CallerAwareImpl) Get() interface{} {
@@ -80,7 +92,11 @@ func (instance CallerAwareImpl) Get() interface{} {
 }
 
 func (instance CallerAwareImpl) formatFile() string {
-	return fmt.Sprintf("%s:%d", instance.File, instance.Line)
+	file := instance.File
+	if instance.Detail == CallerAwareDetailSimplified {
+		file = path.Base(file)
+	}
+	return file + ":" + strconv.Itoa(instance.Line)
 }
 
 func (instance CallerAwareImpl) formatFunction() string {

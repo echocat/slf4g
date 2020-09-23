@@ -12,6 +12,7 @@ type Event interface {
 	Withf(key string, format string, args ...interface{}) Event
 	Without(keys ...string) Event
 	WithFields(f fields.Fields) Event
+	WithCallDepth(int) Event
 }
 
 func NewEvent(level Level, f fields.Fields, callDepth int) *EventImpl {
@@ -70,6 +71,15 @@ func (instance *EventImpl) Without(keys ...string) Event {
 	return instance.with(func(s fields.Fields) fields.Fields {
 		return s.Without(keys...)
 	})
+}
+
+func (instance *EventImpl) WithCallDepth(add int) Event {
+	return &EventImpl{
+		Fields:    instance.Fields,
+		Level:     instance.Level,
+		CallDepth: instance.CallDepth + add,
+		Context:   instance.Context,
+	}
 }
 
 func (instance *EventImpl) with(mod func(fields.Fields) fields.Fields) Event {

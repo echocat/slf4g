@@ -9,7 +9,11 @@ import (
 )
 
 var (
-	ErrIllegalLevel = errors.New("illegal level")
+	ErrIllegalLevel               = errors.New("illegal level")
+	DefaultLevelNames       Names = &defaultNames{}
+	DefaultLevelNamesFacade       = NewNamesFacade(func() Names {
+		return DefaultLevelNames
+	})
 )
 
 type Names interface {
@@ -17,7 +21,9 @@ type Names interface {
 	ToOrdinal(string) (uint16, error)
 }
 
-var DefaultLevelNames Names = &defaultNames{}
+func NewNamesFacade(provider func() Names) Names {
+	return namesFacade(provider)
+}
 
 type defaultNames struct{}
 
@@ -65,4 +71,14 @@ func (instance *defaultNames) ToOrdinal(name string) (uint16, error) {
 
 type NamesAware interface {
 	GetLevelNames() Names
+}
+
+type namesFacade func() Names
+
+func (instance namesFacade) FromOrdinal(ordinal uint16) (string, error) {
+	return instance().FromOrdinal(ordinal)
+}
+
+func (instance namesFacade) ToOrdinal(name string) (uint16, error) {
+	return instance().ToOrdinal(name)
 }

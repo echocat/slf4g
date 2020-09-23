@@ -20,15 +20,15 @@ func (instance *CoreLogger) Log(event log.Event) {
 	if event == nil {
 		return
 	}
+	if !instance.IsLevelEnabled(event.GetLevel()) {
+		return
+	}
 
 	if v := log.GetTimestampOf(event, instance.provider); v == nil {
 		event = event.With(instance.provider.GetFieldKeySpec().GetTimestamp(), time.Now())
 	}
 	if v := log.GetLoggerOf(event, instance.provider); v == nil {
 		event = event.With(instance.provider.GetFieldKeySpec().GetLogger(), instance.name)
-	}
-	if !instance.IsLevelEnabled(event.GetLevel()) {
-		return
 	}
 
 	if v := instance.getLocationFactory()(event, event.GetCallDepth()+1); v != nil {

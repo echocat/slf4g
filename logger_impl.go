@@ -19,7 +19,10 @@ func (instance *loggerImpl) GetName() string {
 }
 
 func (instance *loggerImpl) Log(event Event) {
-	instance.UnwrapCore().Log(event)
+	if !instance.IsLevelEnabled(event.GetLevel()) {
+		return
+	}
+	instance.UnwrapCore().Log(event.WithCallDepth(1))
 }
 
 func (instance *loggerImpl) IsLevelEnabled(level Level) bool {
@@ -32,19 +35,20 @@ func (instance *loggerImpl) GetProvider() Provider {
 
 func (instance *loggerImpl) log(level Level, args ...interface{}) {
 	f := instance.fields
-	if len(args) > 0 {
-		key := instance.GetProvider().GetFieldKeySpec().GetMessage()
-		f = f.With(key, fields.LazyFunc(func() interface{} {
+	if len(args) == 1 {
+		f = f.With(instance.GetProvider().GetFieldKeySpec().GetMessage(), args[0])
+	} else if len(args) > 1 {
+		f = f.With(instance.GetProvider().GetFieldKeySpec().GetMessage(), fields.LazyFunc(func() interface{} {
 			return fmt.Sprint(args...)
 		}))
 	}
-	instance.Log(NewEvent(level, f, 3))
+	instance.Log(NewEvent(level, f, 2))
 }
 
 func (instance *loggerImpl) logf(level Level, format string, args ...interface{}) {
 	f := instance.fields.
 		Withf(instance.GetProvider().GetFieldKeySpec().GetMessage(), format, args...)
-	instance.Log(NewEvent(level, f, 3))
+	instance.Log(NewEvent(level, f, 2))
 }
 
 func (instance *loggerImpl) getMessageKey() string {
