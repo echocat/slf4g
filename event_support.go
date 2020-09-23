@@ -54,8 +54,14 @@ func GetTimestampOf(e Event, using Provider) *time.Time {
 	}
 	switch v := pv.(type) {
 	case time.Time:
+		if v.IsZero() {
+			return nil
+		}
 		return &v
 	case *time.Time:
+		if v.IsZero() {
+			return nil
+		}
 		return v
 	default:
 		return nil
