@@ -40,6 +40,12 @@ func (instance *SimpleValueFormatter) FormatValue(v interface{}, _ log.Provider)
 				return json.Marshal(str)
 			}
 			return []byte(str), nil
+		case error:
+			str := vs.Error()
+			if stringNeedsQuoting(str) {
+				return json.Marshal(str)
+			}
+			return []byte(str), nil
 		}
 		return json.Marshal(v)
 	}

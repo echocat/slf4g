@@ -169,12 +169,22 @@ func (instance *fallbackCoreLogger) formatTime(time *time.Time) *string {
 }
 
 func (instance *fallbackCoreLogger) formatMessage(message *string) *string {
+	*message = strings.TrimLeftFunc(*message, func(r rune) bool {
+		return r == '\r' || r == '\n'
+	})
 	*message = strings.TrimRightFunc(*message, unicode.IsSpace)
+	*message = strings.TrimFunc(*message, func(r rune) bool {
+		return r == '\r' || !unicode.IsGraphic(r)
+	})
+	*message = strings.ReplaceAll(*message, "\n", "\u23CE")
 	return message
 }
 
-func (instance *fallbackCoreLogger) formatValue(value interface{}) ([]byte, error) {
-	return json.Marshal(value)
+func (instance *fallbackCoreLogger) formatValue(v interface{}) ([]byte, error) {
+	if ve, ok := v.(error); ok {
+		v = ve.Error()
+	}
+	return json.Marshal(v)
 }
 
 func (instance *fallbackCoreLogger) IsLevelEnabled(level Level) bool {

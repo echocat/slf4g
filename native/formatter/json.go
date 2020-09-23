@@ -7,6 +7,8 @@ import (
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/native/formatter/hints"
+	"strings"
+	"unicode"
 )
 
 const (
@@ -66,8 +68,8 @@ func (instance *Json) Format(event log.Event, using log.Provider, _ hints.Hints)
 	return to.Bytes(), nil
 }
 
-func (instance *Json) encode(buf *bytes.Buffer, enc *json.Encoder, key string, value interface{}) error {
-	if err := enc.Encode(key); err != nil {
+func (instance *Json) encode(buf *bytes.Buffer, enc *json.Encoder, k string, v interface{}) error {
+	if err := enc.Encode(k); err != nil {
 		return err
 	}
 	buf.Truncate(buf.Len() - 1) // Because someone believe it is a great idea to but a \n always everywhere ...
@@ -75,7 +77,17 @@ func (instance *Json) encode(buf *bytes.Buffer, enc *json.Encoder, key string, v
 	if _, err := buf.Write([]byte(":")); err != nil {
 		return err
 	}
-	if err := enc.Encode(value); err != nil {
+
+	if ve, ok := v.(error); ok {
+		v = ve.Error()
+	}
+	if vs, ok := v.(string); ok {
+		v = strings.TrimRightFunc(vs, unicode.IsSpace)
+	}
+	if vs, ok := v.(*string); ok {
+		v = strings.TrimRightFunc(*vs, unicode.IsSpace)
+	}
+	if err := enc.Encode(v); err != nil {
 		return err
 	}
 	buf.Truncate(buf.Len() - 1) // Because someone believe it is a great idea to but a \n always everywhere ...

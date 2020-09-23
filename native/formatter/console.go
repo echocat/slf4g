@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 )
 
 var (
@@ -26,6 +27,7 @@ type Console struct {
 
 	MinMessageWidth             int16
 	MultiLineMessageAfterFields bool
+	AllowMultiLineMessage       bool
 
 	PrintGlobalLogger   bool
 	FieldValueFormatter ValueFormatter
@@ -43,6 +45,7 @@ func NewConsole() *Console {
 
 		MinMessageWidth:             50,
 		MultiLineMessageAfterFields: true,
+		AllowMultiLineMessage:       true,
 
 		FieldValueFormatter: DefaultValueFormatter,
 		PrintGlobalLogger:   false,
@@ -56,7 +59,7 @@ func (instance *Console) Format(event log.Event, using log.Provider, h hints.Hin
 	message := log.GetMessageOf(event, using)
 	multiLineMessage := false
 	if message != nil {
-		*message = strings.TrimRightFunc(*message, unicode.IsSpace)
+		message = instance.formatMessage(message)
 		if strings.IndexRune(*message, '\n') >= 0 {
 			multiLineMessage = instance.MultiLineMessageAfterFields
 		} else {
@@ -101,6 +104,20 @@ func (instance *Console) Format(event log.Event, using log.Provider, h hints.Hin
 	buf.WriteByte('\n')
 
 	return buf.Bytes(), nil
+}
+
+func (instance *Console) formatMessage(message *string) *string {
+	*message = strings.TrimLeftFunc(*message, func(r rune) bool {
+		return r == '\r' || r == '\n'
+	})
+	*message = strings.TrimRightFunc(*message, unicode.IsSpace)
+	*message = strings.TrimFunc(*message, func(r rune) bool {
+		return r == '\r' || !unicode.IsGraphic(r)
+	})
+	if !instance.AllowMultiLineMessage {
+		*message = strings.ReplaceAll(*message, "\n", "\u23CE")
+	}
+	return message
 }
 
 func (instance *Console) shouldColorize(h hints.Hints) bool {
@@ -219,13 +236,14 @@ func (instance *Console) ensureMessageWidth(str string) string {
 	if width == 0 {
 		return str
 	}
-	if len(str) >= int(width) {
+	l := utf8.RuneCountInString(str)
+	if l >= int(width) {
 		return str
 	}
 	if l2r {
-		return str + strings.Repeat(" ", int(width)-len(str))
+		return str + strings.Repeat(" ", int(width)-l)
 	} else {
-		return strings.Repeat(" ", int(width)-len(str)) + str
+		return strings.Repeat(" ", int(width)-l) + str
 	}
 }
 

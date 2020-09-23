@@ -5,7 +5,6 @@ import (
 	_ "github.com/echocat/slf4g/native"
 	"github.com/echocat/slf4g/native/formatter"
 	_ "github.com/echocat/slf4g/std/bridge/hook"
-	stdlog "log"
 )
 
 func main() {
@@ -24,6 +23,4 @@ func main() {
 	log.With("bar", 234).Error()
 	log.With("bar", 234).Info("hello\nworld")
 	log.Info("\nhello\nworld")
-
-	stdlog.Print("abc")
 }
