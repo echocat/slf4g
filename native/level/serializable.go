@@ -14,7 +14,6 @@ func AsSerializable(level *log.Level, aware NamesAware) Serializable {
 type Serializable interface {
 	encoding.TextMarshaler
 	encoding.TextUnmarshaler
-	fmt.Stringer
 	flag.Value
 
 	AsLevel() *log.Level
