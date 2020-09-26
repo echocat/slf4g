@@ -1,6 +1,6 @@
 package fields
 
-// Empty is returning always
+// Empty returns an empty instance of Fields.
 func Empty() Fields {
 	return emptyV
 }

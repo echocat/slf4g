@@ -77,5 +77,5 @@ func (instance *lineage) asParentOf(fields Fields) Fields {
 }
 
 func (instance *lineage) Without(keys ...string) Fields {
-	return Without(instance, keys...)
+	return newWithout(instance, keys...)
 }

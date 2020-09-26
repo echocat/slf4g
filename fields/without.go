@@ -1,6 +1,6 @@
 package fields
 
-func Without(fields Fields, keys ...string) *without {
+func newWithout(fields Fields, keys ...string) *without {
 	result := &without{
 		fields: fields,
 	}
@@ -79,5 +79,5 @@ func (instance *without) asParentOf(fields Fields) Fields {
 }
 
 func (instance *without) Without(keys ...string) Fields {
-	return Without(instance, keys...)
+	return newWithout(instance, keys...)
 }

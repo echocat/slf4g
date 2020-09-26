@@ -1,5 +1,6 @@
 package fields
 
+// KeysSpec defines the keys for common usages inside of a Fields instance.
 type KeysSpec interface {
 	GetTimestamp() string
 	GetMessage() string
@@ -7,4 +8,5 @@ type KeysSpec interface {
 	GetLogger() string
 }
 
+// KeysSpecProvider provides a populated instance of KeysSpec.
 type KeysSpecProvider func() KeysSpec

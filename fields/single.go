@@ -44,5 +44,5 @@ func (instance *single) asParentOf(fields Fields) Fields {
 }
 
 func (instance *single) Without(keys ...string) Fields {
-	return Without(instance, keys...)
+	return newWithout(instance, keys...)
 }
