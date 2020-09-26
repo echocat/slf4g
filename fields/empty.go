@@ -17,21 +17,17 @@ func (instance *empty) Get(string) interface{} {
 }
 
 func (instance *empty) With(key string, value interface{}) Fields {
-	return instance.asParentOf(With(key, value))
+	return With(key, value)
 }
 
 func (instance *empty) Withf(key string, format string, args ...interface{}) Fields {
-	return instance.asParentOf(Withf(key, format, args...))
+	return Withf(key, format, args...)
 }
 
 func (instance *empty) WithFields(fields Fields) Fields {
-	return instance.asParentOf(fields)
+	return fields
 }
 
-func (instance *empty) asParentOf(fields Fields) Fields {
-	return newLineage(fields, nil)
-}
-
-func (instance *empty) Without(keys ...string) Fields {
-	return Without(instance, keys...)
+func (instance *empty) Without(...string) Fields {
+	return instance
 }
