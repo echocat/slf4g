@@ -17,8 +17,11 @@ type without struct {
 }
 
 func (instance *without) ForEach(consumer Consumer) error {
+	if instance == nil {
+		return nil
+	}
 	f := instance.fields
-	if instance == nil || f == nil {
+	if f == nil {
 		return nil
 	}
 
@@ -39,8 +42,11 @@ func (instance *without) ForEach(consumer Consumer) error {
 }
 
 func (instance *without) Get(key string) interface{} {
+	if instance == nil {
+		return nil
+	}
 	f := instance.fields
-	if instance == nil || f == nil {
+	if f == nil {
 		return nil
 	}
 

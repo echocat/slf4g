@@ -2,13 +2,14 @@ package consumer
 
 import (
 	"fmt"
+	"io"
+	"sync"
+
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/native/color"
 	"github.com/echocat/slf4g/native/formatter"
 	"github.com/echocat/slf4g/native/formatter/hints"
 	"github.com/echocat/slf4g/native/interceptor"
-	"io"
-	"sync"
 )
 
 type WritingConsumer struct {
@@ -57,9 +58,7 @@ func (instance *WritingConsumer) Consume(event log.Event, source log.CoreLogger)
 
 	_, _ = out.Write(content)
 
-	if canContinue := instance.onAfterLog(event, source); !canContinue {
-		return
-	}
+	_ = instance.onAfterLog(event, source)
 }
 
 func (instance *WritingConsumer) initIfRequired() {

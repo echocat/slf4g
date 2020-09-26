@@ -22,10 +22,6 @@ var simpleProviderV = func() *fallbackProvider {
 }()
 
 func (instance *fallbackProvider) factory(name string) Logger {
-	prefix := name
-	if prefix == GlobalLoggerName {
-		prefix = ""
-	}
 	cl := &fallbackCoreLogger{
 		fallbackProvider: instance,
 		name:             name,

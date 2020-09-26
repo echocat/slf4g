@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+
 	"github.com/echocat/slf4g/fields"
 )
 
@@ -49,10 +50,6 @@ func (instance *loggerImpl) logf(level Level, format string, args ...interface{}
 	f := instance.fields.
 		Withf(instance.GetProvider().GetFieldKeySpec().GetMessage(), format, args...)
 	instance.Log(NewEvent(level, f, 2))
-}
-
-func (instance *loggerImpl) getMessageKey() string {
-	return instance.GetProvider().GetFieldKeySpec().GetMessage()
 }
 
 func (instance *loggerImpl) Trace(args ...interface{}) {

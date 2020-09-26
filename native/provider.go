@@ -2,14 +2,15 @@ package native
 
 import (
 	"fmt"
-	"github.com/echocat/slf4g"
+	"os"
+
+	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/native/consumer"
 	"github.com/echocat/slf4g/native/formatter"
 	"github.com/echocat/slf4g/native/interceptor"
 	"github.com/echocat/slf4g/native/level"
 	"github.com/echocat/slf4g/native/location"
-	"os"
 )
 
 var DefaultProvider = NewProvider("native")
@@ -53,10 +54,6 @@ func (instance *Provider) GetLogger(name string) log.Logger {
 }
 
 func (instance *Provider) factory(name string) log.Logger {
-	prefix := name
-	if prefix == log.GlobalLoggerName {
-		prefix = ""
-	}
 	cl := &CoreLogger{
 		provider: instance,
 		name:     name,
@@ -78,16 +75,6 @@ func (instance *Provider) GetInterceptor() interceptor.Interceptor {
 
 func (instance *Provider) SetInterceptor(v interceptor.Interceptor) {
 	instance.Interceptor = v
-}
-
-func (instance *Provider) getInterceptor() interceptor.Interceptor {
-	if i := instance.GetInterceptor(); i != nil {
-		return i
-	}
-	if i := interceptor.Default; i != nil {
-		return i
-	}
-	return interceptor.Noop()
 }
 
 func (instance *Provider) GetConsumer() consumer.Consumer {

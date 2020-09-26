@@ -1,5 +1,6 @@
 package fields
 
+// Empty is returning always
 func Empty() Fields {
 	return emptyV
 }

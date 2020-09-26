@@ -2,15 +2,16 @@ package formatter
 
 import (
 	"bytes"
+	"strings"
+	"time"
+	"unicode"
+	"unicode/utf8"
+
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/native/color"
 	"github.com/echocat/slf4g/native/formatter/hints"
 	"github.com/echocat/slf4g/native/level"
-	"strings"
-	"time"
-	"unicode"
-	"unicode/utf8"
 )
 
 var (
@@ -60,7 +61,7 @@ func (instance *Console) Format(event log.Event, using log.Provider, h hints.Hin
 	multiLineMessage := false
 	if message != nil {
 		message = instance.formatMessage(message)
-		if strings.IndexRune(*message, '\n') >= 0 {
+		if strings.ContainsRune(*message, '\n') {
 			multiLineMessage = instance.MultiLineMessageAfterFields
 		} else {
 			// Multiline message could be printed on a dedicated line
@@ -153,15 +154,6 @@ func (instance *Console) printLevel(event log.Event, buf *bytes.Buffer, using lo
 	_, err = buf.WriteString(`[` + instance.colorize(event, v, h) + `]`)
 	cn = 1 + len(v) + 1
 
-	return
-}
-
-func (instance *Console) printMessage(event log.Event, buf *bytes.Buffer, using log.Provider, _ hints.Hints) (err error) {
-	if message := log.GetMessageOf(event, using); message != nil {
-		target := strings.TrimRightFunc(*message, unicode.IsSpace)
-		target = instance.ensureMessageWidth(target)
-		_, err = buf.WriteString(` ` + target)
-	}
 	return
 }
 
