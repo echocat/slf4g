@@ -16,6 +16,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Install goveralls
+        env:
+          GO111MODULE: off
+        run: go get github.com/mattn/goveralls
+
       - name: Test slf4g
         run: |
           go test -v -covermode atomic "-coverprofile=profile.cov" ./...
@@ -24,7 +29,7 @@ jobs:
         uses: shogo82148/actions-goveralls@v1
         with:
           path-to-profile: profile.cov
-          flag-name: Go-${{ matrix.go }}
+          flag-name: go-${{ matrix.go-version }}-${{ matrix.os }}-slf4g
           parallel: true
 
       - name: Test slf4g/native
@@ -32,12 +37,12 @@ jobs:
           cd native
           go test -v -covermode atomic "-coverprofile=profile.cov" ./...
 
-  #      - name: Send coverage slf4g/native
-  #        uses: shogo82148/actions-goveralls@v1
-  #        with:
-  #          path-to-profile: native/profile.cov
-  #          flag-name: Go-${{ matrix.go }}
-  #          parallel: true
+      - name: Send coverage slf4g/native
+        uses: shogo82148/actions-goveralls@v1
+        with:
+          path-to-profile: native/profile.cov
+          flag-name: go-${{ matrix.go-version }}-${{ matrix.os }}-slf4g-native
+          parallel: true
 
   # notifies that all test jobs are finished.
   finish:
