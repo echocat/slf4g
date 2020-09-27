@@ -16,7 +16,7 @@ func newLineage(fields Fields, parent Fields) Fields {
 }
 
 func (instance *lineage) ForEach(consumer Consumer) error {
-	if instance == nil {
+	if instance == nil || consumer == nil {
 		return nil
 	}
 
@@ -68,8 +68,8 @@ func (instance *lineage) Withf(key string, format string, args ...interface{}) F
 	return instance.asParentOf(Withf(key, format, args...))
 }
 
-func (instance *lineage) WithFields(fields Fields) Fields {
-	return instance.asParentOf(fields)
+func (instance *lineage) WithAll(of map[string]interface{}) Fields {
+	return instance.asParentOf(WithAll(of))
 }
 
 func (instance *lineage) asParentOf(fields Fields) Fields {

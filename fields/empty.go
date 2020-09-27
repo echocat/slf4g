@@ -25,8 +25,8 @@ func (instance *empty) Withf(key string, format string, args ...interface{}) Fie
 	return Withf(key, format, args...)
 }
 
-func (instance *empty) WithFields(fields Fields) Fields {
-	return fields
+func (instance *empty) WithAll(of map[string]interface{}) Fields {
+	return WithAll(of)
 }
 
 func (instance *empty) Without(...string) Fields {

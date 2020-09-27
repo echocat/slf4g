@@ -1,8 +1,9 @@
 package fields
 
 import (
-	"github.com/echocat/slf4g/internal/test/assert"
 	"testing"
+
+	"github.com/echocat/slf4g/internal/test/assert"
 )
 
 func Test_Empty(t *testing.T) {
@@ -52,13 +53,16 @@ func Test_empty_Withf_isAlwaysWithfResult(t *testing.T) {
 	assert.ToBeEqual(t, Withf("foo", "bar %s", "xyz"), actual)
 }
 
-func Test_empty_WithFields_isAlwaysTheInput(t *testing.T) {
+func Test_empty_WithAll_isAlwaysTheWrappedInput(t *testing.T) {
 	instance := Empty()
-	given := newDummyFields()
+	given := map[string]interface{}{
+		"foo": 1,
+		"bar": 2,
+	}
 
-	actual := instance.WithFields(given)
+	actual := instance.WithAll(given)
 
-	assert.ToBeSame(t, given, actual)
+	assert.ToBeEqual(t, WithAll(given), actual)
 }
 
 func Test_empty_Without_isAlwaysSameEmptyInstance(t *testing.T) {

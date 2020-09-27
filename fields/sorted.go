@@ -2,18 +2,21 @@ package fields
 
 import "sort"
 
-type KeySorter func([]string)
-
+// DefaultKeySorter is the default instance of an KeySorter. By default this is
+// sorting in increasing order.
 var DefaultKeySorter KeySorter = func(what []string) {
 	sort.Strings(what)
 }
 
-func Sort(f Fields, sorter KeySorter) Fields {
+// Sort returns an instance Fields which contains the exact same key value pairs
+// but on calling Fields.ForEach() the key value pairs are returned ordered by
+// all fields sorted by the provided sorter.
+func Sort(fields Fields, sorter KeySorter) Fields {
 	if sorter == nil {
-		return f
+		return fields
 	}
 	result := sorted{
-		m: AsMap(f),
+		m: asMap(fields),
 	}
 	result.keys = make([]string, len(result.m))
 	var i int
@@ -25,13 +28,16 @@ func Sort(f Fields, sorter KeySorter) Fields {
 	return &result
 }
 
+// KeySorter is used to sort all keys. See Sort() for more details.
+type KeySorter func(keys []string)
+
 type sorted struct {
-	m    Map
+	m    mapped
 	keys []string
 }
 
 func (instance *sorted) ForEach(consumer Consumer) error {
-	if instance == nil {
+	if instance == nil || consumer == nil {
 		return nil
 	}
 	for _, k := range instance.keys {
@@ -59,6 +65,25 @@ func (instance *sorted) Without(keys ...string) Fields {
 	return instance.m.Without(keys...)
 }
 
-func (instance *sorted) WithFields(fields Fields) Fields {
-	return instance.m.WithFields(fields)
+func (instance *sorted) WithAll(of map[string]interface{}) Fields {
+	return instance.m.WithAll(of)
+}
+
+func asMap(f Fields) mapped {
+	switch v := f.(type) {
+	case mapped:
+		return v
+	case *mapped:
+		return *v
+	}
+
+	result := mapped{}
+	if err := f.ForEach(func(key string, value interface{}) error {
+		result[key] = value
+		return nil
+	}); err != nil {
+		panic(err)
+	}
+
+	return result
 }

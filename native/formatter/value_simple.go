@@ -3,6 +3,7 @@ package formatter
 import (
 	"encoding/json"
 	"fmt"
+
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
 )

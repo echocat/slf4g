@@ -145,12 +145,12 @@ func (instance *loggerImpl) WithError(err error) Logger {
 	return instance.With(instance.GetProvider().GetFieldKeySpec().GetError(), err)
 }
 
-func (instance *loggerImpl) WithFields(fields fields.Fields) Logger {
+func (instance *loggerImpl) WithAll(of map[string]interface{}) Logger {
 	targetFields := instance.fields
 	if targetFields != nil {
-		targetFields = targetFields.WithFields(fields)
+		targetFields = targetFields.WithAll(of)
 	} else {
-		targetFields = fields
+		targetFields = fields.WithAll(of)
 	}
 	return &loggerImpl{
 		coreProvider: instance.coreProvider,

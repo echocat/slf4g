@@ -11,7 +11,7 @@
 // Immutability
 //
 // Fields are defined as immutable. Calling the methods With, Withf, Without and
-// WithFields always results in a new instance of Fields that could be either
+// WithAll always results in a new instance of Fields that could be either
 // brand new, a copy of the source one or do inherit some stuff of the original
 // called one; but it never modifies the called instance.
 package fields
@@ -35,10 +35,10 @@ type Fields interface {
 	// consumption of the value. (See ForEach() and Get())
 	Withf(key string, format string, args ...interface{}) Fields
 
-	// WithFields is similar to With but it can consume more than one field at
+	// WithAll is similar to With but it can consume more than one field at
 	// once. Be aware: There is neither a guarantee that this instance will be
 	// copied or not.
-	WithFields(Fields) Fields
+	WithAll(map[string]interface{}) Fields
 
 	// Without returns a variant of this instance of Fields without the given
 	// key contained inside. In other words: If someone afterwards tries to

@@ -10,8 +10,8 @@ type Event interface {
 
 	With(key string, value interface{}) Event
 	Withf(key string, format string, args ...interface{}) Event
+	WithAll(map[string]interface{}) Event
 	Without(keys ...string) Event
-	WithFields(f fields.Fields) Event
 	WithCallDepth(int) Event
 }
 
@@ -61,9 +61,9 @@ func (instance *EventImpl) Withf(key string, format string, args ...interface{})
 	})
 }
 
-func (instance *EventImpl) WithFields(f fields.Fields) Event {
+func (instance *EventImpl) WithAll(of map[string]interface{}) Event {
 	return instance.with(func(s fields.Fields) fields.Fields {
-		return s.WithFields(f)
+		return s.WithAll(of)
 	})
 }
 

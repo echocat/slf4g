@@ -36,7 +36,7 @@ type Logger interface {
 	With(name string, value interface{}) Logger
 	Withf(name string, format string, args ...interface{}) Logger
 	WithError(error) Logger
-	WithFields(fields.Fields) Logger
+	WithAll(map[string]interface{}) Logger
 }
 
 func NewLogger(cl CoreLogger) Logger {

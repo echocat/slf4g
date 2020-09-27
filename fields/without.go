@@ -1,6 +1,9 @@
 package fields
 
-func newWithout(fields Fields, keys ...string) *without {
+func newWithout(fields Fields, keys ...string) Fields {
+	if fields == nil {
+		return Empty()
+	}
 	result := &without{
 		fields: fields,
 	}
@@ -17,7 +20,7 @@ type without struct {
 }
 
 func (instance *without) ForEach(consumer Consumer) error {
-	if instance == nil {
+	if instance == nil || consumer == nil {
 		return nil
 	}
 	f := instance.fields
@@ -70,8 +73,8 @@ func (instance *without) Withf(key string, format string, args ...interface{}) F
 	return instance.asParentOf(Withf(key, format, args...))
 }
 
-func (instance *without) WithFields(fields Fields) Fields {
-	return instance.asParentOf(fields)
+func (instance *without) WithAll(of map[string]interface{}) Fields {
+	return instance.asParentOf(WithAll(of))
 }
 
 func (instance *without) asParentOf(fields Fields) Fields {

@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+
 	"github.com/echocat/slf4g/fields"
 )
 
@@ -130,6 +131,6 @@ func WithError(err error) Logger {
 	return GetGlobalLogger().WithError(err)
 }
 
-func WithFields(fields fields.Fields) Logger {
-	return GetGlobalLogger().WithFields(fields)
+func WithAll(of map[string]interface{}) Logger {
+	return GetGlobalLogger().WithAll(of)
 }

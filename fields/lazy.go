@@ -15,9 +15,13 @@ type Lazy interface {
 }
 
 // LazyFunc wraps Lazy into a single function pointer.
-type LazyFunc func() interface{}
+func LazyFunc(provider func() interface{}) Lazy {
+	return lazyFunc(provider)
+}
 
-func (instance LazyFunc) Get() interface{} {
+type lazyFunc func() interface{}
+
+func (instance lazyFunc) Get() interface{} {
 	return instance()
 }
 
@@ -37,5 +41,12 @@ func (instance *lazyFormat) Get() interface{} {
 }
 
 func (instance *lazyFormat) String() string {
-	return fmt.Sprintf(instance.format, instance.args...)
+	targetArgs := make([]interface{}, len(instance.args))
+	for i, arg := range instance.args {
+		if l, ok := arg.(Lazy); ok {
+			arg = l.Get()
+		}
+		targetArgs[i] = arg
+	}
+	return fmt.Sprintf(instance.format, targetArgs...)
 }
