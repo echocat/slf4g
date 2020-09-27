@@ -1,18 +1,18 @@
 package fields
 
 type lineage struct {
-	fields Fields
+	target Fields
 	parent Fields
 }
 
-func newLineage(fields Fields, parent Fields) Fields {
-	if parent == nil {
-		return fields
+func newLineage(target Fields, parent Fields) Fields {
+	if isEmpty(parent) {
+		return target
 	}
-	if _, ok := parent.(*empty); ok {
-		return fields
+	if isEmpty(target) {
+		return parent
 	}
-	return &lineage{fields, parent}
+	return &lineage{target, parent}
 }
 
 func (instance *lineage) ForEach(consumer Consumer) error {
@@ -30,7 +30,7 @@ func (instance *lineage) ForEach(consumer Consumer) error {
 		}
 	}
 
-	if f := instance.fields; f != nil {
+	if f := instance.target; f != nil {
 		if err := f.ForEach(duplicatePreventingConsumer); err != nil {
 			return err
 		}
@@ -47,7 +47,7 @@ func (instance *lineage) Get(key string) interface{} {
 	if instance == nil {
 		return nil
 	}
-	if f := instance.fields; f != nil {
+	if f := instance.target; f != nil {
 		if v := f.Get(key); v != nil {
 			return v
 		}

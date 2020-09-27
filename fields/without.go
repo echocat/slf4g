@@ -1,23 +1,30 @@
 package fields
 
 func newWithout(fields Fields, keys ...string) Fields {
-	if fields == nil {
+	if isEmpty(fields) {
 		return Empty()
+	}
+	if len(keys) == 0 {
+		return fields
 	}
 	result := &without{
 		fields: fields,
 	}
-	result.excludedKeys = make(map[string]bool, len(keys))
+	result.excludedKeys = make(withoutKeys, len(keys))
 	for _, key := range keys {
-		result.excludedKeys[key] = true
+		result.excludedKeys[key] = withoutPresent
 	}
 	return result
 }
 
 type without struct {
 	fields       Fields
-	excludedKeys map[string]bool
+	excludedKeys withoutKeys
 }
+
+type withoutKeys map[string]struct{}
+
+var withoutPresent = struct{}{}
 
 func (instance *without) ForEach(consumer Consumer) error {
 	if instance == nil || consumer == nil {
@@ -29,12 +36,8 @@ func (instance *without) ForEach(consumer Consumer) error {
 	}
 
 	excludedKeys := instance.excludedKeys
-	if excludedKeys == nil {
-		return f.ForEach(consumer)
-	}
-
 	filteringConsumer := func(key string, value interface{}) error {
-		if excludedKeys[key] {
+		if _, ok := excludedKeys[key]; ok {
 			return nil
 		} else {
 			return consumer(key, value)
@@ -54,11 +57,7 @@ func (instance *without) Get(key string) interface{} {
 	}
 
 	excludedKeys := instance.excludedKeys
-	if excludedKeys == nil {
-		return f.Get(key)
-	}
-
-	if excludedKeys[key] {
+	if _, ok := excludedKeys[key]; ok {
 		return nil
 	}
 
@@ -77,10 +76,10 @@ func (instance *without) WithAll(of map[string]interface{}) Fields {
 	return instance.asParentOf(WithAll(of))
 }
 
-func (instance *without) asParentOf(fields Fields) Fields {
-	return newLineage(fields, instance)
-}
-
 func (instance *without) Without(keys ...string) Fields {
 	return newWithout(instance, keys...)
+}
+
+func (instance *without) asParentOf(fields Fields) Fields {
+	return newLineage(fields, instance)
 }

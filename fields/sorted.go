@@ -12,7 +12,7 @@ var DefaultKeySorter KeySorter = func(what []string) {
 // but on calling Fields.ForEach() the key value pairs are returned ordered by
 // all fields sorted by the provided sorter.
 func Sort(fields Fields, sorter KeySorter) Fields {
-	if sorter == nil {
+	if sorter == nil || isEmpty(fields) {
 		return fields
 	}
 	result := sorted{
@@ -50,40 +50,36 @@ func (instance *sorted) ForEach(consumer Consumer) error {
 }
 
 func (instance *sorted) Get(key string) interface{} {
+	if instance == nil {
+		return nil
+	}
 	return instance.m.Get(key)
 }
 
 func (instance *sorted) With(key string, value interface{}) Fields {
+	if instance == nil {
+		return With(key, value)
+	}
 	return instance.m.With(key, value)
 }
 
 func (instance *sorted) Withf(key string, format string, args ...interface{}) Fields {
+	if instance == nil {
+		return Withf(key, format, args...)
+	}
 	return instance.m.Withf(key, format, args...)
 }
 
-func (instance *sorted) Without(keys ...string) Fields {
-	return instance.m.Without(keys...)
-}
-
 func (instance *sorted) WithAll(of map[string]interface{}) Fields {
+	if instance == nil {
+		return WithAll(of)
+	}
 	return instance.m.WithAll(of)
 }
 
-func asMap(f Fields) mapped {
-	switch v := f.(type) {
-	case mapped:
-		return v
-	case *mapped:
-		return *v
+func (instance *sorted) Without(keys ...string) Fields {
+	if instance == nil {
+		return Empty()
 	}
-
-	result := mapped{}
-	if err := f.ForEach(func(key string, value interface{}) error {
-		result[key] = value
-		return nil
-	}); err != nil {
-		panic(err)
-	}
-
-	return result
+	return instance.m.Without(keys...)
 }
