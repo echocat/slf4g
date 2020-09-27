@@ -17,7 +17,8 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Test slf4g
-        run: go test -v "-coverprofile=profile.cov" ./...
+        run: |
+          go test -v -covermode atomic "-coverprofile=profile.cov" ./...
 
       - name: Send coverage slf4g
         uses: shogo82148/actions-goveralls@v1
@@ -27,14 +28,16 @@ jobs:
           parallel: true
 
       - name: Test slf4g/native
-        run: cd native && go test -v "-coverprofile=profile.cov" ./...
+        run: |
+          cd native
+          go test -v -covermode atomic "-coverprofile=profile.cov" ./...
 
-      - name: Send coverage slf4g/native
-        uses: shogo82148/actions-goveralls@v1
-        with:
-          path-to-profile: native/profile.cov
-          flag-name: Go-${{ matrix.go }}
-          parallel: true
+  #      - name: Send coverage slf4g/native
+  #        uses: shogo82148/actions-goveralls@v1
+  #        with:
+  #          path-to-profile: native/profile.cov
+  #          flag-name: Go-${{ matrix.go }}
+  #          parallel: true
 
   # notifies that all test jobs are finished.
   finish:
