@@ -1,12 +1,13 @@
 package std
 
 import (
-	log "github.com/echocat/slf4g"
 	stdlog "log"
+
+	log "github.com/echocat/slf4g"
 )
 
 func Configure() {
-	ConfigureWith(log.GetGlobalLogger(), log.LevelInfo)
+	ConfigureWith(log.GetRootLogger(), log.LevelInfo)
 }
 
 func ConfigureWith(target log.CoreLogger, logAs log.Level) {

@@ -24,12 +24,12 @@ func (instance *providerFacade) GetLogger(name string) Logger {
 	})
 }
 
-func (instance *providerFacade) GetAllLevels() []Level {
+func (instance *providerFacade) GetAllLevels() Levels {
 	return instance.UnwrapProvider().GetAllLevels()
 }
 
-func (instance *providerFacade) GetFieldKeySpec() fields.KeysSpec {
-	return instance.UnwrapProvider().GetFieldKeySpec()
+func (instance *providerFacade) GetFieldKeysSpec() fields.KeysSpec {
+	return instance.UnwrapProvider().GetFieldKeysSpec()
 }
 
 func (instance *providerFacade) UnwrapProvider() Provider {

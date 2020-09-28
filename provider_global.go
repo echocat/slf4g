@@ -16,7 +16,7 @@ var (
 
 func GetProvider() Provider {
 	// We're using this facade to deal with concurrency issues where someone already
-	// addresses the reference to the global available provider but afterwards
+	// addresses the reference to the root available provider but afterwards
 	// the real provider is initiated.
 	return globalProviderFacade
 }

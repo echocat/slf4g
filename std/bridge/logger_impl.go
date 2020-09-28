@@ -2,9 +2,10 @@ package std
 
 import (
 	"fmt"
+	"os"
+
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
-	"os"
 )
 
 var DefaultOnPanic = func(e log.Event) {
@@ -29,7 +30,7 @@ type LoggerImpl struct {
 func (instance *LoggerImpl) log(level log.Level, args ...interface{}) log.Event {
 	f := fields.Empty()
 	if len(args) > 0 {
-		f = fields.With(instance.GetProvider().GetFieldKeySpec().GetMessage(), fields.LazyFunc(func() interface{} {
+		f = fields.With(instance.GetProvider().GetFieldKeysSpec().GetMessage(), fields.LazyFunc(func() interface{} {
 			return fmt.Sprint(args...)
 		}))
 	}
@@ -39,7 +40,7 @@ func (instance *LoggerImpl) log(level log.Level, args ...interface{}) log.Event 
 }
 
 func (instance *LoggerImpl) logf(level log.Level, format string, args ...interface{}) log.Event {
-	f := fields.Withf(instance.GetProvider().GetFieldKeySpec().GetMessage(), format, args...)
+	f := fields.Withf(instance.GetProvider().GetFieldKeysSpec().GetMessage(), format, args...)
 	e := log.NewEvent(level, f, 3)
 	instance.Log(e)
 	return e

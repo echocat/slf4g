@@ -12,7 +12,7 @@ type LoggingWriter struct {
 func (instance *LoggingWriter) Write(p []byte) (n int, err error) {
 	instance.Log(NewEvent(
 		instance.LogAs,
-		fields.With(GetProvider().GetFieldKeySpec().GetMessage(), string(p)),
+		fields.With(GetProvider().GetFieldKeysSpec().GetMessage(), string(p)),
 		3,
 	))
 	return len(p), nil

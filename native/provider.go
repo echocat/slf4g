@@ -17,7 +17,7 @@ var DefaultProvider = NewProvider("native")
 var _ = log.RegisterProvider(DefaultProvider)
 
 type Provider struct {
-	Cache log.LoggerCache
+	Cache log.LoggerProvider
 	Name  string
 
 	Level         log.Level
@@ -33,12 +33,15 @@ type Provider struct {
 
 func NewProvider(name string) *Provider {
 	result := &Provider{
-		Name:            name,
-		Level:           log.LevelInfo,
-		LevelNames:      level.DefaultLevelNamesFacade,
+		Name: name,
+
+		Level:         log.LevelInfo,
+		LevelNames:    level.DefaultLevelNamesFacade,
+		LevelProvider: log.DefaultLevelProviderFacade,
+
+		Formatter:       formatter.DefaultFacade,
 		LocationFactory: location.DefaultFactoryFacade,
 		FieldsKeysSpec:  DefaultFieldsKeySpecFacade,
-		Formatter:       formatter.DefaultFacade,
 	}
 	result.Cache = log.NewLoggerCache(result.factory)
 	result.Consumer = consumer.NewWritingConsumer(result, os.Stderr)
@@ -103,11 +106,11 @@ func (instance *Provider) SetFormatter(v formatter.Formatter) {
 	instance.Formatter = v
 }
 
-func (instance *Provider) GetAllLevels() []log.Level {
+func (instance *Provider) GetAllLevels() log.Levels {
 	if p := instance.LevelProvider; p != nil {
 		return p()
 	}
-	return log.DefaultLevelProvider()
+	panic("no LevelProvider configured")
 }
 
 func (instance *Provider) GetLocationFactory() location.Factory {
@@ -125,7 +128,7 @@ func (instance *Provider) getLocationFactory() location.Factory {
 	return location.NoopFactory
 }
 
-func (instance *Provider) GetFieldKeySpec() fields.KeysSpec {
+func (instance *Provider) GetFieldKeysSpec() fields.KeysSpec {
 	return instance.FieldsKeysSpec
 }
 

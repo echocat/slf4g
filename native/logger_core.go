@@ -1,10 +1,11 @@
 package native
 
 import (
+	"time"
+
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/native/consumer"
 	"github.com/echocat/slf4g/native/location"
-	"time"
 )
 
 type CoreLogger struct {
@@ -25,10 +26,10 @@ func (instance *CoreLogger) Log(event log.Event) {
 	}
 
 	if v := log.GetTimestampOf(event, instance.provider); v == nil {
-		event = event.With(instance.provider.GetFieldKeySpec().GetTimestamp(), time.Now())
+		event = event.With(instance.provider.GetFieldKeysSpec().GetTimestamp(), time.Now())
 	}
 	if v := log.GetLoggerOf(event, instance.provider); v == nil {
-		event = event.With(instance.provider.GetFieldKeySpec().GetLogger(), instance.name)
+		event = event.With(instance.provider.GetFieldKeysSpec().GetLogger(), instance.name)
 	}
 
 	if v := instance.getLocationFactory()(event, event.GetCallDepth()+1); v != nil {

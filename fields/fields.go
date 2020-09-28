@@ -25,7 +25,7 @@ type Fields interface {
 	// Otherwise it will return nil.
 	Get(key string) interface{}
 
-	// With returns an variant of this instance of Fields with the given key
+	// With returns an variant of this Fields with the given key
 	// value pair contained inside. If the given key already exists in the
 	// current instance this means it will be overwritten.
 	With(key string, value interface{}) Fields
@@ -40,7 +40,7 @@ type Fields interface {
 	// copied or not.
 	WithAll(map[string]interface{}) Fields
 
-	// Without returns a variant of this instance of Fields without the given
+	// Without returns a variant of this Fields without the given
 	// key contained inside. In other words: If someone afterwards tries to
 	// call either ForEach() or Get() nothing with this key(s) will be returned.
 	Without(keys ...string) Fields

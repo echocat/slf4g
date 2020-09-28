@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"unicode"
+
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/native/formatter/hints"
-	"strings"
-	"unicode"
 )
 
 const (
@@ -44,13 +45,13 @@ func (instance *Json) Format(event log.Event, using log.Provider, _ hints.Hints)
 		return fail(err)
 	}
 
-	loggerKey := using.GetFieldKeySpec().GetLogger()
+	loggerKey := using.GetFieldKeysSpec().GetLogger()
 	if err := event.GetFields().ForEach(func(k string, v interface{}) error {
 		if vl, ok := v.(fields.Lazy); ok {
 			v = vl.Get()
 		}
 
-		if !instance.PrintGlobalLogger && k == loggerKey && v == log.GlobalLoggerName {
+		if !instance.PrintGlobalLogger && k == loggerKey && v == log.RootLoggerName {
 			return nil
 		}
 		if _, err := to.Write([]byte(",")); err != nil {

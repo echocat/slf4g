@@ -1,13 +1,14 @@
 package log
 
 import (
-	"github.com/echocat/slf4g/fields"
 	"io"
 	"os"
+
+	"github.com/echocat/slf4g/fields"
 )
 
 type fallbackProvider struct {
-	cache LoggerCache
+	cache LoggerProvider
 	level Level
 	out   io.Writer
 }
@@ -37,11 +38,11 @@ func (instance *fallbackProvider) GetLogger(name string) Logger {
 	return instance.cache.GetLogger(name)
 }
 
-func (instance *fallbackProvider) GetAllLevels() []Level {
+func (instance *fallbackProvider) GetAllLevels() Levels {
 	return DefaultLevelProvider()
 }
 
-func (instance *fallbackProvider) GetFieldKeySpec() fields.KeysSpec {
+func (instance *fallbackProvider) GetFieldKeysSpec() fields.KeysSpec {
 	return fallbackFieldKeysSpecV
 }
 

@@ -37,9 +37,9 @@ func (instance *loggerImpl) GetProvider() Provider {
 func (instance *loggerImpl) log(level Level, args ...interface{}) {
 	f := instance.fields
 	if len(args) == 1 {
-		f = f.With(instance.GetProvider().GetFieldKeySpec().GetMessage(), args[0])
+		f = f.With(instance.GetProvider().GetFieldKeysSpec().GetMessage(), args[0])
 	} else if len(args) > 1 {
-		f = f.With(instance.GetProvider().GetFieldKeySpec().GetMessage(), fields.LazyFunc(func() interface{} {
+		f = f.With(instance.GetProvider().GetFieldKeysSpec().GetMessage(), fields.LazyFunc(func() interface{} {
 			return fmt.Sprint(args...)
 		}))
 	}
@@ -48,7 +48,7 @@ func (instance *loggerImpl) log(level Level, args ...interface{}) {
 
 func (instance *loggerImpl) logf(level Level, format string, args ...interface{}) {
 	f := instance.fields.
-		Withf(instance.GetProvider().GetFieldKeySpec().GetMessage(), format, args...)
+		Withf(instance.GetProvider().GetFieldKeysSpec().GetMessage(), format, args...)
 	instance.Log(NewEvent(level, f, 2))
 }
 
@@ -142,7 +142,7 @@ func (instance *loggerImpl) Withf(name string, format string, args ...interface{
 }
 
 func (instance *loggerImpl) WithError(err error) Logger {
-	return instance.With(instance.GetProvider().GetFieldKeySpec().GetError(), err)
+	return instance.With(instance.GetProvider().GetFieldKeysSpec().GetError(), err)
 }
 
 func (instance *loggerImpl) WithAll(of map[string]interface{}) Logger {
@@ -151,6 +151,19 @@ func (instance *loggerImpl) WithAll(of map[string]interface{}) Logger {
 		targetFields = targetFields.WithAll(of)
 	} else {
 		targetFields = fields.WithAll(of)
+	}
+	return &loggerImpl{
+		coreProvider: instance.coreProvider,
+		fields:       targetFields,
+	}
+}
+
+func (instance *loggerImpl) Without(keys ...string) Logger {
+	targetFields := instance.fields
+	if targetFields != nil {
+		targetFields = targetFields.Without(keys...)
+	} else {
+		targetFields = fields.Empty()
 	}
 	return &loggerImpl{
 		coreProvider: instance.coreProvider,

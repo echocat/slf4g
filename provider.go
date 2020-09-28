@@ -5,8 +5,8 @@ import (
 )
 
 type Provider interface {
-	GetName() string
 	GetLogger(name string) Logger
-	GetAllLevels() []Level
-	GetFieldKeySpec() fields.KeysSpec
+	GetName() string
+	GetAllLevels() Levels
+	GetFieldKeysSpec() fields.KeysSpec
 }

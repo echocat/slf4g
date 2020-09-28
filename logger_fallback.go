@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/echocat/slf4g/fields"
 	"os"
 	"path"
 	"runtime"
@@ -12,6 +11,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/echocat/slf4g/fields"
 )
 
 const (
@@ -33,10 +34,10 @@ func (instance *fallbackCoreLogger) Log(event Event) {
 	}
 
 	if v := GetTimestampOf(event, instance); v == nil {
-		event = event.With(instance.GetFieldKeySpec().GetTimestamp(), time.Now())
+		event = event.With(instance.GetFieldKeysSpec().GetTimestamp(), time.Now())
 	}
 	if v := GetLoggerOf(event, instance); v == nil {
-		event = event.With(instance.GetFieldKeySpec().GetLogger(), instance.name)
+		event = event.With(instance.GetFieldKeysSpec().GetLogger(), instance.name)
 	}
 
 	s, err := instance.format(event)
@@ -83,15 +84,15 @@ func (instance *fallbackCoreLogger) format(event Event) ([]byte, error) {
 		}
 	}
 
-	messageKey := instance.GetFieldKeySpec().GetMessage()
-	loggerKey := instance.GetFieldKeySpec().GetLogger()
-	timestampKey := instance.GetFieldKeySpec().GetTimestamp()
+	messageKey := instance.GetFieldKeysSpec().GetMessage()
+	loggerKey := instance.GetFieldKeysSpec().GetLogger()
+	timestampKey := instance.GetFieldKeysSpec().GetTimestamp()
 	if err := event.GetFields().ForEach(func(k string, vp interface{}) error {
 		if vl, ok := vp.(fields.Lazy); ok {
 			vp = vl.Get()
 		}
 
-		if k == loggerKey && vp == GlobalLoggerName {
+		if k == loggerKey && vp == RootLoggerName {
 			return nil
 		}
 		if k == messageKey || k == timestampKey {

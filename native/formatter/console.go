@@ -160,9 +160,9 @@ func (instance *Console) printLevel(event log.Event, buf *bytes.Buffer, using lo
 func (instance *Console) printFields(event log.Event, buf *bytes.Buffer, using log.Provider, h hints.Hints) (printed bool, err error) {
 	formatter := instance.getFieldValueFormatter()
 
-	messageKey := using.GetFieldKeySpec().GetMessage()
-	loggerKey := using.GetFieldKeySpec().GetLogger()
-	timestampKey := using.GetFieldKeySpec().GetTimestamp()
+	messageKey := using.GetFieldKeysSpec().GetMessage()
+	loggerKey := using.GetFieldKeysSpec().GetLogger()
+	timestampKey := using.GetFieldKeysSpec().GetTimestamp()
 
 	err = fields.Sort(event.GetFields(), instance.FieldSorter).ForEach(func(k string, v interface{}) error {
 		if vl, ok := v.(fields.Lazy); ok {
@@ -171,7 +171,7 @@ func (instance *Console) printFields(event log.Event, buf *bytes.Buffer, using l
 		if v == nil {
 			return nil
 		}
-		if !instance.PrintGlobalLogger && k == loggerKey && v == log.GlobalLoggerName {
+		if !instance.PrintGlobalLogger && k == loggerKey && v == log.RootLoggerName {
 			return nil
 		}
 		if k == messageKey || k == timestampKey {

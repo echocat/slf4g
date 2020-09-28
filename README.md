@@ -1,7 +1,8 @@
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/echocat/slf4g)](https://pkg.go.dev/github.com/echocat/slf4g)
 ![Test](https://github.com/echocat/slf4g/workflows/Test/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/echocat/slf4g/badge.svg?branch=master)](https://coveralls.io/github/echocat/slf4g?branch=master)
 
-# Simple Log Framework 4 Golang (slf4g)
+# Simple Log Framework for Golang (slf4g)
 
 **WARNING: This project is still under heavy development. Everything could still
 change.**
