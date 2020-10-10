@@ -17,9 +17,9 @@
 package fields
 
 type Fields interface {
-	// ForEach will call the provided Consumer for each field which is provided
+	// ForEach will call the provided consumer for each field which is provided
 	// by this Fields instance.
-	ForEach(consumer Consumer) error
+	ForEach(consumer func(key string, value interface{}) error) error
 
 	// Get will return for the given key the corresponding value if exists.
 	// Otherwise it will return nil.
@@ -45,8 +45,3 @@ type Fields interface {
 	// call either ForEach() or Get() nothing with this key(s) will be returned.
 	Without(keys ...string) Fields
 }
-
-// Consumer will be called on each field that needs to be consumed.
-//
-// See Fields.ForEach() for more details.
-type Consumer func(key string, value interface{}) error

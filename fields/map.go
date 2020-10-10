@@ -14,7 +14,7 @@ func WithAll(of map[string]interface{}) Fields {
 
 type mapped map[string]interface{}
 
-func (instance mapped) ForEach(consumer Consumer) error {
+func (instance mapped) ForEach(consumer func(key string, value interface{}) error) error {
 	if instance == nil || consumer == nil {
 		return nil
 	}

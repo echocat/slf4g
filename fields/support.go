@@ -1,6 +1,10 @@
 package fields
 
-func asMap(f Fields) mapped {
+type ForEachEnabled interface {
+	ForEach(func(key string, value interface{}) error) error
+}
+
+func asMap(f ForEachEnabled) mapped {
 	switch v := f.(type) {
 	case mapped:
 		return v
@@ -19,7 +23,7 @@ func asMap(f Fields) mapped {
 	return result
 }
 
-func isEmpty(given Fields) bool {
+func isEmpty(given ForEachEnabled) bool {
 	if given == nil {
 		return true
 	}

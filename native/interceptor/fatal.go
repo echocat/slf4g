@@ -1,9 +1,11 @@
 package interceptor
 
 import (
-	log "github.com/echocat/slf4g"
-	"github.com/echocat/slf4g/native/internal/support"
 	"os"
+
+	log "github.com/echocat/slf4g"
+	"github.com/echocat/slf4g/level"
+	"github.com/echocat/slf4g/native/internal/support"
 )
 
 var DefaultFatal = Fatal{
@@ -19,7 +21,7 @@ func (instance Fatal) OnBeforeLog(event log.Event, _ log.Provider) (intercepted 
 }
 
 func (instance Fatal) OnAfterLog(event log.Event, _ log.Provider) (canContinue bool) {
-	if code := instance.ExitCode; code != nil && log.LevelFatal.CompareTo(event.GetLevel()) <= 0 {
+	if code := instance.ExitCode; code != nil && level.Fatal.CompareTo(event.GetLevel()) <= 0 {
 		os.Exit(*code)
 		return false
 	}

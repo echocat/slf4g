@@ -13,10 +13,12 @@ import (
 	"unicode"
 
 	"github.com/echocat/slf4g/fields"
+	"github.com/echocat/slf4g/level"
 )
 
 const (
-	simpleTimeLayout = "0102 15:04:05.000000"
+	simpleTimeLayout       = "0102 15:04:05.000000"
+	fallbackRootLoggerName = "ROOT"
 )
 
 var (
@@ -87,12 +89,12 @@ func (instance *fallbackCoreLogger) format(event Event) ([]byte, error) {
 	messageKey := instance.GetFieldKeysSpec().GetMessage()
 	loggerKey := instance.GetFieldKeysSpec().GetLogger()
 	timestampKey := instance.GetFieldKeysSpec().GetTimestamp()
-	if err := event.GetFields().ForEach(func(k string, vp interface{}) error {
+	if err := event.ForEach(func(k string, vp interface{}) error {
 		if vl, ok := vp.(fields.Lazy); ok {
 			vp = vl.Get()
 		}
 
-		if k == loggerKey && vp == RootLoggerName {
+		if k == loggerKey && vp == fallbackRootLoggerName {
 			return nil
 		}
 		if k == messageKey || k == timestampKey {
@@ -125,19 +127,19 @@ func (instance *fallbackCoreLogger) format(event Event) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (instance *fallbackCoreLogger) formatLevel(level Level) byte {
-	switch level {
-	case LevelTrace:
+func (instance *fallbackCoreLogger) formatLevel(l level.Level) byte {
+	switch l {
+	case level.Trace:
 		return 'T'
-	case LevelDebug:
+	case level.Debug:
 		return 'D'
-	case LevelInfo:
+	case level.Info:
 		return 'I'
-	case LevelWarn:
+	case level.Warn:
 		return 'W'
-	case LevelError:
+	case level.Error:
 		return 'E'
-	case LevelFatal:
+	case level.Fatal:
 		return 'F'
 	default:
 		return '?'
@@ -188,7 +190,7 @@ func (instance *fallbackCoreLogger) formatValue(v interface{}) ([]byte, error) {
 	return json.Marshal(v)
 }
 
-func (instance *fallbackCoreLogger) IsLevelEnabled(level Level) bool {
+func (instance *fallbackCoreLogger) IsLevelEnabled(level level.Level) bool {
 	return instance.level.CompareTo(level) <= 0
 }
 

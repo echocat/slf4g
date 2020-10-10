@@ -1,13 +1,14 @@
-package level
+package nlevel
 
 import (
 	"encoding"
 	"flag"
 	"fmt"
-	"github.com/echocat/slf4g"
+
+	"github.com/echocat/slf4g/level"
 )
 
-func AsSerializable(level *log.Level, aware NamesAware) Serializable {
+func AsSerializable(level *level.Level, aware NamesAware) Serializable {
 	return &serializable{level, aware.GetLevelNames()}
 }
 
@@ -16,15 +17,15 @@ type Serializable interface {
 	encoding.TextUnmarshaler
 	flag.Value
 
-	AsLevel() *log.Level
+	AsLevel() *level.Level
 }
 
 type serializable struct {
-	*log.Level
+	*level.Level
 	levelNames Names
 }
 
-func (instance serializable) AsLevel() *log.Level {
+func (instance serializable) AsLevel() *level.Level {
 	return instance.Level
 }
 
@@ -41,7 +42,7 @@ func (instance serializable) UnmarshalText(text []byte) error {
 	if err != nil {
 		return err
 	}
-	l := log.Level(ordinal)
+	l := level.Level(ordinal)
 	instance.Level = &l
 	return nil
 }

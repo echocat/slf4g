@@ -3,6 +3,8 @@ package log
 import (
 	"fmt"
 
+	"github.com/echocat/slf4g/level"
+
 	"github.com/echocat/slf4g/fields"
 )
 
@@ -11,117 +13,120 @@ type loggerImpl struct {
 	fields       fields.Fields
 }
 
-func (instance *loggerImpl) UnwrapCore() CoreLogger {
+func (instance *loggerImpl) Unwrap() CoreLogger {
 	return instance.coreProvider()
 }
 
 func (instance *loggerImpl) GetName() string {
-	return instance.UnwrapCore().GetName()
+	return instance.Unwrap().GetName()
 }
 
 func (instance *loggerImpl) Log(event Event) {
 	if !instance.IsLevelEnabled(event.GetLevel()) {
 		return
 	}
-	instance.UnwrapCore().Log(event.WithCallDepth(1))
+	instance.Unwrap().Log(event.WithCallDepth(1))
 }
 
-func (instance *loggerImpl) IsLevelEnabled(level Level) bool {
-	return instance.UnwrapCore().IsLevelEnabled(level)
+func (instance *loggerImpl) IsLevelEnabled(level level.Level) bool {
+	return instance.Unwrap().IsLevelEnabled(level)
 }
 
 func (instance *loggerImpl) GetProvider() Provider {
-	return instance.UnwrapCore().GetProvider()
+	return instance.Unwrap().GetProvider()
 }
 
-func (instance *loggerImpl) log(level Level, args ...interface{}) {
-	f := instance.fields
+func (instance *loggerImpl) log(level level.Level, args ...interface{}) {
+	e := NewEvent(instance.GetProvider(), level, 2, instance.fields)
+
 	if len(args) == 1 {
-		f = f.With(instance.GetProvider().GetFieldKeysSpec().GetMessage(), args[0])
+		e = e.With(instance.GetProvider().GetFieldKeysSpec().GetMessage(), args[0])
 	} else if len(args) > 1 {
-		f = f.With(instance.GetProvider().GetFieldKeysSpec().GetMessage(), fields.LazyFunc(func() interface{} {
+		e = e.With(instance.GetProvider().GetFieldKeysSpec().GetMessage(), fields.LazyFunc(func() interface{} {
 			return fmt.Sprint(args...)
 		}))
 	}
-	instance.Log(NewEvent(level, f, 2))
+
+	instance.Log(e)
 }
 
-func (instance *loggerImpl) logf(level Level, format string, args ...interface{}) {
-	f := instance.fields.
+func (instance *loggerImpl) logf(level level.Level, format string, args ...interface{}) {
+	e := NewEvent(instance.GetProvider(), level, 2, instance.fields).
 		Withf(instance.GetProvider().GetFieldKeysSpec().GetMessage(), format, args...)
-	instance.Log(NewEvent(level, f, 2))
+
+	instance.Log(e)
 }
 
 func (instance *loggerImpl) Trace(args ...interface{}) {
-	instance.log(LevelTrace, args...)
+	instance.log(level.Trace, args...)
 }
 
 func (instance *loggerImpl) Tracef(format string, args ...interface{}) {
-	instance.logf(LevelTrace, format, args...)
+	instance.logf(level.Trace, format, args...)
 }
 
 func (instance *loggerImpl) IsTraceEnabled() bool {
-	return instance.IsLevelEnabled(LevelTrace)
+	return instance.IsLevelEnabled(level.Trace)
 }
 
 func (instance *loggerImpl) Debug(args ...interface{}) {
-	instance.log(LevelDebug, args...)
+	instance.log(level.Debug, args...)
 }
 
 func (instance *loggerImpl) Debugf(format string, args ...interface{}) {
-	instance.logf(LevelDebug, format, args...)
+	instance.logf(level.Debug, format, args...)
 }
 
 func (instance *loggerImpl) IsDebugEnabled() bool {
-	return instance.IsLevelEnabled(LevelDebug)
+	return instance.IsLevelEnabled(level.Debug)
 }
 
 func (instance *loggerImpl) Info(args ...interface{}) {
-	instance.log(LevelInfo, args...)
+	instance.log(level.Info, args...)
 }
 
 func (instance *loggerImpl) Infof(format string, args ...interface{}) {
-	instance.logf(LevelInfo, format, args...)
+	instance.logf(level.Info, format, args...)
 }
 
 func (instance *loggerImpl) IsInfoEnabled() bool {
-	return instance.IsLevelEnabled(LevelInfo)
+	return instance.IsLevelEnabled(level.Info)
 }
 
 func (instance *loggerImpl) Warn(args ...interface{}) {
-	instance.log(LevelWarn, args...)
+	instance.log(level.Warn, args...)
 }
 
 func (instance *loggerImpl) Warnf(format string, args ...interface{}) {
-	instance.logf(LevelWarn, format, args...)
+	instance.logf(level.Warn, format, args...)
 }
 
 func (instance *loggerImpl) IsWarnEnabled() bool {
-	return instance.IsLevelEnabled(LevelWarn)
+	return instance.IsLevelEnabled(level.Warn)
 }
 
 func (instance *loggerImpl) Error(args ...interface{}) {
-	instance.log(LevelError, args...)
+	instance.log(level.Error, args...)
 }
 
 func (instance *loggerImpl) Errorf(format string, args ...interface{}) {
-	instance.logf(LevelError, format, args...)
+	instance.logf(level.Error, format, args...)
 }
 
 func (instance *loggerImpl) IsErrorEnabled() bool {
-	return instance.IsLevelEnabled(LevelError)
+	return instance.IsLevelEnabled(level.Error)
 }
 
 func (instance *loggerImpl) Fatal(args ...interface{}) {
-	instance.log(LevelFatal, args...)
+	instance.log(level.Fatal, args...)
 }
 
 func (instance *loggerImpl) Fatalf(format string, args ...interface{}) {
-	instance.logf(LevelFatal, format, args...)
+	instance.logf(level.Fatal, format, args...)
 }
 
 func (instance *loggerImpl) IsFatalEnabled() bool {
-	return instance.IsLevelEnabled(LevelFatal)
+	return instance.IsLevelEnabled(level.Fatal)
 }
 
 func (instance *loggerImpl) With(name string, value interface{}) Logger {

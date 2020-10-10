@@ -15,7 +15,7 @@ func newLineage(target Fields, parent Fields) Fields {
 	return &lineage{target, parent}
 }
 
-func (instance *lineage) ForEach(consumer Consumer) error {
+func (instance *lineage) ForEach(consumer func(key string, value interface{}) error) error {
 	if instance == nil || consumer == nil {
 		return nil
 	}

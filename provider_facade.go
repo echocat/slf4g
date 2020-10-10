@@ -2,36 +2,35 @@ package log
 
 import (
 	"github.com/echocat/slf4g/fields"
+	"github.com/echocat/slf4g/level"
 )
 
-func NewProviderFacade(provider func() Provider) Provider {
-	return &providerFacade{
-		provider: provider,
-	}
+type providerFacade func() Provider
+
+func (instance providerFacade) GetName() string {
+	return instance.Unwrap().GetName()
 }
 
-type providerFacade struct {
-	provider func() Provider
-}
-
-func (instance *providerFacade) GetName() string {
-	return instance.UnwrapProvider().GetName()
-}
-
-func (instance *providerFacade) GetLogger(name string) Logger {
+func (instance providerFacade) GetRootLogger() Logger {
 	return NewLoggerFacade(func() CoreLogger {
-		return instance.UnwrapProvider().GetLogger(name)
+		return instance.Unwrap().GetRootLogger()
 	})
 }
 
-func (instance *providerFacade) GetAllLevels() Levels {
-	return instance.UnwrapProvider().GetAllLevels()
+func (instance providerFacade) GetLogger(name string) Logger {
+	return NewLoggerFacade(func() CoreLogger {
+		return instance.Unwrap().GetLogger(name)
+	})
 }
 
-func (instance *providerFacade) GetFieldKeysSpec() fields.KeysSpec {
-	return instance.UnwrapProvider().GetFieldKeysSpec()
+func (instance providerFacade) GetAllLevels() level.Levels {
+	return instance.Unwrap().GetAllLevels()
 }
 
-func (instance *providerFacade) UnwrapProvider() Provider {
-	return instance.provider()
+func (instance providerFacade) GetFieldKeysSpec() fields.KeysSpec {
+	return instance.Unwrap().GetFieldKeysSpec()
+}
+
+func (instance providerFacade) Unwrap() Provider {
+	return instance()
 }

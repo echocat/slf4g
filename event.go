@@ -1,14 +1,28 @@
 package log
 
-import "github.com/echocat/slf4g/fields"
+import (
+	"github.com/echocat/slf4g/fields"
+	"github.com/echocat/slf4g/level"
+)
 
 // Event represents an event which can be logged using a Logger (or CoreLogger).
 //
 // Contents
 //
-// Events are haven dynamic contents (such as messages, errors, ...) provided
-// by GetFields(). Only be contract always provided information are provided by
-// GetLevel() and GetCalDepth().
+// Events containing always present content provided by GetLevel() and
+// GetCallDepth().
+//
+// They are providing additionally dynamic content (messages, errors, ...)
+// which are accessible via ForEach() and Get(). None of this fields are
+// required to exists by contract. The keys of these fields are defined by
+// Provider.GetFieldKeysSpec(). For example using fields.KeysSpec.GetMessage()
+// it might be possible to get the key of the message.
+//
+// The keys are always of type string and should be only printable characters
+// which can be printed in any context. Recommended are everything that matches:
+//   ^[a-zA-Z0-9._-]+$
+//
+// The values could be everything including nils.
 //
 // Immutability
 //
@@ -19,7 +33,7 @@ import "github.com/echocat/slf4g/fields"
 // instance.
 type Event interface {
 	// GetLevel returns the Level of this event.
-	GetLevel() Level
+	GetLevel() level.Level
 
 	// GetCallDepth returns the call depth inside of the call stack that should
 	// be ignored before capturing the caller position (if required). This could
@@ -33,13 +47,13 @@ type Event interface {
 	// WithContext().
 	GetContext() interface{}
 
-	// GetFields will return all fields which are associated with this Event.
-	// This could contain a message, timestamp, error and so on. None of this
-	// fields is required to exists by contract. The keys of these fields is
-	// defined by Provider.GetFieldKeysSpec(). For example using
-	// fields.KeysSpec.GetMessage() it might be possible to get the
-	// key of the message.
-	GetFields() fields.Fields
+	// ForEach will call the provided consumer for each field which is provided
+	// by this Fields instance.
+	ForEach(consumer func(key string, value interface{}) error) error
+
+	// Get will return for the given key the corresponding value if exists.
+	// Otherwise it will return nil.
+	Get(key string) interface{}
 
 	// With returns an variant of this Event with the given key
 	// value pair contained inside. If the given key already exists in the
@@ -51,6 +65,9 @@ type Event interface {
 	// consumption of the value. (See fields.Fields.ForEach() and
 	// fields.Fields.Get())
 	Withf(key string, format string, args ...interface{}) Event
+
+	// WithError is similar to With but it adds an error as field.
+	WithError(error) Event
 
 	// WithAll is similar to With but it can consume more than one field at
 	// once. Be aware: There is neither a guarantee that this instance will be
@@ -74,15 +91,33 @@ type Event interface {
 	WithContext(ctx interface{}) Event
 }
 
-// NewEvent creates a new instance of Event from the given Level, fields.Fields
-// and the given callDepth.
-func NewEvent(level Level, f fields.Fields, callDepth int) Event {
-	if f == nil {
-		f = fields.Empty()
+// NewEvent creates a new instance of Event from the given Provider, Level,
+// callDepth and fields.Fields.
+func NewEvent(provider Provider, level level.Level, callDepth int, f ...fields.Fields) Event {
+	var tf fields.Fields
+	if len(f) > 0 {
+		tf = f[0]
+	} else {
+		tf = fields.Empty()
 	}
-	return &eventImpl{
-		Level:     level,
-		Fields:    f,
-		CallDepth: callDepth,
+
+	var result Event = &eventImpl{
+		provider:  provider,
+		level:     level,
+		fields:    tf,
+		callDepth: callDepth,
 	}
+
+	if len(f) > 1 {
+		for _, sf := range f[1:] {
+			if err := sf.ForEach(func(k string, v interface{}) error {
+				result = result.With(k, v)
+				return nil
+			}); err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	return result
 }

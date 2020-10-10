@@ -1,11 +1,12 @@
-package level
+package nlevel
 
 import (
 	"errors"
 	"fmt"
-	"github.com/echocat/slf4g"
 	"strconv"
 	"strings"
+
+	"github.com/echocat/slf4g/level"
 )
 
 var (
@@ -28,18 +29,18 @@ func NewNamesFacade(provider func() Names) Names {
 type defaultNames struct{}
 
 func (instance *defaultNames) FromOrdinal(ordinal uint16) (string, error) {
-	switch log.Level(ordinal) {
-	case log.LevelTrace:
+	switch level.Level(ordinal) {
+	case level.Trace:
 		return "TRACE", nil
-	case log.LevelDebug:
+	case level.Debug:
 		return "DEBUG", nil
-	case log.LevelInfo:
+	case level.Info:
 		return "INFO", nil
-	case log.LevelWarn:
+	case level.Warn:
 		return "WARN", nil
-	case log.LevelError:
+	case level.Error:
 		return "ERROR", nil
-	case log.LevelFatal:
+	case level.Fatal:
 		return "FATAL", nil
 	default:
 		return fmt.Sprintf("%d", ordinal), nil
@@ -49,17 +50,17 @@ func (instance *defaultNames) FromOrdinal(ordinal uint16) (string, error) {
 func (instance *defaultNames) ToOrdinal(name string) (uint16, error) {
 	switch strings.ToUpper(name) {
 	case "TRACE":
-		return uint16(log.LevelTrace), nil
+		return uint16(level.Trace), nil
 	case "DEBUG", "VERBOSE":
-		return uint16(log.LevelDebug), nil
+		return uint16(level.Debug), nil
 	case "INFO", "INFORMATION":
-		return uint16(log.LevelInfo), nil
+		return uint16(level.Info), nil
 	case "WARN", "WARNING":
-		return uint16(log.LevelWarn), nil
+		return uint16(level.Warn), nil
 	case "ERROR", "ERR":
-		return uint16(log.LevelError), nil
+		return uint16(level.Error), nil
 	case "FATAL":
-		return uint16(log.LevelFatal), nil
+		return uint16(level.Fatal), nil
 	default:
 		if result, err := strconv.ParseUint(name, 10, 16); err != nil {
 			return 0, fmt.Errorf("%w: %s", ErrIllegalLevel, name)

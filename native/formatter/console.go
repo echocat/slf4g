@@ -9,9 +9,10 @@ import (
 
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
+	"github.com/echocat/slf4g/level"
 	"github.com/echocat/slf4g/native/color"
 	"github.com/echocat/slf4g/native/formatter/hints"
-	"github.com/echocat/slf4g/native/level"
+	nlevel "github.com/echocat/slf4g/native/level"
 )
 
 var (
@@ -164,14 +165,14 @@ func (instance *Console) printFields(event log.Event, buf *bytes.Buffer, using l
 	loggerKey := using.GetFieldKeysSpec().GetLogger()
 	timestampKey := using.GetFieldKeysSpec().GetTimestamp()
 
-	err = fields.Sort(event.GetFields(), instance.FieldSorter).ForEach(func(k string, v interface{}) error {
+	err = fields.SortedForEach(event, instance.FieldSorter, func(k string, v interface{}) error {
 		if vl, ok := v.(fields.Lazy); ok {
 			v = vl.Get()
 		}
 		if v == nil {
 			return nil
 		}
-		if !instance.PrintGlobalLogger && k == loggerKey && v == log.RootLoggerName {
+		if !instance.PrintGlobalLogger && k == loggerKey && v == "ROOT" {
 			return nil
 		}
 		if k == messageKey || k == timestampKey {
@@ -261,8 +262,8 @@ func (instance *Console) printWithIdent(str string, firstLine, otherLines string
 	return nil
 }
 
-func (instance *Console) ensureLevelWidth(l log.Level, using log.Provider) string {
-	str := level.AsSerializable(&l, using.(level.NamesAware)).String()
+func (instance *Console) ensureLevelWidth(l level.Level, using log.Provider) string {
+	str := nlevel.AsSerializable(&l, using.(nlevel.NamesAware)).String()
 	width := instance.LevelWidth
 	l2r := true
 	if width < 0 {

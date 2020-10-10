@@ -16,7 +16,7 @@ type single struct {
 	value interface{}
 }
 
-func (instance *single) ForEach(consumer Consumer) error {
+func (instance *single) ForEach(consumer func(key string, value interface{}) error) error {
 	if instance == nil || consumer == nil {
 		return nil
 	}

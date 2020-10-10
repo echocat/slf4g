@@ -1,5 +1,7 @@
 package log
 
+import "github.com/echocat/slf4g/level"
+
 // CoreLogger defines the base functions of all Logger of the slf4g framework.
 //
 // This needs to be usually implemented by loggers that interfaces with the
@@ -12,10 +14,9 @@ type CoreLogger interface {
 
 	// IsLevelEnabled returns <true> if the given Level is enabled to be logged
 	// with this (Core)Logger.
-	IsLevelEnabled(Level) bool
+	IsLevelEnabled(level.Level) bool
 
-	// GetName returns the name of this (Core)Logger instance. If this is the
-	// root logger it will be RootLoggerName.
+	// GetName returns the name of this (Core)Logger instance.
 	GetName() string
 
 	// GetProvider will return the Provider where this (Core)Logger belongs to.

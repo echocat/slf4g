@@ -1,19 +1,18 @@
 package log
 
 import (
-	"github.com/echocat/slf4g/fields"
+	"github.com/echocat/slf4g/level"
 )
 
 type LoggingWriter struct {
 	CoreLogger
-	LogAs Level
+	LogAs level.Level
 }
 
 func (instance *LoggingWriter) Write(p []byte) (n int, err error) {
-	instance.Log(NewEvent(
-		instance.LogAs,
-		fields.With(GetProvider().GetFieldKeysSpec().GetMessage(), string(p)),
-		3,
-	))
+	provider := GetProvider()
+	instance.Log(NewEvent(provider, instance.LogAs, 3).
+		With(provider.GetFieldKeysSpec().GetMessage(), string(p)),
+	)
 	return len(p), nil
 }

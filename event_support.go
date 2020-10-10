@@ -12,7 +12,7 @@ func GetMessageOf(e Event, using Provider) *string {
 	if e == nil {
 		return nil
 	}
-	pv := e.GetFields().Get(using.GetFieldKeysSpec().GetMessage())
+	pv := e.Get(using.GetFieldKeysSpec().GetMessage())
 	if pv == nil {
 		return nil
 	}
@@ -38,7 +38,7 @@ func GetErrorOf(e Event, using Provider) error {
 	if e == nil {
 		return nil
 	}
-	pv := e.GetFields().Get(using.GetFieldKeysSpec().GetError())
+	pv := e.Get(using.GetFieldKeysSpec().GetError())
 	if lv, ok := pv.(fields.Lazy); ok {
 		pv = lv.Get()
 	}
@@ -62,7 +62,7 @@ func GetTimestampOf(e Event, using Provider) *time.Time {
 	if e == nil {
 		return nil
 	}
-	pv := e.GetFields().Get(using.GetFieldKeysSpec().GetTimestamp())
+	pv := e.Get(using.GetFieldKeysSpec().GetTimestamp())
 	if lv, ok := pv.(fields.Lazy); ok {
 		pv = lv.Get()
 	}
@@ -91,7 +91,7 @@ func GetLoggerOf(e Event, using Provider) *string {
 	if e == nil {
 		return nil
 	}
-	pv := e.GetFields().Get(using.GetFieldKeysSpec().GetLogger())
+	pv := e.Get(using.GetFieldKeysSpec().GetLogger())
 	if lv, ok := pv.(fields.Lazy); ok {
 		pv = lv.Get()
 	}

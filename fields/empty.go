@@ -9,7 +9,7 @@ type empty struct{}
 
 var emptyV = &empty{}
 
-func (instance *empty) ForEach(Consumer) error {
+func (instance *empty) ForEach(func(key string, value interface{}) error) error {
 	return nil
 }
 

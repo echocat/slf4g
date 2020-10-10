@@ -46,12 +46,12 @@ func (instance *Json) Format(event log.Event, using log.Provider, _ hints.Hints)
 	}
 
 	loggerKey := using.GetFieldKeysSpec().GetLogger()
-	if err := event.GetFields().ForEach(func(k string, v interface{}) error {
+	if err := event.ForEach(func(k string, v interface{}) error {
 		if vl, ok := v.(fields.Lazy); ok {
 			v = vl.Get()
 		}
 
-		if !instance.PrintGlobalLogger && k == loggerKey && v == log.RootLoggerName {
+		if !instance.PrintGlobalLogger && k == loggerKey && v == "ROOT" {
 			return nil
 		}
 		if _, err := to.Write([]byte(",")); err != nil {

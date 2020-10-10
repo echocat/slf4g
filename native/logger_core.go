@@ -3,13 +3,19 @@ package native
 import (
 	"time"
 
+	"github.com/echocat/slf4g/level"
+
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/native/consumer"
 	"github.com/echocat/slf4g/native/location"
 )
 
+const (
+	rootLoggerName = "ROOT"
+)
+
 type CoreLogger struct {
-	Level           *log.Level
+	Level           *level.Level
 	Consumer        consumer.Consumer
 	LocationFactory location.Factory
 
@@ -39,15 +45,15 @@ func (instance *CoreLogger) Log(event log.Event) {
 	instance.getConsumer().Consume(event, instance)
 }
 
-func (instance *CoreLogger) IsLevelEnabled(level log.Level) bool {
+func (instance *CoreLogger) IsLevelEnabled(level level.Level) bool {
 	return instance.GetLevel().CompareTo(level) <= 0
 }
 
-func (instance *CoreLogger) SetLevel(level log.Level) {
+func (instance *CoreLogger) SetLevel(level level.Level) {
 	instance.Level = &level
 }
 
-func (instance *CoreLogger) GetLevel() log.Level {
+func (instance *CoreLogger) GetLevel() level.Level {
 	if v := instance.Level; v != nil {
 		return *v
 	}

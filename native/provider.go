@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/echocat/slf4g/level"
+
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/native/consumer"
 	"github.com/echocat/slf4g/native/formatter"
 	"github.com/echocat/slf4g/native/interceptor"
-	"github.com/echocat/slf4g/native/level"
+	nlevel "github.com/echocat/slf4g/native/level"
 	"github.com/echocat/slf4g/native/location"
 )
 
@@ -17,12 +19,12 @@ var DefaultProvider = NewProvider("native")
 var _ = log.RegisterProvider(DefaultProvider)
 
 type Provider struct {
-	Cache log.LoggerProvider
+	Cache log.LoggerCache
 	Name  string
 
-	Level         log.Level
-	LevelNames    level.Names
-	LevelProvider log.LevelProvider
+	Level         level.Level
+	LevelNames    nlevel.Names
+	LevelProvider level.Provider
 
 	Formatter       formatter.Formatter
 	Interceptor     interceptor.Interceptor
@@ -35,15 +37,15 @@ func NewProvider(name string) *Provider {
 	result := &Provider{
 		Name: name,
 
-		Level:         log.LevelInfo,
-		LevelNames:    level.DefaultLevelNamesFacade,
-		LevelProvider: log.DefaultLevelProviderFacade,
+		Level:         level.Info,
+		LevelNames:    nlevel.DefaultLevelNamesFacade,
+		LevelProvider: level.GetProvider(),
 
 		Formatter:       formatter.DefaultFacade,
 		LocationFactory: location.DefaultFactoryFacade,
 		FieldsKeysSpec:  DefaultFieldsKeySpecFacade,
 	}
-	result.Cache = log.NewLoggerCache(result.factory)
+	result.Cache = log.NewLoggerCache(result.rootFactory, result.factory)
 	result.Consumer = consumer.NewWritingConsumer(result, os.Stderr)
 	return result
 }
@@ -52,8 +54,16 @@ func (instance *Provider) GetName() string {
 	return instance.Name
 }
 
+func (instance *Provider) GetRootLogger() log.Logger {
+	return instance.Cache.GetRootLogger()
+}
+
 func (instance *Provider) GetLogger(name string) log.Logger {
 	return instance.Cache.GetLogger(name)
+}
+
+func (instance *Provider) rootFactory() log.Logger {
+	return instance.factory(rootLoggerName)
 }
 
 func (instance *Provider) factory(name string) log.Logger {
@@ -64,11 +74,11 @@ func (instance *Provider) factory(name string) log.Logger {
 	return log.NewLogger(cl)
 }
 
-func (instance *Provider) SetLevel(level log.Level) {
+func (instance *Provider) SetLevel(level level.Level) {
 	instance.Level = level
 }
 
-func (instance *Provider) GetLevel() log.Level {
+func (instance *Provider) GetLevel() level.Level {
 	return instance.Level
 }
 
@@ -106,11 +116,11 @@ func (instance *Provider) SetFormatter(v formatter.Formatter) {
 	instance.Formatter = v
 }
 
-func (instance *Provider) GetAllLevels() log.Levels {
+func (instance *Provider) GetAllLevels() level.Levels {
 	if p := instance.LevelProvider; p != nil {
-		return p()
+		return p.GetLevels()
 	}
-	panic("no LevelProvider configured")
+	return level.GetProvider().GetLevels()
 }
 
 func (instance *Provider) GetLocationFactory() location.Factory {
@@ -132,6 +142,6 @@ func (instance *Provider) GetFieldKeysSpec() fields.KeysSpec {
 	return instance.FieldsKeysSpec
 }
 
-func (instance *Provider) GetLevelNames() level.Names {
+func (instance *Provider) GetLevelNames() nlevel.Names {
 	return instance.LevelNames
 }

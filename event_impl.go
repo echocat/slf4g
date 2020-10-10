@@ -1,28 +1,48 @@
 package log
 
-import "github.com/echocat/slf4g/fields"
+import (
+	"github.com/echocat/slf4g/fields"
+	level2 "github.com/echocat/slf4g/level"
+)
 
 type eventImpl struct {
-	Fields    fields.Fields
-	Level     Level
-	CallDepth int
-	Context   interface{}
+	provider  Provider
+	fields    fields.Fields
+	level     level2.Level
+	callDepth int
+	context   interface{}
 }
 
-func (instance *eventImpl) GetFields() fields.Fields {
-	return instance.Fields
+func (instance *eventImpl) ForEach(consumer func(key string, value interface{}) error) error {
+	if instance == nil {
+		return nil
+	}
+	if v := instance.fields; v != nil {
+		return v.ForEach(consumer)
+	}
+	return nil
 }
 
-func (instance *eventImpl) GetLevel() Level {
-	return instance.Level
+func (instance *eventImpl) Get(key string) interface{} {
+	if instance == nil {
+		return nil
+	}
+	if v := instance.fields; v != nil {
+		return v.Get(key)
+	}
+	return nil
+}
+
+func (instance *eventImpl) GetLevel() level2.Level {
+	return instance.level
 }
 
 func (instance *eventImpl) GetCallDepth() int {
-	return instance.CallDepth
+	return instance.callDepth
 }
 
 func (instance *eventImpl) GetContext() interface{} {
-	return instance.Context
+	return instance.context
 }
 
 func (instance *eventImpl) With(key string, value interface{}) Event {
@@ -34,6 +54,12 @@ func (instance *eventImpl) With(key string, value interface{}) Event {
 func (instance *eventImpl) Withf(key string, format string, args ...interface{}) Event {
 	return instance.with(func(s fields.Fields) fields.Fields {
 		return s.Withf(key, format, args...)
+	})
+}
+
+func (instance *eventImpl) WithError(err error) Event {
+	return instance.with(func(s fields.Fields) fields.Fields {
+		return s.With(instance.provider.GetFieldKeysSpec().GetError(), err)
 	})
 }
 
@@ -51,27 +77,30 @@ func (instance *eventImpl) Without(keys ...string) Event {
 
 func (instance *eventImpl) WithContext(ctx interface{}) Event {
 	return &eventImpl{
-		Fields:    instance.Fields,
-		Level:     instance.Level,
-		CallDepth: instance.CallDepth,
-		Context:   ctx,
+		provider:  instance.provider,
+		fields:    instance.fields,
+		level:     instance.level,
+		callDepth: instance.callDepth,
+		context:   ctx,
 	}
 }
 
 func (instance *eventImpl) WithCallDepth(add int) Event {
 	return &eventImpl{
-		Fields:    instance.Fields,
-		Level:     instance.Level,
-		CallDepth: instance.CallDepth + add,
-		Context:   instance.Context,
+		provider:  instance.provider,
+		fields:    instance.fields,
+		level:     instance.level,
+		callDepth: instance.callDepth + add,
+		context:   instance.context,
 	}
 }
 
 func (instance *eventImpl) with(mod func(fields.Fields) fields.Fields) Event {
 	return &eventImpl{
-		Fields:    mod(instance.Fields),
-		Level:     instance.Level,
-		CallDepth: instance.CallDepth,
-		Context:   instance.Context,
+		provider:  instance.provider,
+		fields:    mod(instance.fields),
+		level:     instance.level,
+		callDepth: instance.callDepth,
+		context:   instance.context,
 	}
 }

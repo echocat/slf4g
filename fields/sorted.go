@@ -28,6 +28,21 @@ func Sort(fields Fields, sorter KeySorter) Fields {
 	return &result
 }
 
+// SortedForEach is like Sort but calls the ForEach immediately.
+func SortedForEach(input ForEachEnabled, sorter KeySorter, consumer func(key string, value interface{}) error) error {
+	if sorter == nil || isEmpty(input) {
+		return nil
+	}
+	m := asMap(input)
+	keys := make([]string, len(m))
+	for _, key := range keys {
+		if err := consumer(key, m[key]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // KeySorter is used to sort all keys. See Sort() for more details.
 type KeySorter func(keys []string)
 
@@ -36,7 +51,7 @@ type sorted struct {
 	keys []string
 }
 
-func (instance *sorted) ForEach(consumer Consumer) error {
+func (instance *sorted) ForEach(consumer func(key string, value interface{}) error) error {
 	if instance == nil || consumer == nil {
 		return nil
 	}

@@ -3,6 +3,8 @@ package log
 import (
 	"fmt"
 
+	"github.com/echocat/slf4g/level"
+
 	"github.com/echocat/slf4g/fields"
 )
 
@@ -13,108 +15,108 @@ func GetLogger(name string) Logger {
 
 // GetLogger returns the ROOT logger from the global Provider.
 func GetRootLogger() Logger {
-	return rootLogger
+	return GetProvider().GetRootLogger()
 }
 
 // IsLevelEnabled checks if the given Level is enabled at the current root
 // Logger.
-func IsLevelEnabled(level Level) bool {
+func IsLevelEnabled(level level.Level) bool {
 	return GetRootLogger().IsLevelEnabled(level)
 }
 
-// Trace logs the provided arguments on LevelTrace at the current root Logger.
+// Trace logs the provided arguments on Trace at the current root Logger.
 func Trace(args ...interface{}) {
-	log(LevelTrace, args...)
+	log(level.Trace, args...)
 }
 
 // Tracef is like Trace but wraps the message itself in a fmt.Sprintf action.
 // By contract the actual format action will not be executed before the value
 // will be really consumed.
 func Tracef(format string, args ...interface{}) {
-	logf(LevelTrace, format, args...)
+	logf(level.Trace, format, args...)
 }
 
-// IsTraceEnabled checks if LevelTrace is enabled at the current root Logger.
+// IsTraceEnabled checks if Trace is enabled at the current root Logger.
 func IsTraceEnabled() bool {
-	return IsLevelEnabled(LevelTrace)
+	return IsLevelEnabled(level.Trace)
 }
 
-// Debug logs the provided arguments on LevelDebug at the current root Logger.
+// Debug logs the provided arguments on Debug at the current root Logger.
 func Debug(args ...interface{}) {
-	log(LevelDebug, args...)
+	log(level.Debug, args...)
 }
 
 // Debugf is like Debug but wraps the message itself in a fmt.Sprintf action.
 // By contract the actual format action will not be executed before the value
 // will be really consumed.
 func Debugf(format string, args ...interface{}) {
-	logf(LevelDebug, format, args...)
+	logf(level.Debug, format, args...)
 }
 
-// IsDebugEnabled checks if LevelDebug is enabled at the current root Logger.
+// IsDebugEnabled checks if Debug is enabled at the current root Logger.
 func IsDebugEnabled() bool {
-	return IsLevelEnabled(LevelDebug)
+	return IsLevelEnabled(level.Debug)
 }
 
-// Info logs the provided arguments on LevelInfo at the current root Logger.
+// Info logs the provided arguments on Info at the current root Logger.
 func Info(args ...interface{}) {
-	log(LevelInfo, args...)
+	log(level.Info, args...)
 }
 
 // Infof is like Info but wraps the message itself in a fmt.Sprintf action.
 // By contract the actual format action will not be executed before the value
 // will be really consumed.
 func Infof(format string, args ...interface{}) {
-	logf(LevelInfo, format, args...)
+	logf(level.Info, format, args...)
 }
 
-// IsInfoEnabled checks if LevelInfo is enabled at the current root Logger.
+// IsInfoEnabled checks if Info is enabled at the current root Logger.
 func IsInfoEnabled() bool {
-	return IsLevelEnabled(LevelInfo)
+	return IsLevelEnabled(level.Info)
 }
 
-// Warn logs the provided arguments on LevelWarn at the current root Logger.
+// Warn logs the provided arguments on Warn at the current root Logger.
 func Warn(args ...interface{}) {
-	log(LevelWarn, args...)
+	log(level.Warn, args...)
 }
 
 // Warnf is like Warn but wraps the message itself in a fmt.Sprintf action.
 // By contract the actual format action will not be executed before the value
 // will be really consumed.
 func Warnf(format string, args ...interface{}) {
-	logf(LevelWarn, format, args...)
+	logf(level.Warn, format, args...)
 }
 
-// IsWarnEnabled checks if LevelWarn is enabled at the current root Logger.
+// IsWarnEnabled checks if Warn is enabled at the current root Logger.
 func IsWarnEnabled() bool {
-	return IsLevelEnabled(LevelWarn)
+	return IsLevelEnabled(level.Warn)
 }
 
-// Error logs the provided arguments on LevelError at the current root Logger.
+// Error logs the provided arguments on Error at the current root Logger.
 func Error(args ...interface{}) {
-	log(LevelError, args...)
+	log(level.Error, args...)
 }
 
 // Errorf is like Error but wraps the message itself in a fmt.Sprintf action.
 // By contract the actual format action will not be executed before the value
 // will be really consumed.
 func Errorf(format string, args ...interface{}) {
-	logf(LevelError, format, args...)
+	logf(level.Error, format, args...)
 }
 
-// IsErrorEnabled checks if LevelError is enabled at the current root Logger.
+// IsErrorEnabled checks if Error is enabled at the current root Logger.
 func IsErrorEnabled() bool {
-	return IsLevelEnabled(LevelError)
+	return IsLevelEnabled(level.Error)
 }
 
-// Fatal logs the provided arguments on LevelFatal at the current root Logger.
+// Fatal logs the provided arguments on Fatal at the current root Logger.
 //
 // IMPORTANT! In contrast to many other log Golang frameworks this logging Fatal
 // with slf4g does not lead to an os.Exit() by default. By contract the
 // application can do that but it is doing that always GRACEFUL. All processes
 // should be always able to do shutdown operations if needed AND possible.
 func Fatal(args ...interface{}) {
-	log(LevelFatal, args...)
+	log(level.Fatal, args...)
 }
 
 // Fatalf is like Fatal but wraps the message itself in a fmt.Sprintf action.
@@ -126,12 +128,12 @@ func Fatal(args ...interface{}) {
 // application can do that but it is doing that always GRACEFUL. All processes
 // should be always able to do shutdown operations if needed AND possible.
 func Fatalf(format string, args ...interface{}) {
-	logf(LevelFatal, format, args...)
+	logf(level.Fatal, format, args...)
 }
 
-// IsFatalEnabled checks if LevelFatal is enabled at the current root Logger.
+// IsFatalEnabled checks if Fatal is enabled at the current root Logger.
 func IsFatalEnabled() bool {
-	return IsLevelEnabled(LevelFatal)
+	return IsLevelEnabled(level.Fatal)
 }
 
 // With returns a root Logger which will contain the provided field.
@@ -158,31 +160,33 @@ func WithAll(of map[string]interface{}) Logger {
 	return GetRootLogger().WithAll(of)
 }
 
-var rootLogger = GetLogger(RootLoggerName)
-
-func log(level Level, args ...interface{}) {
-	if !IsLevelEnabled(level) {
+func log(l level.Level, args ...interface{}) {
+	if !IsLevelEnabled(l) {
 		return
 	}
 
-	var f fields.Fields
+	p := GetProvider()
+	e := NewEvent(p, l, 2)
+
 	if len(args) == 1 {
-		f = fields.With(GetProvider().GetFieldKeysSpec().GetMessage(), args[0])
+		e = e.With(p.GetFieldKeysSpec().GetMessage(), args[0])
 	} else if len(args) > 1 {
-		f = fields.With(GetProvider().GetFieldKeysSpec().GetMessage(), fields.LazyFunc(func() interface{} {
+		e = e.With(p.GetFieldKeysSpec().GetMessage(), fields.LazyFunc(func() interface{} {
 			return fmt.Sprint(args...)
 		}))
 	}
 
-	GetRootLogger().Log(NewEvent(level, f, 2))
+	GetRootLogger().Log(e)
 }
 
-func logf(level Level, format string, args ...interface{}) {
-	if !IsLevelEnabled(level) {
+func logf(l level.Level, format string, args ...interface{}) {
+	if !IsLevelEnabled(l) {
 		return
 	}
 
-	f := fields.With(GetProvider().GetFieldKeysSpec().GetMessage(), fields.LazyFormat(format, args...))
+	p := GetProvider()
+	e := NewEvent(p, l, 2).
+		With(GetProvider().GetFieldKeysSpec().GetMessage(), fields.LazyFormat(format, args...))
 
-	GetRootLogger().Log(NewEvent(level, f, 2))
+	GetRootLogger().Log(e)
 }

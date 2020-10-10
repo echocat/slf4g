@@ -4,23 +4,29 @@ import (
 	"io"
 	"os"
 
+	"github.com/echocat/slf4g/level"
+
 	"github.com/echocat/slf4g/fields"
 )
 
 type fallbackProvider struct {
-	cache LoggerProvider
-	level Level
+	cache LoggerCache
+	level level.Level
 	out   io.Writer
 }
 
-var simpleProviderV = func() *fallbackProvider {
+var fallbackProviderV = func() *fallbackProvider {
 	result := &fallbackProvider{
-		level: LevelInfo,
+		level: level.Info,
 		out:   os.Stderr,
 	}
-	result.cache = NewLoggerCache(result.factory)
+	result.cache = NewLoggerCache(result.rootFactory, result.factory)
 	return result
 }()
+
+func (instance *fallbackProvider) rootFactory() Logger {
+	return instance.factory(fallbackRootLoggerName)
+}
 
 func (instance *fallbackProvider) factory(name string) Logger {
 	cl := &fallbackCoreLogger{
@@ -34,12 +40,16 @@ func (instance *fallbackProvider) GetName() string {
 	return "fallback"
 }
 
+func (instance *fallbackProvider) GetRootLogger() Logger {
+	return instance.cache.GetRootLogger()
+}
+
 func (instance *fallbackProvider) GetLogger(name string) Logger {
 	return instance.cache.GetLogger(name)
 }
 
-func (instance *fallbackProvider) GetAllLevels() Levels {
-	return DefaultLevelProvider()
+func (instance *fallbackProvider) GetAllLevels() level.Levels {
+	return level.GetProvider().GetLevels()
 }
 
 func (instance *fallbackProvider) GetFieldKeysSpec() fields.KeysSpec {

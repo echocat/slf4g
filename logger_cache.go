@@ -4,27 +4,32 @@ import (
 	"sync"
 )
 
-func NewLoggerCache(factory LoggerFactory) LoggerProvider {
+type LoggerCache interface {
+	GetLogger(name string) Logger
+	GetRootLogger() Logger
+}
+
+func NewLoggerCache(rootFactory func() Logger, factory func(name string) Logger) LoggerCache {
 	return &loggerCache{
 		factory: factory,
-		root:    factory(RootLoggerName),
+		root:    rootFactory(),
 		loggers: make(map[string]Logger),
 	}
 }
 
 type loggerCache struct {
-	factory LoggerFactory
+	factory func(name string) Logger
 
 	root    Logger
 	loggers map[string]Logger
 	mutex   sync.RWMutex
 }
 
-func (instance *loggerCache) GetLogger(name string) Logger {
-	if name == RootLoggerName {
-		return instance.root
-	}
+func (instance *loggerCache) GetRootLogger() Logger {
+	return instance.root
+}
 
+func (instance *loggerCache) GetLogger(name string) Logger {
 	instance.mutex.RLock()
 	rLocked := true
 	defer func() {

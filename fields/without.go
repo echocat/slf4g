@@ -26,7 +26,7 @@ type withoutKeys map[string]struct{}
 
 var withoutPresent = struct{}{}
 
-func (instance *without) ForEach(consumer Consumer) error {
+func (instance *without) ForEach(consumer func(key string, value interface{}) error) error {
 	if instance == nil || consumer == nil {
 		return nil
 	}

@@ -1,4 +1,4 @@
-package log
+package level
 
 import (
 	"fmt"
@@ -59,8 +59,8 @@ func exactOneProvider() Provider {
 		return p
 	}
 
-	// Everything failed, using the fallbackProvider now...
-	return fallbackProviderV
+	// Everything failed, using a simple Provider now...
+	return defaultProviderV
 }
 
 // SetProvider forces the given Provider as the actual one which will be
@@ -129,13 +129,14 @@ func GetAllProviders() []Provider {
 	knownProvidersMutex.RLock()
 	defer knownProvidersMutex.RUnlock()
 
-	result := make([]Provider, len(knownProviders))
+	result := make([]Provider, len(knownProviders)+1)
 
 	var i int
 	for _, p := range knownProviders {
 		result[i] = p
 		i++
 	}
+	result[i] = defaultProviderV
 
 	return result
 }

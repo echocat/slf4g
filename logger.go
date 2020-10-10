@@ -106,10 +106,6 @@ type Logger interface {
 	Without(keys ...string) Logger
 }
 
-type LoggerProvider interface {
-	GetLogger(name string) Logger
-}
-
 func NewLogger(cl CoreLogger) Logger {
 	return NewLoggerFacade(func() CoreLogger { return cl })
 }
@@ -120,10 +116,3 @@ func NewLoggerFacade(provider func() CoreLogger) Logger {
 		fields:       fields.Empty(),
 	}
 }
-
-type LoggerFactory func(name string) Logger
-
-// RootLoggerName represents the logger which is the root of all other loggers
-// and/or the logger which is used if no name was specified. For example all
-// package log methods (like Info(), Warn(), ...) are using the root logger.
-const RootLoggerName = "ROOT"
