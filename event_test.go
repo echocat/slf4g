@@ -1,6 +1,7 @@
 package log
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/echocat/slf4g/fields"
@@ -11,7 +12,7 @@ import (
 )
 
 func Test_NewEvent_withoutFields(t *testing.T) {
-	givenProvider := &testProvider{"test"}
+	givenProvider := &testProvider{name: "test"}
 	givenLevel := level.Error
 	givenCallDepth := 66
 
@@ -25,8 +26,8 @@ func Test_NewEvent_withoutFields(t *testing.T) {
 	assert.ToBeNil(t, actual.GetContext())
 }
 
-func Test_NewEvent_witOneFields(t *testing.T) {
-	givenProvider := &testProvider{"test"}
+func Test_NewEvent_withOneFields(t *testing.T) {
+	givenProvider := &testProvider{name: "test"}
 	givenLevel := level.Error
 	givenCallDepth := 66
 
@@ -42,8 +43,8 @@ func Test_NewEvent_witOneFields(t *testing.T) {
 	assert.ToBeNil(t, actual.GetContext())
 }
 
-func Test_NewEvent_wit3Fields(t *testing.T) {
-	givenProvider := &testProvider{"test"}
+func Test_NewEvent_with3Fields(t *testing.T) {
+	givenProvider := &testProvider{name: "test"}
 	givenLevel := level.Error
 	givenCallDepth := 66
 
@@ -57,10 +58,22 @@ func Test_NewEvent_wit3Fields(t *testing.T) {
 	assert.ToBeSame(t, givenProvider, actual.(*eventImpl).provider)
 	assert.ToBeEqual(t, givenLevel, actual.GetLevel())
 	assert.ToBeEqual(t, givenCallDepth, actual.GetCallDepth())
-	equal, equalErr := fields.IsEqual(fields.With("a", 3).With("b", 2).With("c", 3), actual.(*eventImpl).fields)
-	assert.ToBeNil(t, equalErr)
-	assert.ToBeEqual(t, true, equal)
+	assert.ToBeEqualUsing(t, fields.With("a", 3).With("b", 2).With("c", 3), actual.(*eventImpl).fields, fields.IsEqual)
 	assert.ToBeNil(t, actual.GetContext())
+}
+
+func Test_NewEvent_withErrorInFieldsPanics(t *testing.T) {
+	givenProvider := &testProvider{name: "test"}
+	givenLevel := level.Error
+	givenCallDepth := 66
+	givenError := errors.New("expected")
+
+	givenFields1 := fields.With("a", 1)
+	givenFields2 := &fieldsThatErrors{fields.With("a", 2), givenError}
+
+	assert.Execution(t, func() {
+		NewEvent(givenProvider, givenLevel, givenCallDepth, givenFields1, givenFields2)
+	}).WillPanicWith("expected")
 }
 
 //type testEvent struct {
@@ -117,3 +130,30 @@ func Test_NewEvent_wit3Fields(t *testing.T) {
 //func (instance *testEvent) WithContext(interface{}) Event {
 //	panic("not implemented in tests")
 //}
+
+type fieldsThatErrors struct {
+	fields.Fields
+	err error
+}
+
+func (instance *fieldsThatErrors) ForEach(func(key string, value interface{}) error) error {
+	return instance.err
+}
+
+type entries []entry
+
+func (instance *entries) add(key string, value interface{}) {
+	*instance = append(*instance, entry{key, value})
+}
+
+func (instance *entries) consumer() func(key string, value interface{}) error {
+	return func(key string, value interface{}) error {
+		instance.add(key, value)
+		return nil
+	}
+}
+
+type entry struct {
+	key   string
+	value interface{}
+}

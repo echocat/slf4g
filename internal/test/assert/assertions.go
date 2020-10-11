@@ -24,7 +24,27 @@ func ToBeEqual(t testing.TB, expected, actual interface{}) {
 func ToBeNotEqual(t testing.TB, expected, actual interface{}) {
 	t.Helper()
 	if isEqual(expected, actual) {
-		Failf(t, "Expected to be no equal to: <%+v>; but got: <%+v>", expected, actual)
+		Failf(t, "Expected to be not equal to: <%+v>; but got: <%+v>", expected, actual)
+	}
+}
+
+func ToBeEqualUsing(t testing.TB, expected, actual interface{}, comparator interface{}) {
+	t.Helper()
+	isEqual, err := callComparator(expected, actual, comparator)
+	if err != nil {
+		Failf(t, "Expected to be no error; but got: <%+v>", err)
+	} else if !isEqual {
+		Failf(t, "Expected to be equal to: <%+v>; but got: <%+v>", expected, actual)
+	}
+}
+
+func ToBeNotEqualUsing(t testing.TB, expected, actual interface{}, comparator interface{}) {
+	t.Helper()
+	isEqual, err := callComparator(expected, actual, comparator)
+	if err != nil {
+		Failf(t, "Expected to be no error; but got: <%+v>", err)
+	} else if !isEqual {
+		Failf(t, "Expected to be not equal to: <%+v>; but got: <%+v>", expected, actual)
 	}
 }
 
@@ -124,4 +144,35 @@ func (instance *ExecutionT) WillPanicWithRegexp(pattern *regexp.Regexp) {
 		}
 	}()
 	instance.what()
+}
+
+func callComparator(expected, actual interface{}, comparator interface{}) (equal bool, err error) {
+	if comparator == nil {
+		panic("comparator of kind func expected; but got: <nil>")
+	}
+	cv := reflect.ValueOf(comparator)
+	if cv.Kind() != reflect.Func {
+		panic(fmt.Sprintf("comparator of kind func expected; but got: <%+v>", comparator))
+	}
+	ct := cv.Type()
+	if ct.NumIn() != 2 ||
+		ct.NumOut() != 2 ||
+		ct.Out(0) != reflect.TypeOf(true) ||
+		ct.Out(1) != reflect.TypeOf((*error)(nil)).Elem() {
+		panic(fmt.Sprintf("comparator of signature <func(interface{}, interface{}) (bool, error)>; but got: <%+v>", ct))
+	}
+	if ct.In(0) != ct.In(1) {
+		panic(fmt.Sprintf("comparator of signature with same expected and actual type expected; but got: <%+v>", ct))
+	}
+	result := cv.Call([]reflect.Value{
+		reflect.ValueOf(expected),
+		reflect.ValueOf(actual),
+	})
+	if v, ok := result[0].Interface().(bool); ok {
+		equal = v
+	}
+	if v, ok := result[1].Interface().(error); ok {
+		err = v
+	}
+	return
 }

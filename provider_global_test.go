@@ -184,7 +184,7 @@ func getCurrentProvider() Provider {
 }
 
 func newProvider(name string) *testProvider {
-	return &testProvider{name}
+	return &testProvider{name: name}
 }
 
 func newOtherProvider(name string) Provider {

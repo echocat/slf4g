@@ -14,33 +14,15 @@ type eventImpl struct {
 }
 
 func (instance *eventImpl) ForEach(consumer func(key string, value interface{}) error) error {
-	if instance == nil {
-		return nil
-	}
-	if v := instance.fields; v != nil {
-		return v.ForEach(consumer)
-	}
-	return nil
+	return instance.fields.ForEach(consumer)
 }
 
 func (instance *eventImpl) Get(key string) (interface{}, bool) {
-	if instance == nil {
-		return nil, false
-	}
-	if v := instance.fields; v != nil {
-		return v.Get(key)
-	}
-	return nil, false
+	return instance.fields.Get(key)
 }
 
 func (instance *eventImpl) Len() int {
-	if instance == nil {
-		return 0
-	}
-	if v := instance.fields; v != nil {
-		return v.Len()
-	}
-	return 0
+	return instance.fields.Len()
 }
 
 func (instance *eventImpl) GetLevel() level.Level {
