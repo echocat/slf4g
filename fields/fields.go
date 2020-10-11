@@ -22,8 +22,11 @@ type Fields interface {
 	ForEach(consumer func(key string, value interface{}) error) error
 
 	// Get will return for the given key the corresponding value if exists.
-	// Otherwise it will return nil.
-	Get(key string) interface{}
+	// The value itself can be nil but it cal still exist.
+	Get(key string) (value interface{}, exists bool)
+
+	// Len returns the len of this Fields instance.
+	Len() int
 
 	// With returns an variant of this Fields with the given key
 	// value pair contained inside. If the given key already exists in the

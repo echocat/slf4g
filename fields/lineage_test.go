@@ -134,31 +134,44 @@ func Test_lineage_ForEach_withNilConsumer(t *testing.T) {
 func Test_lineage_Get(t *testing.T) {
 	instance := &lineage{With("foo", 1), With("bar", 2)}
 
-	assert.ToBeEqual(t, 1, instance.Get("foo"))
-	assert.ToBeEqual(t, 2, instance.Get("bar"))
-	assert.ToBeEqual(t, nil, instance.Get("xyz"))
+	actual1, actual1Exists := instance.Get("foo")
+	assert.ToBeEqual(t, 1, actual1)
+	assert.ToBeEqual(t, true, actual1Exists)
+
+	actual2, actual2Exists := instance.Get("bar")
+	assert.ToBeEqual(t, 2, actual2)
+	assert.ToBeEqual(t, true, actual2Exists)
+
+	actual3, actual3Exists := instance.Get("xyz")
+	assert.ToBeEqual(t, nil, actual3)
+	assert.ToBeEqual(t, false, actual3Exists)
 }
 
 //goland:noinspection GoNilness
 func Test_lineage_Get_withNilInstance(t *testing.T) {
 	var instance *lineage
 
-	assert.ToBeEqual(t, nil, instance.Get("foo"))
-	assert.ToBeEqual(t, nil, instance.Get("bar"))
+	actual1, actual1Exists := instance.Get("foo")
+	assert.ToBeEqual(t, nil, actual1)
+	assert.ToBeEqual(t, false, actual1Exists)
+
+	actual2, actual2Exists := instance.Get("bar")
+	assert.ToBeEqual(t, nil, actual2)
+	assert.ToBeEqual(t, false, actual2Exists)
 }
 
 func Test_lineage_With(t *testing.T) {
 	instance := &lineage{With("foo", 1), With("bar", 2)}
 
 	actual := instance.With("xyz", 3)
-	assert.ToBeEqual(t, mapped{"foo": 1, "bar": 2, "xyz": 3}, asMap(actual))
+	assert.ToBeEqual(t, mapped{"foo": 1, "bar": 2, "xyz": 3}, mustAsMap(actual))
 }
 
 func Test_lineage_With_overwrites(t *testing.T) {
 	instance := &lineage{With("foo", 1), With("bar", 2)}
 
 	actual := instance.With("foo", 2)
-	assert.ToBeEqual(t, mapped{"foo": 2, "bar": 2}, asMap(actual))
+	assert.ToBeEqual(t, mapped{"foo": 2, "bar": 2}, mustAsMap(actual))
 }
 
 //goland:noinspection GoNilness
@@ -166,21 +179,21 @@ func Test_lineage_With_withNilInstance(t *testing.T) {
 	var instance *lineage
 
 	actual := instance.With("bar", 2)
-	assert.ToBeEqual(t, mapped{"bar": 2}, asMap(actual))
+	assert.ToBeEqual(t, mapped{"bar": 2}, mustAsMap(actual))
 }
 
 func Test_lineage_Withf(t *testing.T) {
 	instance := &lineage{With("foo", 1), With("bar", 2)}
 
 	actual := instance.Withf("xyz", "hello %d", 3)
-	assert.ToBeEqual(t, mapped{"foo": 1, "bar": 2, "xyz": LazyFormat("hello %d", 3)}, asMap(actual))
+	assert.ToBeEqual(t, mapped{"foo": 1, "bar": 2, "xyz": LazyFormat("hello %d", 3)}, mustAsMap(actual))
 }
 
 func Test_lineage_Withf_overwrites(t *testing.T) {
 	instance := &lineage{With("foo", 1), With("bar", 2)}
 
 	actual := instance.Withf("foo", "hello %d", 2)
-	assert.ToBeEqual(t, mapped{"foo": LazyFormat("hello %d", 2), "bar": 2}, asMap(actual))
+	assert.ToBeEqual(t, mapped{"foo": LazyFormat("hello %d", 2), "bar": 2}, mustAsMap(actual))
 }
 
 //goland:noinspection GoNilness
@@ -188,14 +201,14 @@ func Test_lineage_Withf_withNilInstance(t *testing.T) {
 	var instance *lineage
 
 	actual := instance.Withf("bar", "hello %d", 2)
-	assert.ToBeEqual(t, mapped{"bar": LazyFormat("hello %d", 2)}, asMap(actual))
+	assert.ToBeEqual(t, mapped{"bar": LazyFormat("hello %d", 2)}, mustAsMap(actual))
 }
 
 func Test_lineage_WithAll(t *testing.T) {
 	instance := &lineage{With("foo", 1), With("bar", 2)}
 
 	actual := instance.WithAll(map[string]interface{}{"bar": 66, "xyz": 3})
-	assert.ToBeEqual(t, mapped{"foo": 1, "bar": 66, "xyz": 3}, asMap(actual))
+	assert.ToBeEqual(t, mapped{"foo": 1, "bar": 66, "xyz": 3}, mustAsMap(actual))
 }
 
 //goland:noinspection GoNilness
@@ -203,16 +216,16 @@ func Test_lineage_WithAll_withNilInstance(t *testing.T) {
 	var instance *lineage
 
 	actual := instance.WithAll(map[string]interface{}{"bar": 66, "xyz": 3})
-	assert.ToBeEqual(t, mapped{"bar": 66, "xyz": 3}, asMap(actual))
+	assert.ToBeEqual(t, mapped{"bar": 66, "xyz": 3}, mustAsMap(actual))
 }
 
 func Test_lineage_Without(t *testing.T) {
 	instance := &lineage{With("foo", 1), With("bar", 2)}
 
 	actual1 := instance.Without("bar", "notExisting")
-	assert.ToBeEqual(t, mapped{"foo": 1}, asMap(actual1))
+	assert.ToBeEqual(t, mapped{"foo": 1}, mustAsMap(actual1))
 	actual2 := actual1.Without("foo", "notExisting")
-	assert.ToBeEqual(t, mapped{}, asMap(actual2))
+	assert.ToBeEqual(t, mapped{}, mustAsMap(actual2))
 }
 
 //goland:noinspection GoNilness
@@ -220,5 +233,46 @@ func Test_lineage_Without_withNilInstance(t *testing.T) {
 	var instance *lineage
 
 	actual := instance.Without("bar", "foo")
-	assert.ToBeEqual(t, mapped{}, asMap(actual))
+	assert.ToBeEqual(t, mapped{}, mustAsMap(actual))
+}
+
+func Test_lineage_Len(t *testing.T) {
+	instance := &lineage{With("a", 1).With("b", 2), With("a", 1).With("c", 3)}
+
+	actual := instance.Len()
+
+	assert.ToBeEqual(t, 3, actual)
+}
+
+func Test_lineage_Len_withNilTarget(t *testing.T) {
+	instance := &lineage{nil, With("a", 1)}
+
+	actual := instance.Len()
+
+	assert.ToBeEqual(t, 1, actual)
+}
+
+func Test_lineage_Len_withNilParent(t *testing.T) {
+	instance := &lineage{With("a", 1), nil}
+
+	actual := instance.Len()
+
+	assert.ToBeEqual(t, 1, actual)
+}
+
+func Test_lineage_Len_withNilTargetAndParent(t *testing.T) {
+	instance := &lineage{nil, nil}
+
+	actual := instance.Len()
+
+	assert.ToBeEqual(t, 0, actual)
+}
+
+//goland:noinspection GoNilness
+func Test_lineage_Len_withNilInstance(t *testing.T) {
+	var instance *lineage
+
+	actual := instance.Len()
+
+	assert.ToBeEqual(t, 0, actual)
 }

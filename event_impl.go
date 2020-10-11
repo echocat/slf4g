@@ -2,13 +2,13 @@ package log
 
 import (
 	"github.com/echocat/slf4g/fields"
-	level2 "github.com/echocat/slf4g/level"
+	"github.com/echocat/slf4g/level"
 )
 
 type eventImpl struct {
 	provider  Provider
 	fields    fields.Fields
-	level     level2.Level
+	level     level.Level
 	callDepth int
 	context   interface{}
 }
@@ -23,17 +23,27 @@ func (instance *eventImpl) ForEach(consumer func(key string, value interface{}) 
 	return nil
 }
 
-func (instance *eventImpl) Get(key string) interface{} {
+func (instance *eventImpl) Get(key string) (interface{}, bool) {
 	if instance == nil {
-		return nil
+		return nil, false
 	}
 	if v := instance.fields; v != nil {
 		return v.Get(key)
 	}
-	return nil
+	return nil, false
 }
 
-func (instance *eventImpl) GetLevel() level2.Level {
+func (instance *eventImpl) Len() int {
+	if instance == nil {
+		return 0
+	}
+	if v := instance.fields; v != nil {
+		return v.Len()
+	}
+	return 0
+}
+
+func (instance *eventImpl) GetLevel() level.Level {
 	return instance.level
 }
 

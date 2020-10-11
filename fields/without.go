@@ -10,21 +10,19 @@ func newWithout(fields Fields, keys ...string) Fields {
 	result := &without{
 		fields: fields,
 	}
-	result.excludedKeys = make(withoutKeys, len(keys))
+	result.excludedKeys = make(keySet, len(keys))
 	for _, key := range keys {
-		result.excludedKeys[key] = withoutPresent
+		result.excludedKeys[key] = keyPresent
 	}
 	return result
 }
 
 type without struct {
 	fields       Fields
-	excludedKeys withoutKeys
+	excludedKeys keySet
 }
 
-type withoutKeys map[string]struct{}
-
-var withoutPresent = struct{}{}
+var keyPresent = struct{}{}
 
 func (instance *without) ForEach(consumer func(key string, value interface{}) error) error {
 	if instance == nil || consumer == nil {
@@ -47,18 +45,18 @@ func (instance *without) ForEach(consumer func(key string, value interface{}) er
 	return f.ForEach(filteringConsumer)
 }
 
-func (instance *without) Get(key string) interface{} {
+func (instance *without) Get(key string) (interface{}, bool) {
 	if instance == nil {
-		return nil
+		return nil, false
 	}
 	f := instance.fields
 	if f == nil {
-		return nil
+		return nil, false
 	}
 
 	excludedKeys := instance.excludedKeys
 	if _, ok := excludedKeys[key]; ok {
-		return nil
+		return nil, false
 	}
 
 	return f.Get(key)
@@ -82,4 +80,29 @@ func (instance *without) Without(keys ...string) Fields {
 
 func (instance *without) asParentOf(fields Fields) Fields {
 	return newLineage(fields, instance)
+}
+
+func (instance *without) Len() (result int) {
+	if instance == nil {
+		return
+	}
+
+	f := instance.fields
+	if f == nil {
+		return
+	}
+	result = f.Len()
+
+	ek := instance.excludedKeys
+	if ek == nil {
+		return
+	}
+
+	for k := range instance.excludedKeys {
+		if _, exists := f.Get(k); exists {
+			result--
+		}
+	}
+
+	return
 }

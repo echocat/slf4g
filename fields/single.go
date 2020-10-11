@@ -23,11 +23,11 @@ func (instance *single) ForEach(consumer func(key string, value interface{}) err
 	return consumer(instance.key, instance.value)
 }
 
-func (instance *single) Get(key string) interface{} {
+func (instance *single) Get(key string) (interface{}, bool) {
 	if instance != nil && key == instance.key {
-		return instance.value
+		return instance.value, true
 	}
-	return nil
+	return nil, false
 }
 
 func (instance *single) With(key string, value interface{}) Fields {
@@ -48,4 +48,11 @@ func (instance *single) asParentOf(fields Fields) Fields {
 
 func (instance *single) Without(keys ...string) Fields {
 	return newWithout(instance, keys...)
+}
+
+func (instance *single) Len() (result int) {
+	if instance == nil {
+		return 0
+	}
+	return 1
 }

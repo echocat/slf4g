@@ -1,15 +1,29 @@
 package fields
 
+// ForEachEnabled defines a type that handles iterates over all its
+// key value pairs and providing it to the the given consumer.
 type ForEachEnabled interface {
-	ForEach(func(key string, value interface{}) error) error
+	ForEach(consumer func(key string, value interface{}) error) error
 }
 
-func asMap(f ForEachEnabled) mapped {
+// ForEachFunc is a utility type to wrapping simple functions into
+// ForEachEnabled.
+type ForEachFunc func(consumer func(key string, value interface{}) error) error
+
+func (instance ForEachFunc) ForEach(consumer func(key string, value interface{}) error) error {
+	return instance(consumer)
+}
+
+func asMap(f ForEachEnabled) (mapped, error) {
+	if f == nil {
+		return mapped{}, nil
+	}
+
 	switch v := f.(type) {
 	case mapped:
-		return v
+		return v, nil
 	case *mapped:
-		return *v
+		return *v, nil
 	}
 
 	result := mapped{}
@@ -17,10 +31,18 @@ func asMap(f ForEachEnabled) mapped {
 		result[key] = value
 		return nil
 	}); err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return result
+	return result, nil
+}
+
+func mustAsMap(f ForEachEnabled) mapped {
+	if m, err := asMap(f); err != nil {
+		panic(err)
+	} else {
+		return m
+	}
 }
 
 func isEmpty(given ForEachEnabled) bool {
@@ -35,3 +57,5 @@ func isEmpty(given ForEachEnabled) bool {
 	}
 	return false
 }
+
+type keySet map[string]struct{}

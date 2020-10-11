@@ -13,8 +13,8 @@ func (instance *empty) ForEach(func(key string, value interface{}) error) error 
 	return nil
 }
 
-func (instance *empty) Get(string) interface{} {
-	return nil
+func (instance *empty) Get(string) (interface{}, bool) {
+	return nil, false
 }
 
 func (instance *empty) With(key string, value interface{}) Fields {
@@ -31,4 +31,8 @@ func (instance *empty) WithAll(of map[string]interface{}) Fields {
 
 func (instance *empty) Without(...string) Fields {
 	return instance
+}
+
+func (instance *empty) Len() int {
+	return 0
 }

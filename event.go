@@ -53,7 +53,11 @@ type Event interface {
 
 	// Get will return for the given key the corresponding value if exists.
 	// Otherwise it will return nil.
-	Get(key string) interface{}
+	Get(key string) (value interface{}, exists bool)
+
+	// Len returns the len of all key value pairs contained in this event which
+	// can be received by using ForEach() or Get().
+	Len() int
 
 	// With returns an variant of this Event with the given key
 	// value pair contained inside. If the given key already exists in the

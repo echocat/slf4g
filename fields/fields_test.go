@@ -16,7 +16,7 @@ func ExampleFields_forEach() {
 }
 
 func ExampleFields_get() {
-	v := someFields.Get("foo")
+	v, _ := someFields.Get("foo")
 
 	fmt.Printf("foo=%+v\n", v)
 }

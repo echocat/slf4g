@@ -2,16 +2,14 @@ package log
 
 // UnwrapLogger unwraps a wrapped Logger inside of another Logger. For example
 // by NewLoggerFacade.
-func UnwrapLogger(in Logger) Logger {
-	type unwrapper interface {
+func UnwrapLogger(in CoreLogger) Logger {
+	if u, ok := in.(interface {
 		Unwrap() Logger
-	}
-	type coreUnwrapper interface {
-		Unwrap() CoreLogger
-	}
-	if u, ok := in.(unwrapper); ok {
+	}); ok {
 		return u.Unwrap()
-	} else if u, ok := in.(coreUnwrapper); ok {
+	} else if u, ok := in.(interface {
+		Unwrap() CoreLogger
+	}); ok {
 		if c := u.Unwrap(); c != nil {
 			return NewLogger(c)
 		}
@@ -22,16 +20,14 @@ func UnwrapLogger(in Logger) Logger {
 // UnwrapCoreLogger unwraps a wrapped CoreLogger inside of another CoreLogger.
 // For example by NewLoggerFacade.
 func UnwrapCoreLogger(in CoreLogger) CoreLogger {
-	type unwrapper interface {
+	if u, ok := in.(interface {
 		Unwrap() Logger
-	}
-	type coreUnwrapper interface {
-		Unwrap() CoreLogger
-	}
-	if u, ok := in.(unwrapper); ok {
+	}); ok {
 		return u.Unwrap()
 	}
-	if u, ok := in.(coreUnwrapper); ok {
+	if u, ok := in.(interface {
+		Unwrap() CoreLogger
+	}); ok {
 		return u.Unwrap()
 	}
 	return nil
@@ -40,10 +36,9 @@ func UnwrapCoreLogger(in CoreLogger) CoreLogger {
 // UnwrapProvider unwraps a wrapped Provider inside of another Provider. For
 // example by NewProviderFacade.
 func UnwrapProvider(in Provider) Provider {
-	type unwrapper interface {
+	if u, ok := in.(interface {
 		Unwrap() Provider
-	}
-	if u, ok := in.(unwrapper); ok {
+	}); ok {
 		return u.Unwrap()
 	}
 	return nil

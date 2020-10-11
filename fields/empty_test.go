@@ -33,8 +33,13 @@ func Test_empty_ForEach_isNeverConsumingSomething(t *testing.T) {
 func Test_empty_Get_isAlwaysNil(t *testing.T) {
 	instance := Empty()
 
-	assert.ToBeNil(t, instance.Get("foo"))
-	assert.ToBeNil(t, instance.Get("bar"))
+	actual1, actual1Exists := instance.Get("foo")
+	assert.ToBeNil(t, actual1)
+	assert.ToBeEqual(t, false, actual1Exists)
+
+	actual2, actual2Exists := instance.Get("foo")
+	assert.ToBeNil(t, actual2)
+	assert.ToBeEqual(t, false, actual2Exists)
 }
 
 func Test_empty_With_isAlwaysWithResult(t *testing.T) {
@@ -71,4 +76,12 @@ func Test_empty_Without_isAlwaysSameEmptyInstance(t *testing.T) {
 	actual := instance.Without("a", "b")
 
 	assert.ToBeSame(t, instance, actual)
+}
+
+func Test_empty_Len(t *testing.T) {
+	instance := Empty()
+
+	actual := instance.Len()
+
+	assert.ToBeEqual(t, 0, actual)
 }

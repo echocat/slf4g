@@ -26,11 +26,12 @@ func (instance mapped) ForEach(consumer func(key string, value interface{}) erro
 	return nil
 }
 
-func (instance mapped) Get(key string) interface{} {
+func (instance mapped) Get(key string) (interface{}, bool) {
 	if instance == nil {
-		return nil
+		return nil, false
 	}
-	return instance[key]
+	v, exists := instance[key]
+	return v, exists
 }
 
 func (instance mapped) With(key string, value interface{}) Fields {
@@ -51,4 +52,11 @@ func (instance mapped) Without(keys ...string) Fields {
 
 func (instance mapped) asParentOf(fields Fields) Fields {
 	return newLineage(fields, instance)
+}
+
+func (instance mapped) Len() (result int) {
+	if instance == nil {
+		return
+	}
+	return len(instance)
 }

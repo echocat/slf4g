@@ -184,20 +184,11 @@ func getCurrentProvider() Provider {
 }
 
 func newProvider(name string) *testProvider {
-	return &testProvider{fallbackProviderV, name}
+	return &testProvider{name}
 }
 
 func newOtherProvider(name string) Provider {
 	return &otherProvider{newProvider(name)}
-}
-
-type testProvider struct {
-	*fallbackProvider
-	name string
-}
-
-func (instance *testProvider) GetName() string {
-	return instance.name
 }
 
 type otherProvider struct {

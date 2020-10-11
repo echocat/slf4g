@@ -43,21 +43,21 @@ func (instance *lineage) ForEach(consumer func(key string, value interface{}) er
 	return nil
 }
 
-func (instance *lineage) Get(key string) interface{} {
+func (instance *lineage) Get(key string) (interface{}, bool) {
 	if instance == nil {
-		return nil
+		return nil, false
 	}
 	if f := instance.target; f != nil {
-		if v := f.Get(key); v != nil {
-			return v
+		if v, exists := f.Get(key); exists {
+			return v, true
 		}
 	}
 	if f := instance.parent; f != nil {
-		if v := f.Get(key); v != nil {
-			return v
+		if v, exists := f.Get(key); exists {
+			return v, true
 		}
 	}
-	return nil
+	return nil, false
 }
 
 func (instance *lineage) With(key string, value interface{}) Fields {
@@ -78,4 +78,24 @@ func (instance *lineage) asParentOf(fields Fields) Fields {
 
 func (instance *lineage) Without(keys ...string) Fields {
 	return newWithout(instance, keys...)
+}
+
+func (instance *lineage) Len() int {
+	if instance == nil {
+		return 0
+	}
+	consumedKeys := keySet{}
+	if f := instance.target; f != nil {
+		_ = f.ForEach(func(key string, value interface{}) error {
+			consumedKeys[key] = keyPresent
+			return nil
+		})
+	}
+	if f := instance.parent; f != nil {
+		_ = f.ForEach(func(key string, value interface{}) error {
+			consumedKeys[key] = keyPresent
+			return nil
+		})
+	}
+	return len(consumedKeys)
 }
