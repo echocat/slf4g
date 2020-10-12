@@ -4,37 +4,37 @@ import (
 	"github.com/echocat/slf4g/level"
 )
 
-type testCoreLogger struct {
+type mockCoreLogger struct {
 	name     string
 	provider Provider
 }
 
-func (instance *testCoreLogger) Log(Event) {
+func (instance *mockCoreLogger) Log(Event) {
 	panic("not implemented in tests")
 }
 
-func (instance *testCoreLogger) IsLevelEnabled(level.Level) bool {
+func (instance *mockCoreLogger) IsLevelEnabled(level.Level) bool {
 	panic("not implemented in tests")
 }
 
-func (instance *testCoreLogger) GetName() string {
+func (instance *mockCoreLogger) GetName() string {
 	if v := instance.name; v != "" {
 		return v
 	}
 	panic("not implemented in tests")
 }
 
-func (instance *testCoreLogger) GetProvider() Provider {
+func (instance *mockCoreLogger) GetProvider() Provider {
 	if v := instance.provider; v != nil {
 		return v
 	}
 	panic("not implemented in tests")
 }
 
-type wrappingCoreTestLogger struct {
+type wrappingMockCoreLogger struct {
 	CoreLogger
 }
 
-func (instance *wrappingCoreTestLogger) Unwrap() CoreLogger {
+func (instance *wrappingMockCoreLogger) Unwrap() CoreLogger {
 	return instance.CoreLogger
 }

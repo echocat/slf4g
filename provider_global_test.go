@@ -31,7 +31,7 @@ func Test_getProvider_returnsDefaultIfNoOtherIsRegistered(t *testing.T) {
 
 func Test_getProvider_returnsRegistered(t *testing.T) {
 	defer resetGlobal()
-	instance := newProvider("instance")
+	instance := newMockProvider("instance")
 	RegisterProvider(instance)
 
 	// Nothing cached
@@ -46,7 +46,7 @@ func Test_getProvider_returnsRegistered(t *testing.T) {
 
 func Test_getProvider_returnsCachedRegistered(t *testing.T) {
 	defer resetGlobal()
-	instance := newProvider("instance")
+	instance := newMockProvider("instance")
 
 	// Nothing cached
 	assert.ToBeNil(t, getCurrentProvider())
@@ -63,8 +63,8 @@ func Test_getProvider_returnsCachedRegistered(t *testing.T) {
 
 func Test_getProvider_failsIfMoreThenOneAreRegistered(t *testing.T) {
 	defer resetGlobal()
-	RegisterProvider(newProvider("instance1"))
-	RegisterProvider(newProvider("instance2"))
+	RegisterProvider(newMockProvider("instance1"))
+	RegisterProvider(newMockProvider("instance2"))
 
 	// Nothing cached
 	assert.ToBeNil(t, getCurrentProvider())
@@ -76,8 +76,8 @@ func Test_getProvider_failsIfMoreThenOneAreRegistered(t *testing.T) {
 
 func Test_RegisterProvider_registersOne(t *testing.T) {
 	defer resetGlobal()
-	instanceA := newProvider("instanceA")
-	instanceB := newProvider("instanceB")
+	instanceA := newMockProvider("instanceA")
+	instanceB := newMockProvider("instanceB")
 
 	assert.ToBeEqual(t, map[string]Provider{}, knownProviders)
 	assert.ToBeNil(t, getCurrentProvider())
@@ -102,8 +102,8 @@ func Test_RegisterProvider_failsOnNil(t *testing.T) {
 
 func Test_RegisterProvider_failsOnDoubleRegistration(t *testing.T) {
 	defer resetGlobal()
-	instance1 := newProvider("instance")
-	instance2 := newProvider("instance")
+	instance1 := newMockProvider("instance")
+	instance2 := newMockProvider("instance")
 
 	assert.ToBeEqual(t, map[string]Provider{}, knownProviders)
 	assert.ToBeNil(t, getCurrentProvider())
@@ -120,7 +120,7 @@ func Test_RegisterProvider_failsOnDoubleRegistration(t *testing.T) {
 
 func Test_RegisterProvider_ignoresDoubleRegistrationOfSameInstance(t *testing.T) {
 	defer resetGlobal()
-	instance := newProvider("instance")
+	instance := newMockProvider("instance")
 
 	assert.ToBeEqual(t, map[string]Provider{}, knownProviders)
 	assert.ToBeNil(t, getCurrentProvider())
@@ -138,8 +138,8 @@ func Test_RegisterProvider_ignoresDoubleRegistrationOfSameInstance(t *testing.T)
 
 func Test_UnregisterProvider(t *testing.T) {
 	defer resetGlobal()
-	instanceA := newProvider("instanceA")
-	instanceB := newOtherProvider("instanceB")
+	instanceA := newMockProvider("instanceA")
+	instanceB := newOtherMockProvider("instanceB")
 	RegisterProvider(instanceA)
 	RegisterProvider(instanceB)
 	SetProvider(instanceA)
@@ -163,7 +163,7 @@ func Test_GetAllProviders_nonRegistered(t *testing.T) {
 
 func Test_GetAllProviders_afterOneRegistered(t *testing.T) {
 	defer resetGlobal()
-	instance1 := newProvider("instance")
+	instance1 := newMockProvider("instance")
 	RegisterProvider(instance1)
 
 	assert.ToBeEqual(t, []Provider{instance1}, GetAllProviders())
@@ -183,14 +183,22 @@ func getCurrentProvider() Provider {
 	return nil
 }
 
-func newProvider(name string) *testProvider {
-	return &testProvider{name: name}
+func newMockProvider(name string) *mockProvider {
+	return &mockProvider{
+		name: name,
+		fieldKeysSpec: &testFieldKeysSpec{
+			timestamp: "aTimestamp",
+			message:   "aMessage",
+			error:     "anError",
+			logger:    "aLogger",
+		},
+	}
 }
 
-func newOtherProvider(name string) Provider {
-	return &otherProvider{newProvider(name)}
+func newOtherMockProvider(name string) Provider {
+	return &otherMockProvider{newMockProvider(name)}
 }
 
-type otherProvider struct {
-	*testProvider
+type otherMockProvider struct {
+	*mockProvider
 }

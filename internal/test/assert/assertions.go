@@ -64,12 +64,16 @@ func ToBeNoError(t testing.TB, actual error) {
 
 func ToBeNil(t testing.TB, actual interface{}) {
 	t.Helper()
-	ToBeEqual(t, nil, actual)
+	if !isNil(actual) {
+		Failf(t, "Expected to be nil; but got: <%+v>", actual)
+	}
 }
 
 func ToBeNotNil(t testing.TB, actual interface{}) {
 	t.Helper()
-	ToBeNotEqual(t, nil, actual)
+	if isNil(actual) {
+		Failf(t, "Expected to be not nil; but got: <%+v>", actual)
+	}
 }
 
 func Execution(t testing.TB, f func()) *ExecutionT {
@@ -175,4 +179,35 @@ func callComparator(expected, actual interface{}, comparator interface{}) (equal
 		err = v
 	}
 	return
+}
+
+func isNil(object interface{}) bool {
+	if object == nil {
+		return true
+	}
+
+	value := reflect.ValueOf(object)
+	kind := value.Kind()
+	isNilableKind := containsKind(
+		[]reflect.Kind{
+			reflect.Chan, reflect.Func,
+			reflect.Interface, reflect.Map,
+			reflect.Ptr, reflect.Slice},
+		kind)
+
+	if isNilableKind && value.IsNil() {
+		return true
+	}
+
+	return false
+}
+
+func containsKind(kinds []reflect.Kind, kind reflect.Kind) bool {
+	for i := 0; i < len(kinds); i++ {
+		if kind == kinds[i] {
+			return true
+		}
+	}
+
+	return false
 }

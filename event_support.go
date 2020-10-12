@@ -3,8 +3,6 @@ package log
 import (
 	"fmt"
 	"time"
-
-	"github.com/echocat/slf4g/fields"
 )
 
 // GetMessageOf returns for the given Event the contained message (if exists).
@@ -13,13 +11,14 @@ func GetMessageOf(e Event, using Provider) *string {
 		return nil
 	}
 	pv, _ := e.Get(using.GetFieldKeysSpec().GetMessage())
-	if pv == nil {
-		return nil
-	}
-	if lv, ok := pv.(fields.Lazy); ok {
+	if lv, ok := pv.(interface {
+		Get() interface{}
+	}); ok {
 		pv = lv.Get()
 	}
 	switch v := pv.(type) {
+	case nil:
+		return nil
 	case string:
 		return &v
 	case *string:
@@ -39,10 +38,14 @@ func GetErrorOf(e Event, using Provider) error {
 		return nil
 	}
 	pv, _ := e.Get(using.GetFieldKeysSpec().GetError())
-	if lv, ok := pv.(fields.Lazy); ok {
+	if lv, ok := pv.(interface {
+		Get() interface{}
+	}); ok {
 		pv = lv.Get()
 	}
 	switch v := pv.(type) {
+	case nil:
+		return nil
 	case error:
 		return v
 	case string:
@@ -63,7 +66,9 @@ func GetTimestampOf(e Event, using Provider) *time.Time {
 		return nil
 	}
 	pv, _ := e.Get(using.GetFieldKeysSpec().GetTimestamp())
-	if lv, ok := pv.(fields.Lazy); ok {
+	if lv, ok := pv.(interface {
+		Get() interface{}
+	}); ok {
 		pv = lv.Get()
 	}
 	switch v := pv.(type) {
@@ -85,26 +90,32 @@ func GetTimestampOf(e Event, using Provider) *time.Time {
 // GetLoggerOf returns for the given Event the contained logger (name)
 // (if exists).
 func GetLoggerOf(e Event, using Provider) *string {
-	type getName interface {
-		GetName() string
-	}
 	if e == nil {
 		return nil
 	}
 	pv, _ := e.Get(using.GetFieldKeysSpec().GetLogger())
-	if lv, ok := pv.(fields.Lazy); ok {
+	if lv, ok := pv.(interface {
+		Get() interface{}
+	}); ok {
 		pv = lv.Get()
 	}
-	if pv == nil {
-		return nil
-	}
 	switch v := pv.(type) {
+	case nil:
+		return nil
 	case string:
 		return &v
 	case *string:
 		return v
-	case getName:
+	case Logger:
 		result := v.GetName()
+		return &result
+	case interface {
+		GetName() string
+	}:
+		result := v.GetName()
+		return &result
+	case fmt.Stringer:
+		result := v.String()
 		return &result
 	default:
 		result := fmt.Sprint(pv)

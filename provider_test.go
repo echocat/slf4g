@@ -5,31 +5,31 @@ import (
 	"github.com/echocat/slf4g/level"
 )
 
-type testProvider struct {
+type mockProvider struct {
 	name          string
 	fieldKeysSpec fields.KeysSpec
 }
 
-func (instance *testProvider) GetName() string {
+func (instance *mockProvider) GetName() string {
 	if v := instance.name; v != "" {
 		return v
 	}
 	panic("not implemented in tests")
 }
 
-func (instance *testProvider) GetRootLogger() Logger {
+func (instance *mockProvider) GetRootLogger() Logger {
 	panic("not implemented in tests")
 }
 
-func (instance *testProvider) GetLogger(string) Logger {
+func (instance *mockProvider) GetLogger(string) Logger {
 	panic("not implemented in tests")
 }
 
-func (instance *testProvider) GetAllLevels() level.Levels {
+func (instance *mockProvider) GetAllLevels() level.Levels {
 	panic("not implemented in tests")
 }
 
-func (instance *testProvider) GetFieldKeysSpec() fields.KeysSpec {
+func (instance *mockProvider) GetFieldKeysSpec() fields.KeysSpec {
 	if v := instance.fieldKeysSpec; v != nil {
 		return v
 	}

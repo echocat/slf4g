@@ -23,7 +23,11 @@ jobs:
 
       - name: Test slf4g
         run: |
-          go test -v -covermode atomic "-coverprofile=profile.cov" ./...
+          go test -v -covermode atomic "-coverprofile=profile.cov.tmp1" ./...
+
+          cat profile.cov.tmp1 | grep -v "echocat/slf4g/internal/test/" > profile.cov.tmp2
+          cat profile.cov.tmp2 | grep -v "echocat/slf4g/internal/demo/" > profile.cov.tmp3
+          cp profile.cov.tmp3 profile.cov
 
       - name: Send coverage slf4g
         uses: shogo82148/actions-goveralls@v1

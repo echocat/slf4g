@@ -4,114 +4,114 @@ import (
 	"github.com/echocat/slf4g/level"
 )
 
-type testLogger struct {
-	testCoreLogger
+type mockLogger struct {
+	mockCoreLogger
 }
 
-func (instance *testLogger) Log(Event) {
+func (instance *mockLogger) Log(Event) {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) IsLevelEnabled(level.Level) bool {
+func (instance *mockLogger) IsLevelEnabled(level.Level) bool {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) Trace(...interface{}) {
+func (instance *mockLogger) Trace(...interface{}) {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) Tracef(string, ...interface{}) {
+func (instance *mockLogger) Tracef(string, ...interface{}) {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) IsTraceEnabled() bool {
+func (instance *mockLogger) IsTraceEnabled() bool {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) Debug(...interface{}) {
+func (instance *mockLogger) Debug(...interface{}) {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) Debugf(string, ...interface{}) {
+func (instance *mockLogger) Debugf(string, ...interface{}) {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) IsDebugEnabled() bool {
+func (instance *mockLogger) IsDebugEnabled() bool {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) Info(...interface{}) {
+func (instance *mockLogger) Info(...interface{}) {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) Infof(string, ...interface{}) {
+func (instance *mockLogger) Infof(string, ...interface{}) {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) IsInfoEnabled() bool {
+func (instance *mockLogger) IsInfoEnabled() bool {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) Warn(...interface{}) {
+func (instance *mockLogger) Warn(...interface{}) {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) Warnf(string, ...interface{}) {
+func (instance *mockLogger) Warnf(string, ...interface{}) {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) IsWarnEnabled() bool {
+func (instance *mockLogger) IsWarnEnabled() bool {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) Error(...interface{}) {
+func (instance *mockLogger) Error(...interface{}) {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) Errorf(string, ...interface{}) {
+func (instance *mockLogger) Errorf(string, ...interface{}) {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) IsErrorEnabled() bool {
+func (instance *mockLogger) IsErrorEnabled() bool {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) Fatal(...interface{}) {
+func (instance *mockLogger) Fatal(...interface{}) {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) Fatalf(string, ...interface{}) {
+func (instance *mockLogger) Fatalf(string, ...interface{}) {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) IsFatalEnabled() bool {
+func (instance *mockLogger) IsFatalEnabled() bool {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) With(string, interface{}) Logger {
+func (instance *mockLogger) With(string, interface{}) Logger {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) Withf(string, string, ...interface{}) Logger {
+func (instance *mockLogger) Withf(string, string, ...interface{}) Logger {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) WithError(error) Logger {
+func (instance *mockLogger) WithError(error) Logger {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) WithAll(map[string]interface{}) Logger {
+func (instance *mockLogger) WithAll(map[string]interface{}) Logger {
 	panic("not implemented in tests")
 }
 
-func (instance *testLogger) Without(...string) Logger {
+func (instance *mockLogger) Without(...string) Logger {
 	panic("not implemented in tests")
 }
 
-type wrappingTestLogger struct {
+type wrappingMockLogger struct {
 	Logger
 }
 
-func (instance *wrappingTestLogger) Unwrap() Logger {
+func (instance *wrappingMockLogger) Unwrap() Logger {
 	return instance.Logger
 }

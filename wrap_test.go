@@ -13,7 +13,7 @@ func Test_UnwrapCoreLogger_withNil(t *testing.T) {
 }
 
 func Test_UnwrapCoreLogger_withoutUnwrapMethod(t *testing.T) {
-	given := &testCoreLogger{}
+	given := &mockCoreLogger{}
 
 	actual := UnwrapCoreLogger(given)
 
@@ -21,8 +21,8 @@ func Test_UnwrapCoreLogger_withoutUnwrapMethod(t *testing.T) {
 }
 
 func Test_UnwrapCoreLogger_withCoreUnwrapMethod(t *testing.T) {
-	wrapped := &testCoreLogger{}
-	given := &wrappingCoreTestLogger{wrapped}
+	wrapped := &mockCoreLogger{}
+	given := &wrappingMockCoreLogger{wrapped}
 
 	actual := UnwrapCoreLogger(given)
 
@@ -30,8 +30,8 @@ func Test_UnwrapCoreLogger_withCoreUnwrapMethod(t *testing.T) {
 }
 
 func Test_UnwrapCoreLogger_withUnwrapMethod(t *testing.T) {
-	wrapped := &testLogger{}
-	given := &wrappingTestLogger{wrapped}
+	wrapped := &mockLogger{}
+	given := &wrappingMockLogger{wrapped}
 
 	actual := UnwrapCoreLogger(given)
 
@@ -45,7 +45,7 @@ func Test_UnwrapLogger_withNil(t *testing.T) {
 }
 
 func Test_UnwrapLogger_withoutUnwrapMethod(t *testing.T) {
-	given := &testLogger{}
+	given := &mockLogger{}
 
 	actual := UnwrapLogger(given)
 
@@ -53,8 +53,8 @@ func Test_UnwrapLogger_withoutUnwrapMethod(t *testing.T) {
 }
 
 func Test_UnwrapLogger_withCoreUnwrapMethod(t *testing.T) {
-	wrapped := &testLogger{}
-	given := &wrappingCoreTestLogger{wrapped}
+	wrapped := &mockLogger{}
+	given := &wrappingMockCoreLogger{wrapped}
 
 	actual := UnwrapLogger(given)
 
@@ -63,8 +63,8 @@ func Test_UnwrapLogger_withCoreUnwrapMethod(t *testing.T) {
 }
 
 func Test_UnwrapLogger_withUnwrapMethod(t *testing.T) {
-	wrapped := &testLogger{}
-	given := &wrappingTestLogger{wrapped}
+	wrapped := &mockLogger{}
+	given := &wrappingMockLogger{wrapped}
 
 	actual := UnwrapLogger(given)
 
@@ -78,7 +78,7 @@ func Test_UnwrapProvider_withNil(t *testing.T) {
 }
 
 func Test_UnwrapProvider_withoutUnwrapMethod(t *testing.T) {
-	given := &testProvider{}
+	given := &mockProvider{}
 
 	actual := UnwrapProvider(given)
 
@@ -86,7 +86,7 @@ func Test_UnwrapProvider_withoutUnwrapMethod(t *testing.T) {
 }
 
 func Test_UnwrapProvider_withUnwrapMethod(t *testing.T) {
-	wrapped := &testProvider{}
+	wrapped := &mockProvider{}
 	given := &wrappingTestProvider{wrapped}
 
 	actual := UnwrapProvider(given)

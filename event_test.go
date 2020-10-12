@@ -12,7 +12,7 @@ import (
 )
 
 func Test_NewEvent_withoutFields(t *testing.T) {
-	givenProvider := &testProvider{name: "test"}
+	givenProvider := &mockProvider{name: "test"}
 	givenLevel := level.Error
 	givenCallDepth := 66
 
@@ -27,7 +27,7 @@ func Test_NewEvent_withoutFields(t *testing.T) {
 }
 
 func Test_NewEvent_withOneFields(t *testing.T) {
-	givenProvider := &testProvider{name: "test"}
+	givenProvider := &mockProvider{name: "test"}
 	givenLevel := level.Error
 	givenCallDepth := 66
 
@@ -44,7 +44,7 @@ func Test_NewEvent_withOneFields(t *testing.T) {
 }
 
 func Test_NewEvent_with3Fields(t *testing.T) {
-	givenProvider := &testProvider{name: "test"}
+	givenProvider := &mockProvider{name: "test"}
 	givenLevel := level.Error
 	givenCallDepth := 66
 
@@ -63,7 +63,7 @@ func Test_NewEvent_with3Fields(t *testing.T) {
 }
 
 func Test_NewEvent_withErrorInFieldsPanics(t *testing.T) {
-	givenProvider := &testProvider{name: "test"}
+	givenProvider := &mockProvider{name: "test"}
 	givenLevel := level.Error
 	givenCallDepth := 66
 	givenError := errors.New("expected")
@@ -75,61 +75,6 @@ func Test_NewEvent_withErrorInFieldsPanics(t *testing.T) {
 		NewEvent(givenProvider, givenLevel, givenCallDepth, givenFields1, givenFields2)
 	}).WillPanicWith("expected")
 }
-
-//type testEvent struct {
-//}
-//
-//func (instance *testEvent) GetLevel() level.Level {
-//	panic("not implemented in tests")
-//}
-//
-//func (instance *testEvent) GetCallDepth() int {
-//	panic("not implemented in tests")
-//}
-//
-//func (instance *testEvent) GetContext() interface{} {
-//	panic("not implemented in tests")
-//}
-//
-//func (instance *testEvent) ForEach(func(key string, value interface{}) error) error {
-//	panic("not implemented in tests")
-//}
-//
-//func (instance *testEvent) Get(string) (interface{}, bool) {
-//	panic("not implemented in tests")
-//}
-//
-//func (instance *testEvent) Len() int {
-//	panic("not implemented in tests")
-//}
-//
-//func (instance *testEvent) With(string, interface{}) Event {
-//	panic("not implemented in tests")
-//}
-//
-//func (instance *testEvent) Withf(string, string, ...interface{}) Event {
-//	panic("not implemented in tests")
-//}
-//
-//func (instance *testEvent) WithError(error) Event {
-//	panic("not implemented in tests")
-//}
-//
-//func (instance *testEvent) WithAll(map[string]interface{}) Event {
-//	panic("not implemented in tests")
-//}
-//
-//func (instance *testEvent) Without(...string) Event {
-//	panic("not implemented in tests")
-//}
-//
-//func (instance *testEvent) WithCallDepth(int) Event {
-//	panic("not implemented in tests")
-//}
-//
-//func (instance *testEvent) WithContext(interface{}) Event {
-//	panic("not implemented in tests")
-//}
 
 type fieldsThatErrors struct {
 	fields.Fields
