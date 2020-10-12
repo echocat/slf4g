@@ -14,6 +14,13 @@ func ToBeSame(t testing.TB, expected, actual interface{}) {
 	}
 }
 
+func ToBeNotSame(t testing.TB, expected, actual interface{}) {
+	t.Helper()
+	if isSame(expected, actual) {
+		Failf(t, "Expected to be not same as: <%+v>; but got: <%+v>", expected, actual)
+	}
+}
+
 func ToBeEqual(t testing.TB, expected, actual interface{}) {
 	t.Helper()
 	if !isEqual(expected, actual) {

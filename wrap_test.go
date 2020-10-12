@@ -13,7 +13,7 @@ func Test_UnwrapCoreLogger_withNil(t *testing.T) {
 }
 
 func Test_UnwrapCoreLogger_withoutUnwrapMethod(t *testing.T) {
-	given := &mockCoreLogger{}
+	given := newMockCoreLogger("foo")
 
 	actual := UnwrapCoreLogger(given)
 
@@ -21,8 +21,8 @@ func Test_UnwrapCoreLogger_withoutUnwrapMethod(t *testing.T) {
 }
 
 func Test_UnwrapCoreLogger_withCoreUnwrapMethod(t *testing.T) {
-	wrapped := &mockCoreLogger{}
-	given := &wrappingMockCoreLogger{wrapped}
+	wrapped := newMockCoreLogger("foo")
+	given := newWrappingCoreLogger(wrapped)
 
 	actual := UnwrapCoreLogger(given)
 
@@ -30,8 +30,8 @@ func Test_UnwrapCoreLogger_withCoreUnwrapMethod(t *testing.T) {
 }
 
 func Test_UnwrapCoreLogger_withUnwrapMethod(t *testing.T) {
-	wrapped := &mockLogger{}
-	given := &wrappingMockLogger{wrapped}
+	wrapped := newMockLogger("foo")
+	given := newWrappingCoreLogger(wrapped)
 
 	actual := UnwrapCoreLogger(given)
 
@@ -45,7 +45,7 @@ func Test_UnwrapLogger_withNil(t *testing.T) {
 }
 
 func Test_UnwrapLogger_withoutUnwrapMethod(t *testing.T) {
-	given := &mockLogger{}
+	given := newMockLogger("foo")
 
 	actual := UnwrapLogger(given)
 
@@ -53,8 +53,8 @@ func Test_UnwrapLogger_withoutUnwrapMethod(t *testing.T) {
 }
 
 func Test_UnwrapLogger_withCoreUnwrapMethod(t *testing.T) {
-	wrapped := &mockLogger{}
-	given := &wrappingMockCoreLogger{wrapped}
+	wrapped := newMockLogger("foo")
+	given := &wrappingCoreLogger{wrapped}
 
 	actual := UnwrapLogger(given)
 
@@ -63,8 +63,8 @@ func Test_UnwrapLogger_withCoreUnwrapMethod(t *testing.T) {
 }
 
 func Test_UnwrapLogger_withUnwrapMethod(t *testing.T) {
-	wrapped := &mockLogger{}
-	given := &wrappingMockLogger{wrapped}
+	wrapped := newMockLogger("foo")
+	given := newWrappingLogger(wrapped)
 
 	actual := UnwrapLogger(given)
 

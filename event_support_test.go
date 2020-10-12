@@ -252,7 +252,7 @@ func Test_GetLoggerOf_withNilValue(t *testing.T) {
 }
 
 func Test_GetLoggerOf_withLoggerValue(t *testing.T) {
-	givenLogger := &mockLogger{mockCoreLogger{name: "foo"}}
+	givenLogger := newMockLogger("foo")
 	givenProvider := newMockProvider("test")
 	givenEvent := NewEvent(givenProvider, level.Info, 0).
 		With(givenProvider.fieldKeysSpec.GetLogger(), givenLogger)

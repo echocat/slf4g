@@ -4,8 +4,14 @@ import (
 	"github.com/echocat/slf4g/level"
 )
 
+func newMockLogger(name string) *mockLogger {
+	return &mockLogger{
+		mockCoreLogger: newMockCoreLogger(name),
+	}
+}
+
 type mockLogger struct {
-	mockCoreLogger
+	*mockCoreLogger
 }
 
 func (instance *mockLogger) Log(Event) {
@@ -108,10 +114,14 @@ func (instance *mockLogger) Without(...string) Logger {
 	panic("not implemented in tests")
 }
 
-type wrappingMockLogger struct {
+func newWrappingLogger(in Logger) *wrappingLogger {
+	return &wrappingLogger{in}
+}
+
+type wrappingLogger struct {
 	Logger
 }
 
-func (instance *wrappingMockLogger) Unwrap() Logger {
+func (instance *wrappingLogger) Unwrap() Logger {
 	return instance.Logger
 }

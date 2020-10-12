@@ -4,6 +4,10 @@ import (
 	"github.com/echocat/slf4g/level"
 )
 
+func newMockCoreLogger(name string) *mockCoreLogger {
+	return &mockCoreLogger{name: name}
+}
+
 type mockCoreLogger struct {
 	name     string
 	provider Provider
@@ -31,10 +35,14 @@ func (instance *mockCoreLogger) GetProvider() Provider {
 	panic("not implemented in tests")
 }
 
-type wrappingMockCoreLogger struct {
+func newWrappingCoreLogger(in CoreLogger) *wrappingCoreLogger {
+	return &wrappingCoreLogger{in}
+}
+
+type wrappingCoreLogger struct {
 	CoreLogger
 }
 
-func (instance *wrappingMockCoreLogger) Unwrap() CoreLogger {
+func (instance *wrappingCoreLogger) Unwrap() CoreLogger {
 	return instance.CoreLogger
 }

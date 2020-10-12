@@ -10,9 +10,13 @@ type LoggerCache interface {
 }
 
 func NewLoggerCache(rootFactory func() Logger, factory func(name string) Logger) LoggerCache {
+	root := rootFactory()
+	if root == nil {
+		panic("Root factory returned a nil root logger.")
+	}
 	return &loggerCache{
 		factory: factory,
-		root:    rootFactory(),
+		root:    root,
 		loggers: make(map[string]Logger),
 	}
 }
