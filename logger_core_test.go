@@ -22,6 +22,10 @@ func (instance *mockCoreLogger) initLoggedEvents() {
 	instance.loggedEvents = new([]Event)
 }
 
+func (instance *mockCoreLogger) loggedEvent(i int) Event {
+	return (*instance.loggedEvents)[i]
+}
+
 func (instance *mockCoreLogger) Log(e Event) {
 	if v := instance.loggedEvents; v != nil {
 		*v = append(*v, e)

@@ -22,7 +22,7 @@ func (instance *mockLogger) getProvider() *mockProvider {
 }
 
 func (instance *mockLogger) getFieldKeysSpec() fields.KeysSpec {
-	return getProvider().GetFieldKeysSpec()
+	return instance.GetProvider().GetFieldKeysSpec()
 }
 
 func (instance *mockLogger) initLoggedEvents() {

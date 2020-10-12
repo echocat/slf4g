@@ -1,8 +1,6 @@
 package log
 
 import (
-	"fmt"
-
 	"github.com/echocat/slf4g/level"
 
 	"github.com/echocat/slf4g/fields"
@@ -37,24 +35,30 @@ func (instance *loggerImpl) GetProvider() Provider {
 }
 
 func (instance *loggerImpl) log(level level.Level, args ...interface{}) {
-	e := NewEvent(instance.GetProvider(), level, 2, instance.fields)
+	if !instance.IsLevelEnabled(level) {
+		return
+	}
+	provider := instance.GetProvider()
+	e := NewEvent(provider, level, 2, instance.fields)
 
 	if len(args) == 1 {
-		e = e.With(instance.GetProvider().GetFieldKeysSpec().GetMessage(), args[0])
+		e = e.With(provider.GetFieldKeysSpec().GetMessage(), args[0])
 	} else if len(args) > 1 {
-		e = e.With(instance.GetProvider().GetFieldKeysSpec().GetMessage(), fields.LazyFunc(func() interface{} {
-			return fmt.Sprint(args...)
-		}))
+		e = e.With(provider.GetFieldKeysSpec().GetMessage(), args)
 	}
 
-	instance.Log(e)
+	instance.Unwrap().Log(e)
 }
 
 func (instance *loggerImpl) logf(level level.Level, format string, args ...interface{}) {
-	e := NewEvent(instance.GetProvider(), level, 2, instance.fields).
-		Withf(instance.GetProvider().GetFieldKeysSpec().GetMessage(), format, args...)
+	if !instance.IsLevelEnabled(level) {
+		return
+	}
+	provider := instance.GetProvider()
+	e := NewEvent(provider, level, 2, instance.fields).
+		Withf(provider.GetFieldKeysSpec().GetMessage(), format, args...)
 
-	instance.Log(e)
+	instance.Unwrap().Log(e)
 }
 
 func (instance *loggerImpl) Trace(args ...interface{}) {
@@ -130,15 +134,9 @@ func (instance *loggerImpl) IsFatalEnabled() bool {
 }
 
 func (instance *loggerImpl) With(name string, value interface{}) Logger {
-	targetFields := instance.fields
-	if targetFields != nil {
-		targetFields = targetFields.With(name, value)
-	} else {
-		targetFields = fields.With(name, value)
-	}
 	return &loggerImpl{
 		coreProvider: instance.coreProvider,
-		fields:       targetFields,
+		fields:       instance.fields.With(name, value),
 	}
 }
 
@@ -151,27 +149,15 @@ func (instance *loggerImpl) WithError(err error) Logger {
 }
 
 func (instance *loggerImpl) WithAll(of map[string]interface{}) Logger {
-	targetFields := instance.fields
-	if targetFields != nil {
-		targetFields = targetFields.WithAll(of)
-	} else {
-		targetFields = fields.WithAll(of)
-	}
 	return &loggerImpl{
 		coreProvider: instance.coreProvider,
-		fields:       targetFields,
+		fields:       instance.fields.WithAll(of),
 	}
 }
 
 func (instance *loggerImpl) Without(keys ...string) Logger {
-	targetFields := instance.fields
-	if targetFields != nil {
-		targetFields = targetFields.Without(keys...)
-	} else {
-		targetFields = fields.Empty()
-	}
 	return &loggerImpl{
 		coreProvider: instance.coreProvider,
-		fields:       targetFields,
+		fields:       instance.fields.Without(keys...),
 	}
 }
