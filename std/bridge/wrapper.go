@@ -14,8 +14,8 @@ func Configure() {
 
 func ConfigureWith(target log.CoreLogger, logAs level.Level) {
 	w := &log.LoggingWriter{
-		CoreLogger: target,
-		LogAs:      logAs,
+		Logger:         target,
+		LevelExtractor: level.FixedLevelExtractor(logAs),
 	}
 	stdlog.SetOutput(w)
 	stdlog.SetPrefix("")
@@ -24,7 +24,7 @@ func ConfigureWith(target log.CoreLogger, logAs level.Level) {
 
 func NewWrapper(target log.CoreLogger, logAs level.Level) *stdlog.Logger {
 	return stdlog.New(&log.LoggingWriter{
-		CoreLogger: target,
-		LogAs:      logAs,
+		Logger:         target,
+		LevelExtractor: level.FixedLevelExtractor(logAs),
 	}, "", 0)
 }
