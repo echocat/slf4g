@@ -78,7 +78,7 @@ func Test_UnwrapProvider_withNil(t *testing.T) {
 }
 
 func Test_UnwrapProvider_withoutUnwrapMethod(t *testing.T) {
-	given := &mockProvider{}
+	given := newMockProvider("test")
 
 	actual := UnwrapProvider(given)
 
@@ -86,8 +86,8 @@ func Test_UnwrapProvider_withoutUnwrapMethod(t *testing.T) {
 }
 
 func Test_UnwrapProvider_withUnwrapMethod(t *testing.T) {
-	wrapped := &mockProvider{}
-	given := &wrappingTestProvider{wrapped}
+	wrapped := newMockProvider("test")
+	given := newWrappingProvider(wrapped)
 
 	actual := UnwrapProvider(given)
 

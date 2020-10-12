@@ -11,7 +11,7 @@ import (
 
 var (
 	providerPointer     unsafe.Pointer
-	providerFacadeV     = NewProviderFacade(getProvider)
+	providerV           = NewProviderFacade(getProvider)
 	knownProviders      = map[string]Provider{}
 	knownProvidersMutex sync.RWMutex
 )
@@ -23,7 +23,7 @@ var (
 // always call the global configured Provider depending on whether the Provider
 // was configured before calling this method or afterwards.
 func GetProvider() Provider {
-	return providerFacadeV
+	return providerV
 }
 
 func getProvider() Provider {

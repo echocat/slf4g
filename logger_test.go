@@ -1,9 +1,5 @@
 package log
 
-import (
-	"github.com/echocat/slf4g/level"
-)
-
 func newMockLogger(name string) *mockLogger {
 	return &mockLogger{
 		mockCoreLogger: newMockCoreLogger(name),
@@ -12,14 +8,6 @@ func newMockLogger(name string) *mockLogger {
 
 type mockLogger struct {
 	*mockCoreLogger
-}
-
-func (instance *mockLogger) Log(Event) {
-	panic("not implemented in tests")
-}
-
-func (instance *mockLogger) IsLevelEnabled(level.Level) bool {
-	panic("not implemented in tests")
 }
 
 func (instance *mockLogger) Trace(...interface{}) {

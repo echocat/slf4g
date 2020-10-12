@@ -183,18 +183,6 @@ func getCurrentProvider() Provider {
 	return nil
 }
 
-func newMockProvider(name string) *mockProvider {
-	return &mockProvider{
-		name: name,
-		fieldKeysSpec: &testFieldKeysSpec{
-			timestamp: "aTimestamp",
-			message:   "aMessage",
-			error:     "anError",
-			logger:    "aLogger",
-		},
-	}
-}
-
 func newOtherMockProvider(name string) Provider {
 	return &otherMockProvider{newMockProvider(name)}
 }

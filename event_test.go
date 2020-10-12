@@ -12,7 +12,7 @@ import (
 )
 
 func Test_NewEvent_withoutFields(t *testing.T) {
-	givenProvider := &mockProvider{name: "test"}
+	givenProvider := newMockProvider("test")
 	givenLevel := level.Error
 	givenCallDepth := 66
 
@@ -27,7 +27,7 @@ func Test_NewEvent_withoutFields(t *testing.T) {
 }
 
 func Test_NewEvent_withOneFields(t *testing.T) {
-	givenProvider := &mockProvider{name: "test"}
+	givenProvider := newMockProvider("test")
 	givenLevel := level.Error
 	givenCallDepth := 66
 
@@ -44,7 +44,7 @@ func Test_NewEvent_withOneFields(t *testing.T) {
 }
 
 func Test_NewEvent_with3Fields(t *testing.T) {
-	givenProvider := &mockProvider{name: "test"}
+	givenProvider := newMockProvider("test")
 	givenLevel := level.Error
 	givenCallDepth := 66
 
@@ -63,7 +63,7 @@ func Test_NewEvent_with3Fields(t *testing.T) {
 }
 
 func Test_NewEvent_withErrorInFieldsPanics(t *testing.T) {
-	givenProvider := &mockProvider{name: "test"}
+	givenProvider := newMockProvider("test")
 	givenLevel := level.Error
 	givenCallDepth := 66
 	givenError := errors.New("expected")

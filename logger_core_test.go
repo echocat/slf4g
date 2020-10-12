@@ -5,19 +5,35 @@ import (
 )
 
 func newMockCoreLogger(name string) *mockCoreLogger {
-	return &mockCoreLogger{name: name}
+	return &mockCoreLogger{
+		name:     name,
+		provider: newMockProvider("mocked"),
+	}
 }
 
 type mockCoreLogger struct {
-	name     string
-	provider Provider
+	name         string
+	provider     *mockProvider
+	level        level.Level
+	loggedEvents *[]Event
 }
 
-func (instance *mockCoreLogger) Log(Event) {
+func (instance *mockCoreLogger) initLoggedEvents() {
+	instance.loggedEvents = new([]Event)
+}
+
+func (instance *mockCoreLogger) Log(e Event) {
+	if v := instance.loggedEvents; v != nil {
+		*v = append(*v, e)
+		return
+	}
 	panic("not implemented in tests")
 }
 
-func (instance *mockCoreLogger) IsLevelEnabled(level.Level) bool {
+func (instance *mockCoreLogger) IsLevelEnabled(l level.Level) bool {
+	if v := instance.level; v != 0 {
+		return instance.level.CompareTo(l) <= 0
+	}
 	panic("not implemented in tests")
 }
 

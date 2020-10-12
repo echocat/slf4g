@@ -5,7 +5,21 @@ import (
 	"github.com/echocat/slf4g/level"
 )
 
+func newMockProvider(name string) *mockProvider {
+	return &mockProvider{
+		name: name,
+		fieldKeysSpec: &testFieldKeysSpec{
+			timestamp: "aTimestamp",
+			message:   "aMessage",
+			error:     "anError",
+			logger:    "aLogger",
+		},
+	}
+}
+
 type mockProvider struct {
+	rootProvider  func() Logger
+	provider      func(name string) Logger
 	name          string
 	fieldKeysSpec fields.KeysSpec
 }
@@ -18,10 +32,16 @@ func (instance *mockProvider) GetName() string {
 }
 
 func (instance *mockProvider) GetRootLogger() Logger {
+	if v := instance.rootProvider; v != nil {
+		return v()
+	}
 	panic("not implemented in tests")
 }
 
-func (instance *mockProvider) GetLogger(string) Logger {
+func (instance *mockProvider) GetLogger(name string) Logger {
+	if v := instance.provider; v != nil {
+		return v(name)
+	}
 	panic("not implemented in tests")
 }
 
@@ -36,11 +56,15 @@ func (instance *mockProvider) GetFieldKeysSpec() fields.KeysSpec {
 	panic("not implemented in tests")
 }
 
-type wrappingTestProvider struct {
+func newWrappingProvider(in Provider) *wrappingProvider {
+	return &wrappingProvider{in}
+}
+
+type wrappingProvider struct {
 	Provider
 }
 
-func (instance *wrappingTestProvider) Unwrap() Provider {
+func (instance *wrappingProvider) Unwrap() Provider {
 	return instance.Provider
 }
 

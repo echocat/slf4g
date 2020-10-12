@@ -1,8 +1,6 @@
 package log
 
 import (
-	"fmt"
-
 	"github.com/echocat/slf4g/level"
 
 	"github.com/echocat/slf4g/fields"
@@ -170,10 +168,8 @@ func log(l level.Level, args ...interface{}) {
 
 	if len(args) == 1 {
 		e = e.With(p.GetFieldKeysSpec().GetMessage(), args[0])
-	} else if len(args) > 1 {
-		e = e.With(p.GetFieldKeysSpec().GetMessage(), fields.LazyFunc(func() interface{} {
-			return fmt.Sprint(args...)
-		}))
+	} else if len(args) > 0 {
+		e = e.With(p.GetFieldKeysSpec().GetMessage(), args)
 	}
 
 	GetRootLogger().Log(e)

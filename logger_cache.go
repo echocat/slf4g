@@ -4,11 +4,16 @@ import (
 	"sync"
 )
 
+// LoggerCache could provide more than one time the same instance of a named
+// Logger (by calling GetLogger(name string)) or the same root Logger (by
+// calling GetRootLogger()).
 type LoggerCache interface {
 	GetLogger(name string) Logger
 	GetRootLogger() Logger
 }
 
+// NewLoggerCache creates a new instance of LoggerCache by the given
+// rootFactory and factory.
 func NewLoggerCache(rootFactory func() Logger, factory func(name string) Logger) LoggerCache {
 	root := rootFactory()
 	if root == nil {
