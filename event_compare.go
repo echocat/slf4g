@@ -65,10 +65,6 @@ func IsEventEqualCustom(eef fields.EntryEqualityFunction, left, right Event) (bo
 	}
 }
 
-// EntryEqualityFunction is comparing two values (of the same key) with each
-// other and check if both are equal.
-type EntryEqualityFunction func(key string, leftValue, rightValue interface{}) (bool, error)
-
 var (
-	entriesNotEqualV = errors.New(reflect.TypeOf(EntryEqualityFunction(nil)).PkgPath() + "/both entries are not equal")
+	entriesNotEqualV = errors.New(reflect.TypeOf((*Logger)(nil)).PkgPath() + "/both entries are not equal")
 )
