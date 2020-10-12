@@ -50,6 +50,34 @@ func Test_fallbackProvider_GetLogger(t *testing.T) {
 	assert.ToBeOfType(t, &fallbackCoreLogger{}, actualBar1.(*loggerImpl).coreProvider())
 }
 
+func Test_fallbackProvider_GetLevel(t *testing.T) {
+	instance := &fallbackProvider{}
+
+	assert.ToBeEqual(t, level.Info, instance.GetLevel())
+
+	for _, l := range instance.GetAllLevels() {
+		instance.level = l
+		assert.ToBeEqual(t, l, instance.GetLevel())
+	}
+
+	instance.level = 0
+	assert.ToBeEqual(t, level.Info, instance.GetLevel())
+}
+
+func Test_fallbackProvider_SetLevel(t *testing.T) {
+	instance := &fallbackProvider{}
+
+	assert.ToBeEqual(t, level.Level(0), instance.level)
+
+	for _, l := range instance.GetAllLevels() {
+		instance.SetLevel(l)
+		assert.ToBeEqual(t, l, instance.level)
+	}
+
+	instance.SetLevel(0)
+	assert.ToBeEqual(t, level.Level(0), instance.level)
+}
+
 func Test_fallbackProvider_GetAllLevels(t *testing.T) {
 	actual := fallbackProviderV.GetAllLevels()
 

@@ -17,8 +17,7 @@ type fallbackProvider struct {
 
 var fallbackProviderV = func() *fallbackProvider {
 	result := &fallbackProvider{
-		level: level.Info,
-		out:   os.Stderr,
+		out: os.Stderr,
 	}
 	result.cache = NewLoggerCache(result.rootFactory, result.factory)
 	return result
@@ -46,6 +45,17 @@ func (instance *fallbackProvider) GetRootLogger() Logger {
 
 func (instance *fallbackProvider) GetLogger(name string) Logger {
 	return instance.cache.GetLogger(name)
+}
+
+func (instance *fallbackProvider) GetLevel() level.Level {
+	if v := instance.level; v != 0 {
+		return v
+	}
+	return level.Info
+}
+
+func (instance *fallbackProvider) SetLevel(in level.Level) {
+	instance.level = in
 }
 
 func (instance *fallbackProvider) GetAllLevels() level.Levels {

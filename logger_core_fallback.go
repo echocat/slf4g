@@ -27,7 +27,8 @@ var (
 
 type fallbackCoreLogger struct {
 	*fallbackProvider
-	name string
+	name  string
+	level level.Level
 }
 
 func (instance *fallbackCoreLogger) Log(event Event) {
@@ -89,7 +90,7 @@ func (instance *fallbackCoreLogger) format(event Event) ([]byte, error) {
 	messageKey := instance.GetFieldKeysSpec().GetMessage()
 	loggerKey := instance.GetFieldKeysSpec().GetLogger()
 	timestampKey := instance.GetFieldKeysSpec().GetTimestamp()
-	if err := event.ForEach(func(k string, vp interface{}) error {
+	if err := fields.SortedForEach(event, nil, func(k string, vp interface{}) error {
 		if vl, ok := vp.(fields.Lazy); ok {
 			vp = vl.Get()
 		}
@@ -191,7 +192,7 @@ func (instance *fallbackCoreLogger) formatValue(v interface{}) ([]byte, error) {
 }
 
 func (instance *fallbackCoreLogger) IsLevelEnabled(level level.Level) bool {
-	return instance.level.CompareTo(level) <= 0
+	return instance.GetLevel().CompareTo(level) <= 0
 }
 
 func (instance *fallbackCoreLogger) GetName() string {
@@ -200,4 +201,15 @@ func (instance *fallbackCoreLogger) GetName() string {
 
 func (instance *fallbackCoreLogger) GetProvider() Provider {
 	return instance.fallbackProvider
+}
+
+func (instance *fallbackCoreLogger) GetLevel() level.Level {
+	if v := instance.level; v != 0 {
+		return v
+	}
+	return instance.fallbackProvider.GetLevel()
+}
+
+func (instance *fallbackCoreLogger) SetLevel(in level.Level) {
+	instance.level = in
 }
