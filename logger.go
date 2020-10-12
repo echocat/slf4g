@@ -3,6 +3,13 @@ package log
 import "github.com/echocat/slf4g/fields"
 
 // Logger defines an instance which executes log event actions.
+//
+// Implementation hints
+//
+// If you considering to implement slf4g you're usually not required to
+// implement a full instance of Logger. Usually you just need to implement
+// CoreLogger and call NewLogger(with the CoreLogger) to create a full
+// implemented instance of a Logger.
 type Logger interface {
 	CoreLogger
 
@@ -106,10 +113,16 @@ type Logger interface {
 	Without(keys ...string) Logger
 }
 
+// NewLogger create a new fully implemented instance of a logger out of a given
+// CoreLogger instance.
 func NewLogger(cl CoreLogger) Logger {
 	return NewLoggerFacade(func() CoreLogger { return cl })
 }
 
+// NewLoggerFacade is like NewLogger but takes a provider function that can
+// potentially return every time another instance of a CoreLogger. This is
+// useful especially in cases where you want to deal with concurrency while
+// creation of objects that need to hold a reference to a Logger.
 func NewLoggerFacade(provider func() CoreLogger) Logger {
 	return &loggerImpl{
 		coreProvider: provider,

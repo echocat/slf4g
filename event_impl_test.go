@@ -97,7 +97,7 @@ func Test_eventImpl_WithError(t *testing.T) {
 	expected := fields.With("a", 1).With("anErrorKey", givenError)
 	instance := &eventImpl{
 		fields:   fields.With("a", 1),
-		provider: &mockProvider{fieldKeysSpec: &testFieldKeysSpec{error: "anErrorKey"}},
+		provider: &mockProvider{fieldKeysSpec: &mockFieldKeysSpec{error: "anErrorKey"}},
 	}
 
 	actual := instance.WithError(givenError)

@@ -8,7 +8,7 @@ import (
 func newMockProvider(name string) *mockProvider {
 	return &mockProvider{
 		name: name,
-		fieldKeysSpec: &testFieldKeysSpec{
+		fieldKeysSpec: &mockFieldKeysSpec{
 			timestamp: "aTimestamp",
 			message:   "aMessage",
 			error:     "anError",
@@ -22,6 +22,7 @@ type mockProvider struct {
 	provider      func(name string) Logger
 	name          string
 	fieldKeysSpec fields.KeysSpec
+	levels        level.Levels
 }
 
 func (instance *mockProvider) GetName() string {
@@ -46,6 +47,9 @@ func (instance *mockProvider) GetLogger(name string) Logger {
 }
 
 func (instance *mockProvider) GetAllLevels() level.Levels {
+	if v := instance.levels; v != nil {
+		return v
+	}
 	panic("not implemented in tests")
 }
 
@@ -68,35 +72,35 @@ func (instance *wrappingProvider) Unwrap() Provider {
 	return instance.Provider
 }
 
-type testFieldKeysSpec struct {
+type mockFieldKeysSpec struct {
 	timestamp string
 	message   string
 	error     string
 	logger    string
 }
 
-func (instance *testFieldKeysSpec) GetTimestamp() string {
+func (instance *mockFieldKeysSpec) GetTimestamp() string {
 	if v := instance.timestamp; v != "" {
 		return v
 	}
 	panic("not implemented in tests")
 }
 
-func (instance *testFieldKeysSpec) GetMessage() string {
+func (instance *mockFieldKeysSpec) GetMessage() string {
 	if v := instance.message; v != "" {
 		return v
 	}
 	panic("not implemented in tests")
 }
 
-func (instance *testFieldKeysSpec) GetError() string {
+func (instance *mockFieldKeysSpec) GetError() string {
 	if v := instance.error; v != "" {
 		return v
 	}
 	panic("not implemented in tests")
 }
 
-func (instance *testFieldKeysSpec) GetLogger() string {
+func (instance *mockFieldKeysSpec) GetLogger() string {
 	if v := instance.logger; v != "" {
 		return v
 	}
