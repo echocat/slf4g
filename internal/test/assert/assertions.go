@@ -55,6 +55,19 @@ func ToBeNotEqualUsing(t testing.TB, expected, actual interface{}, comparator in
 	}
 }
 
+func ToBeMatching(t testing.TB, expectedPattern string, actual interface{}) {
+	t.Helper()
+	if actual == nil {
+		Failf(t, "Expected to be matching: <%s>; but got: <%+v>", expectedPattern, actual)
+	} else {
+		expectedRegexp := regexp.MustCompile(expectedPattern)
+		actualStr := fmt.Sprint(actual)
+		if !expectedRegexp.MatchString(actualStr) {
+			Failf(t, "Expected to be matching: <%s>; but got: <%+v>", expectedPattern, actual)
+		}
+	}
+}
+
 func ToBeOfType(t testing.TB, expectedType, actual interface{}) {
 	t.Helper()
 	if !isType(expectedType, actual) {

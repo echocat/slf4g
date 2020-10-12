@@ -36,9 +36,6 @@ func (instance *fallbackCoreLogger) Log(event Event) {
 		return
 	}
 
-	if v := GetTimestampOf(event, instance); v == nil {
-		event = event.With(instance.GetFieldKeysSpec().GetTimestamp(), time.Now())
-	}
 	if v := GetLoggerOf(event, instance); v == nil {
 		event = event.With(instance.GetFieldKeysSpec().GetLogger(), instance.name)
 	}
@@ -51,20 +48,13 @@ func (instance *fallbackCoreLogger) format(event Event) []byte {
 	buf := new(bytes.Buffer)
 
 	_ = buf.WriteByte(instance.formatLevel(event.GetLevel()))
-	if ts := GetTimestampOf(event, instance); ts != nil {
-		_, _ = buf.WriteString(*instance.formatTime(ts))
-	}
+	_, _ = buf.WriteString(*instance.formatTime(event))
 	_ = buf.WriteByte(' ')
 	_, _ = buf.WriteString(*instance.formatPid())
 	_ = buf.WriteByte(' ')
 	_, _ = buf.WriteString(*instance.formatLocation(event))
 	_ = buf.WriteByte(']')
-
-	if message := GetMessageOf(event, instance); message != nil {
-		_ = buf.WriteByte(' ')
-		_, _ = buf.WriteString(*instance.formatMessage(message))
-	}
-
+	_, _ = buf.WriteString(instance.formatMessage(event))
 	messageKey := instance.GetFieldKeysSpec().GetMessage()
 	loggerKey := instance.GetFieldKeysSpec().GetLogger()
 	timestampKey := instance.GetFieldKeysSpec().GetTimestamp()
@@ -84,18 +74,10 @@ func (instance *fallbackCoreLogger) format(event Event) []byte {
 			return err
 		}
 
-		if err := buf.WriteByte(' '); err != nil {
-			return err
-		}
-		if _, err := buf.WriteString(k); err != nil {
-			return err
-		}
-		if err := buf.WriteByte('='); err != nil {
-			return err
-		}
-		if _, err := buf.Write(v); err != nil {
-			return err
-		}
+		_ = buf.WriteByte(' ')
+		_, _ = buf.WriteString(k)
+		_ = buf.WriteByte('=')
+		_, _ = buf.Write(v)
 		return nil
 	}); err != nil {
 		return []byte(fmt.Sprintf("ERR!! Cannot format event %v: %v", event, err))
@@ -145,20 +127,33 @@ func (instance *fallbackCoreLogger) formatLocation(event Event) *string {
 	return &result
 }
 
-func (instance *fallbackCoreLogger) formatTime(time *time.Time) *string {
-	result := time.Format(simpleTimeLayout)
+func (instance *fallbackCoreLogger) formatTime(event Event) *string {
+	var result string
+	if v := GetTimestampOf(event, instance); v != nil {
+		result = v.Format(simpleTimeLayout)
+	} else {
+		result = time.Now().Format(simpleTimeLayout)
+	}
 	return &result
 }
 
-func (instance *fallbackCoreLogger) formatMessage(message *string) *string {
-	*message = strings.TrimLeftFunc(*message, func(r rune) bool {
-		return r == '\r' || r == '\n'
-	})
-	*message = strings.TrimRightFunc(*message, unicode.IsSpace)
-	*message = strings.TrimFunc(*message, func(r rune) bool {
-		return r == '\r' || !unicode.IsGraphic(r)
-	})
-	*message = strings.ReplaceAll(*message, "\n", "\u23CE")
+func (instance *fallbackCoreLogger) formatMessage(event Event) string {
+	var message string
+	if v := GetMessageOf(event, instance); v != nil {
+		message = *v
+
+		message = strings.TrimLeftFunc(message, func(r rune) bool {
+			return r == '\r' || r == '\n'
+		})
+		message = strings.TrimRightFunc(message, unicode.IsSpace)
+		message = strings.TrimFunc(message, func(r rune) bool {
+			return r == '\r' || !unicode.IsGraphic(r)
+		})
+		message = strings.ReplaceAll(message, "\n", "\u23CE")
+		if message != "" {
+			message = " " + message
+		}
+	}
 	return message
 }
 
