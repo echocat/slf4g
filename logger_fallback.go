@@ -199,5 +199,5 @@ func (instance *fallbackCoreLogger) GetName() string {
 }
 
 func (instance *fallbackCoreLogger) GetProvider() Provider {
-	return instance
+	return instance.fallbackProvider
 }
