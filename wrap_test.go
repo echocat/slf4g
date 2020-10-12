@@ -31,7 +31,7 @@ func Test_UnwrapCoreLogger_withCoreUnwrapMethod(t *testing.T) {
 
 func Test_UnwrapCoreLogger_withUnwrapMethod(t *testing.T) {
 	wrapped := newMockLogger("foo")
-	given := newWrappingCoreLogger(wrapped)
+	given := newWrappingLogger(wrapped)
 
 	actual := UnwrapCoreLogger(given)
 
@@ -45,7 +45,7 @@ func Test_UnwrapLogger_withNil(t *testing.T) {
 }
 
 func Test_UnwrapLogger_withoutUnwrapMethod(t *testing.T) {
-	given := newMockLogger("foo")
+	given := &mockCoreLogger{}
 
 	actual := UnwrapLogger(given)
 

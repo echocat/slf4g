@@ -1,105 +1,43 @@
 package log
 
+import (
+	"github.com/echocat/slf4g/fields"
+	"github.com/echocat/slf4g/level"
+)
+
 func newMockLogger(name string) *mockLogger {
-	return &mockLogger{
-		mockCoreLogger: newMockCoreLogger(name),
-	}
+	return &mockLogger{NewLogger(newMockCoreLogger(name)).(*loggerImpl)}
 }
 
 type mockLogger struct {
-	*mockCoreLogger
+	*loggerImpl
 }
 
-func (instance *mockLogger) Trace(...interface{}) {
-	panic("not implemented in tests")
+func (instance *mockLogger) setLevel(in level.Level) {
+	instance.coreProvider().(*mockCoreLogger).level = in
 }
 
-func (instance *mockLogger) Tracef(string, ...interface{}) {
-	panic("not implemented in tests")
+func (instance *mockLogger) getProvider() *mockProvider {
+	return instance.coreProvider().(*mockCoreLogger).provider
 }
 
-func (instance *mockLogger) IsTraceEnabled() bool {
-	panic("not implemented in tests")
+func (instance *mockLogger) getFieldKeysSpec() fields.KeysSpec {
+	return getProvider().GetFieldKeysSpec()
 }
 
-func (instance *mockLogger) Debug(...interface{}) {
-	panic("not implemented in tests")
+func (instance *mockLogger) initLoggedEvents() {
+	instance.coreProvider().(*mockCoreLogger).initLoggedEvents()
 }
 
-func (instance *mockLogger) Debugf(string, ...interface{}) {
-	panic("not implemented in tests")
+func (instance *mockLogger) loggedEvents() []Event {
+	if v := instance.coreProvider().(*mockCoreLogger).loggedEvents; v != nil {
+		return *v
+	}
+	return nil
 }
 
-func (instance *mockLogger) IsDebugEnabled() bool {
-	panic("not implemented in tests")
-}
-
-func (instance *mockLogger) Info(...interface{}) {
-	panic("not implemented in tests")
-}
-
-func (instance *mockLogger) Infof(string, ...interface{}) {
-	panic("not implemented in tests")
-}
-
-func (instance *mockLogger) IsInfoEnabled() bool {
-	panic("not implemented in tests")
-}
-
-func (instance *mockLogger) Warn(...interface{}) {
-	panic("not implemented in tests")
-}
-
-func (instance *mockLogger) Warnf(string, ...interface{}) {
-	panic("not implemented in tests")
-}
-
-func (instance *mockLogger) IsWarnEnabled() bool {
-	panic("not implemented in tests")
-}
-
-func (instance *mockLogger) Error(...interface{}) {
-	panic("not implemented in tests")
-}
-
-func (instance *mockLogger) Errorf(string, ...interface{}) {
-	panic("not implemented in tests")
-}
-
-func (instance *mockLogger) IsErrorEnabled() bool {
-	panic("not implemented in tests")
-}
-
-func (instance *mockLogger) Fatal(...interface{}) {
-	panic("not implemented in tests")
-}
-
-func (instance *mockLogger) Fatalf(string, ...interface{}) {
-	panic("not implemented in tests")
-}
-
-func (instance *mockLogger) IsFatalEnabled() bool {
-	panic("not implemented in tests")
-}
-
-func (instance *mockLogger) With(string, interface{}) Logger {
-	panic("not implemented in tests")
-}
-
-func (instance *mockLogger) Withf(string, string, ...interface{}) Logger {
-	panic("not implemented in tests")
-}
-
-func (instance *mockLogger) WithError(error) Logger {
-	panic("not implemented in tests")
-}
-
-func (instance *mockLogger) WithAll(map[string]interface{}) Logger {
-	panic("not implemented in tests")
-}
-
-func (instance *mockLogger) Without(...string) Logger {
-	panic("not implemented in tests")
+func (instance *mockLogger) loggedEvent(i int) Event {
+	return instance.loggedEvents()[i]
 }
 
 func newWrappingLogger(in Logger) *wrappingLogger {
