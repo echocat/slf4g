@@ -43,48 +43,26 @@ func (instance *fallbackCoreLogger) Log(event Event) {
 		event = event.With(instance.GetFieldKeysSpec().GetLogger(), instance.name)
 	}
 
-	s, err := instance.format(event)
-	if err != nil {
-		s = []byte(fmt.Sprintf("ERR!! Cannot format event %v: %v", event, err))
-	}
-
-	_, _ = instance.out.Write(s)
+	b := instance.format(event)
+	_, _ = instance.out.Write(b)
 }
 
-func (instance *fallbackCoreLogger) format(event Event) ([]byte, error) {
+func (instance *fallbackCoreLogger) format(event Event) []byte {
 	buf := new(bytes.Buffer)
 
-	if err := buf.WriteByte(instance.formatLevel(event.GetLevel())); err != nil {
-		return nil, err
-	}
+	_ = buf.WriteByte(instance.formatLevel(event.GetLevel()))
 	if ts := GetTimestampOf(event, instance); ts != nil {
-		if _, err := buf.WriteString(*instance.formatTime(ts)); err != nil {
-			return nil, err
-		}
+		_, _ = buf.WriteString(*instance.formatTime(ts))
 	}
-	if err := buf.WriteByte(' '); err != nil {
-		return nil, err
-	}
-	if _, err := buf.WriteString(*instance.formatPid()); err != nil {
-		return nil, err
-	}
-	if err := buf.WriteByte(' '); err != nil {
-		return nil, err
-	}
-	if _, err := buf.WriteString(*instance.formatLocation(event)); err != nil {
-		return nil, err
-	}
-	if err := buf.WriteByte(']'); err != nil {
-		return nil, err
-	}
+	_ = buf.WriteByte(' ')
+	_, _ = buf.WriteString(*instance.formatPid())
+	_ = buf.WriteByte(' ')
+	_, _ = buf.WriteString(*instance.formatLocation(event))
+	_ = buf.WriteByte(']')
 
 	if message := GetMessageOf(event, instance); message != nil {
-		if err := buf.WriteByte(' '); err != nil {
-			return nil, err
-		}
-		if _, err := buf.WriteString(*instance.formatMessage(message)); err != nil {
-			return nil, err
-		}
+		_ = buf.WriteByte(' ')
+		_, _ = buf.WriteString(*instance.formatMessage(message))
 	}
 
 	messageKey := instance.GetFieldKeysSpec().GetMessage()
@@ -120,12 +98,12 @@ func (instance *fallbackCoreLogger) format(event Event) ([]byte, error) {
 		}
 		return nil
 	}); err != nil {
-		return nil, err
+		return []byte(fmt.Sprintf("ERR!! Cannot format event %v: %v", event, err))
 	}
 
 	buf.WriteByte('\n')
 
-	return buf.Bytes(), nil
+	return buf.Bytes()
 }
 
 func (instance *fallbackCoreLogger) formatLevel(l level.Level) byte {
