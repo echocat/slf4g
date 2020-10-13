@@ -2,18 +2,28 @@ package log
 
 import (
 	"github.com/echocat/slf4g/level"
+	"github.com/echocat/slf4g/names"
 
 	"github.com/echocat/slf4g/fields"
 )
 
-// GetLogger returns a logger for the given name from the global Provider.
-func GetLogger(name string) Logger {
-	return GetProvider().GetLogger(name)
-}
-
 // GetLogger returns the ROOT logger from the global Provider.
 func GetRootLogger() Logger {
 	return GetProvider().GetRootLogger()
+}
+
+// GetLogger returns a logger for the given name from the global Provider.
+// If instead of a string another object is given this will be used to create
+// a logger name from it's package name.
+func GetLogger(nameOrReference interface{}) Logger {
+	return GetProvider().GetLogger(names.FullLoggerNameGenerator(nameOrReference))
+}
+
+// GetLoggerForCurrentPackage is similar to GetLogger(name) but it extracts the
+// name automatically from the current call stack. That means: this method
+// should be only used for the package this logger should be for.
+func GetLoggerForCurrentPackage() Logger {
+	return GetProvider().GetLogger(names.CurrentPackageLoggerNameGenerator(1))
 }
 
 // IsLevelEnabled checks if the given Level is enabled at the current root

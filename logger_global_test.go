@@ -29,6 +29,36 @@ func Test_GetLogger(t *testing.T) {
 	assert.ToBeSame(t, givenLogger, actual)
 }
 
+func Test_GetLogger_fromObject(t *testing.T) {
+	givenLogger := newMockLogger("foo")
+	givenProvider := newMockProvider("bar")
+	defer setProvider(givenProvider)()
+
+	givenProvider.provider = func(name string) Logger {
+		assert.ToBeEqual(t, "testing.T", name)
+		return givenLogger
+	}
+
+	actual := GetLogger(t)
+
+	assert.ToBeSame(t, givenLogger, actual)
+}
+
+func Test_GetLoggerForCurrentPackage(t *testing.T) {
+	givenLogger := newMockLogger("foo")
+	givenProvider := newMockProvider("bar")
+	defer setProvider(givenProvider)()
+
+	givenProvider.provider = func(name string) Logger {
+		assert.ToBeEqual(t, "github.com/echocat/slf4g", name)
+		return givenLogger
+	}
+
+	actual := GetLoggerForCurrentPackage()
+
+	assert.ToBeSame(t, givenLogger, actual)
+}
+
 func Test_GetRootLogger(t *testing.T) {
 	givenLogger := newMockLogger("foo")
 	defer setRootLogger(givenLogger)()
