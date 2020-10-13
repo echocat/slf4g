@@ -1,7 +1,7 @@
 package sdk
 
 import (
-	stdlog "log"
+	sdklog "log"
 
 	"github.com/echocat/slf4g/level"
 
@@ -42,9 +42,9 @@ func ConfigureWith(target log.CoreLogger, logAs level.Level) {
 		LevelExtractor: level.FixedLevelExtractor(logAs),
 		CallDepth:      2, // of the SDK based log
 	}
-	stdlog.SetOutput(w)
-	stdlog.SetPrefix("")
-	stdlog.SetFlags(0)
+	sdklog.SetOutput(w)
+	sdklog.SetPrefix("")
+	sdklog.SetFlags(0)
 }
 
 // NewWrapper creates a SDK Logger which is use slf4g the provided Logger and
@@ -59,8 +59,8 @@ func ConfigureWith(target log.CoreLogger, logAs level.Level) {
 // 2# ATTENTION! Fatal*() and Panic*() will still exit the whole application or
 // panics afterwards. This cannot be prevented when you use the logger
 // directly. If possible use NewLogger() to use an SDK compatible interface.
-func NewWrapper(target log.CoreLogger, logAs level.Level) *stdlog.Logger {
-	return stdlog.New(&log.LoggingWriter{
+func NewWrapper(target log.CoreLogger, logAs level.Level) *sdklog.Logger {
+	return sdklog.New(&log.LoggingWriter{
 		Logger:         target,
 		LevelExtractor: level.FixedLevelExtractor(logAs),
 		CallDepth:      2, // of the SDK based log

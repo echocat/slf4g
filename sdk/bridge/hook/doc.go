@@ -1,4 +1,4 @@
-// Importing this package anonymously will configure the current application to
+// Importing this package anonymously will configure the whole application to
 // use the slf4g framework on any usage of the SDK based loggers.
 //
 //    import (

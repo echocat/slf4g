@@ -1,7 +1,7 @@
 package sdk
 
 import (
-	stdlog "log"
+	sdklog "log"
 	"os"
 	"testing"
 
@@ -11,20 +11,26 @@ import (
 	"github.com/echocat/slf4g/testing/recording"
 )
 
+func ExampleConfigure() {
+	// Configures the whole application with to use the ROOT Logger and logs
+	// everything to level.Info.
+	Configure()
+}
+
 func Test_Configure(t *testing.T) {
 	provider := recording.NewProvider()
 	defer provider.HookGlobally()()
 	defer func() {
-		stdlog.SetFlags(stdlog.LstdFlags)
-		stdlog.SetPrefix("")
-		stdlog.SetOutput(os.Stderr)
+		sdklog.SetFlags(sdklog.LstdFlags)
+		sdklog.SetPrefix("")
+		sdklog.SetOutput(os.Stderr)
 	}()
 	logger := provider.GetRootLogger()
 
 	ConfigureWith(logger, level.Warn)
-	stdlog.Print()
-	stdlog.Printf("a%d%s", 2, "c")
-	stdlog.Println("a", 3, "c")
+	sdklog.Print()
+	sdklog.Printf("a%d%s", 2, "c")
+	sdklog.Println("a", 3, "c")
 
 	assert.ToBeEqual(t, 3, provider.Len())
 	assert.ToBeEqual(t, true, provider.MustContains(
@@ -41,19 +47,25 @@ func Test_Configure(t *testing.T) {
 	))
 }
 
+func ExampleConfigureWith() {
+	// Configures the whole application with to use the logger named "sdk" and
+	// logs everything to level.Debug.
+	ConfigureWith(log.GetLogger("sdk"), level.Debug)
+}
+
 func Test_ConfigureWith(t *testing.T) {
 	defer func() {
-		stdlog.SetFlags(stdlog.LstdFlags)
-		stdlog.SetPrefix("")
-		stdlog.SetOutput(os.Stderr)
+		sdklog.SetFlags(sdklog.LstdFlags)
+		sdklog.SetPrefix("")
+		sdklog.SetOutput(os.Stderr)
 	}()
 
 	logger := recording.NewLogger()
 
 	ConfigureWith(logger, level.Warn)
-	stdlog.Print()
-	stdlog.Printf("a%d%s", 2, "c")
-	stdlog.Println("a", 3, "c")
+	sdklog.Print()
+	sdklog.Printf("a%d%s", 2, "c")
+	sdklog.Println("a", 3, "c")
 
 	assert.ToBeEqual(t, 3, logger.Len())
 	assert.ToBeEqual(t, true, logger.MustContains(
@@ -68,6 +80,14 @@ func Test_ConfigureWith(t *testing.T) {
 		log.NewEvent(logger.GetProvider(), level.Warn, 4).
 			With("message", "a 3 c\n"),
 	))
+}
+
+func ExampleNewWrapper() {
+	// Creates a new SDK logger that uses the slf4g logger "sdk" and logs
+	// everything to level.Info.
+	wrapped := NewWrapper(log.GetLogger("sdk"), level.Info)
+
+	wrapped.Print("foo", "bar")
 }
 
 func Test_NewWrapper(t *testing.T) {
