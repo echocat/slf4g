@@ -1,7 +1,6 @@
 package sdk
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/echocat/slf4g/level"
@@ -13,11 +12,7 @@ import (
 // Logger.Panic(), Logger.Panicf() or Logger.Panicln() methods. The initial
 // behavior will be that it panics after logging the event.
 var DefaultOnPanic = func(e log.Event) {
-	if se, ok := e.(fmt.Stringer); ok {
-		panic(se.String())
-	} else {
-		panic(fmt.Sprintf("%+v", e))
-	}
+	panic(e)
 }
 
 // DefaultOnFatal defines what happens by default when someone calls one of the
@@ -33,6 +28,11 @@ type LoggerImpl struct {
 	// Delegate is the Logger of the slf4g framework where to forward all logged
 	// events of this implementation to.
 	Delegate log.CoreLogger
+
+	// PrintLevel defines the regular level.Level to log everything one if
+	// methods Print(), Printf() or Println() are used. If this is not set
+	// level.Info is used.
+	PrintLevel level.Level
 
 	// OnPanic defines what to do if someone calls one of the Logger.Panic(),
 	// Logger.Panicf() or Logger.Panicln() methods. Be default DefaultOnPanic
@@ -69,19 +69,26 @@ func (instance *LoggerImpl) logf(l level.Level, format string, args ...interface
 	return e
 }
 
+func (instance *LoggerImpl) printLevel() level.Level {
+	if v := instance.PrintLevel; v > 0 {
+		return v
+	}
+	return level.Info
+}
+
 // Print implements Logger.Print
 func (instance *LoggerImpl) Print(args ...interface{}) {
-	instance.log(level.Info, args...)
+	instance.log(instance.printLevel(), args...)
 }
 
 // Printf implements Logger.Printf
 func (instance *LoggerImpl) Printf(s string, args ...interface{}) {
-	instance.logf(level.Info, s, args...)
+	instance.logf(instance.printLevel(), s, args...)
 }
 
 // Println implements Logger.Println
 func (instance *LoggerImpl) Println(args ...interface{}) {
-	instance.log(level.Info, args...)
+	instance.log(instance.printLevel(), args...)
 }
 
 // Fatal implements Logger.Fatal
@@ -92,7 +99,7 @@ func (instance *LoggerImpl) Fatal(args ...interface{}) {
 
 // Fatalf implements Logger.Fatalf
 func (instance *LoggerImpl) Fatalf(s string, args ...interface{}) {
-	e := instance.logf(level.Info, s, args...)
+	e := instance.logf(level.Fatal, s, args...)
 	instance.onFatal(e)
 }
 
@@ -110,7 +117,7 @@ func (instance *LoggerImpl) Panic(args ...interface{}) {
 
 // Panicf implements Logger.Panicf
 func (instance *LoggerImpl) Panicf(s string, args ...interface{}) {
-	e := instance.logf(level.Info, s, args...)
+	e := instance.logf(level.Fatal, s, args...)
 	instance.onPanic(e)
 }
 

@@ -76,11 +76,12 @@ func Test_Logger_LogEvent(t *testing.T) {
 	givenEvent := log.NewEvent(instance.Provider, level.Warn, 666).
 		With("timestamp", time.Now()).
 		With("logger", "foo")
+	expected := givenEvent.WithCallDepth(1) // Because we have to add one more because of the wrapping
 
 	assert.ToBeEqual(t, 0, instance.Len())
 
 	instance.Log(givenEvent)
 
 	assert.ToBeEqual(t, 1, instance.Len())
-	assert.ToBeEqual(t, true, instance.MustContains(givenEvent))
+	assert.ToBeEqual(t, true, instance.MustContains(expected))
 }

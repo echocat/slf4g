@@ -40,6 +40,7 @@ func ConfigureWith(target log.CoreLogger, logAs level.Level) {
 	w := &log.LoggingWriter{
 		Logger:         target,
 		LevelExtractor: level.FixedLevelExtractor(logAs),
+		CallDepth:      2, // of the SDK based log
 	}
 	stdlog.SetOutput(w)
 	stdlog.SetPrefix("")
@@ -62,5 +63,6 @@ func NewWrapper(target log.CoreLogger, logAs level.Level) *stdlog.Logger {
 	return stdlog.New(&log.LoggingWriter{
 		Logger:         target,
 		LevelExtractor: level.FixedLevelExtractor(logAs),
+		CallDepth:      2, // of the SDK based log
 	}, "", 0)
 }

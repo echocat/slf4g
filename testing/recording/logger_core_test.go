@@ -152,8 +152,8 @@ func Test_CoreLogger_Log(t *testing.T) {
 	instance.Log(unExpectedEvent3)
 
 	assert.ToBeEqual(t, 2, len(instance.recorded))
-	assert.ToBeEqualUsing(t, expectedEvent1, instance.recorded[0], instance.defaultEventEquality().AreEventsEqual)
-	assert.ToBeEqualUsing(t, expectedEvent2, instance.recorded[1], instance.defaultEventEquality().AreEventsEqual)
+	assert.ToBeEqualUsing(t, expectedEvent1.WithCallDepth(1), instance.recorded[0], instance.defaultEventEquality().AreEventsEqual)
+	assert.ToBeEqualUsing(t, expectedEvent2.WithCallDepth(1), instance.recorded[1], instance.defaultEventEquality().AreEventsEqual)
 }
 func Test_CoreLogger_GetAll(t *testing.T) {
 	instance := NewLogger()

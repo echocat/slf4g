@@ -1,6 +1,9 @@
 package sdk
 
-import log "github.com/echocat/slf4g"
+import (
+	log "github.com/echocat/slf4g"
+	"github.com/echocat/slf4g/level"
+)
 
 // Logger is an interface which describes instances which are compatible with
 // the SDK Logger instance.
@@ -36,8 +39,12 @@ type Logger interface {
 
 // NewLogger creates a new instance of an SDK compatible Logger which forwards
 // all it's events to the provided log.CoreLogger.
-func NewLogger(target log.CoreLogger) Logger {
+//
+// printLevel defines the level which is used to log to the given log.CoreLogger
+// on every Logger.Print(), Logger.Printf() and Logger.Println() event.
+func NewLogger(target log.CoreLogger, printLevel level.Level) Logger {
 	return &LoggerImpl{
-		Delegate: target,
+		Delegate:   target,
+		PrintLevel: printLevel,
 	}
 }

@@ -38,5 +38,5 @@ func (instance *Logger) IsLevelEnabled(v level.Level) bool {
 
 // Log implements log.Logger#Log()
 func (instance *Logger) Log(event log.Event) {
-	instance.CoreLogger.Log(event)
+	instance.CoreLogger.Log(event.WithCallDepth(1))
 }
