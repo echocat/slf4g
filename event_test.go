@@ -58,7 +58,7 @@ func Test_NewEvent_with3Fields(t *testing.T) {
 	assert.ToBeSame(t, givenProvider, actual.(*eventImpl).provider)
 	assert.ToBeEqual(t, givenLevel, actual.GetLevel())
 	assert.ToBeEqual(t, givenCallDepth, actual.GetCallDepth())
-	assert.ToBeEqualUsing(t, fields.With("a", 3).With("b", 2).With("c", 3), actual.(*eventImpl).fields, fields.IsEqual)
+	assert.ToBeEqualUsing(t, fields.With("a", 3).With("b", 2).With("c", 3), actual.(*eventImpl).fields, fields.AreEqual)
 	assert.ToBeNil(t, actual.GetContext())
 }
 

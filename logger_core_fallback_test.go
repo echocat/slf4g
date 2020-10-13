@@ -154,6 +154,27 @@ func Test_fallbackCoreLogger_SetLevel(t *testing.T) {
 	assert.ToBeEqual(t, level.Level(0), instance.level)
 }
 
+func Test_IsFallbackLogger(t *testing.T) {
+	givenMockedProvider := newMockProvider("foo")
+	givenMockedProvider.rootProvider = func() Logger {
+		return newMockLogger("root")
+	}
+
+	previous := SetProvider(nil)
+	defer SetProvider(previous)
+
+	assert.ToBeEqual(t, true, IsFallbackLogger(GetRootLogger()))
+	assert.ToBeEqual(t, []Provider{}, GetAllProviders())
+
+	SetProvider(givenMockedProvider)
+
+	assert.ToBeEqual(t, false, IsFallbackLogger(GetRootLogger()))
+
+	SetProvider(nil)
+
+	assert.ToBeEqual(t, true, IsFallbackLogger(GetRootLogger()))
+}
+
 func newFallbackCoreLogger(name string) (*fallbackCoreLogger, *bytes.Buffer) {
 	buf := new(bytes.Buffer)
 	provider := &fallbackProvider{

@@ -80,7 +80,7 @@ func Test_eventImpl_With(t *testing.T) {
 
 	actual := instance.With("b", 2)
 
-	assert.ToBeEqualUsing(t, expected, actual.(*eventImpl).fields, fields.IsEqual)
+	assert.ToBeEqualUsing(t, expected, actual.(*eventImpl).fields, fields.AreEqual)
 }
 
 func Test_eventImpl_Withf(t *testing.T) {
@@ -89,7 +89,7 @@ func Test_eventImpl_Withf(t *testing.T) {
 
 	actual := instance.Withf("b", "%d", 2)
 
-	assert.ToBeEqualUsing(t, expected, actual.(*eventImpl).fields, fields.IsEqual)
+	assert.ToBeEqualUsing(t, expected, actual.(*eventImpl).fields, fields.AreEqual)
 }
 
 func Test_eventImpl_WithError(t *testing.T) {
@@ -102,7 +102,7 @@ func Test_eventImpl_WithError(t *testing.T) {
 
 	actual := instance.WithError(givenError)
 
-	assert.ToBeEqualUsing(t, expected, actual.(*eventImpl).fields, fields.IsEqual)
+	assert.ToBeEqualUsing(t, expected, actual.(*eventImpl).fields, fields.AreEqual)
 }
 
 func Test_eventImpl_WithAll(t *testing.T) {
@@ -115,7 +115,7 @@ func Test_eventImpl_WithAll(t *testing.T) {
 
 	actual := instance.WithAll(givenMap)
 
-	assert.ToBeEqualUsing(t, expected, actual.(*eventImpl).fields, fields.IsEqual)
+	assert.ToBeEqualUsing(t, expected, actual.(*eventImpl).fields, fields.AreEqual)
 }
 
 func Test_eventImpl_Without(t *testing.T) {
@@ -128,7 +128,7 @@ func Test_eventImpl_Without(t *testing.T) {
 
 	actual := instance.Without("a", "c")
 
-	assert.ToBeEqualUsing(t, expected, actual.(*eventImpl).fields, fields.IsEqual)
+	assert.ToBeEqualUsing(t, expected, actual.(*eventImpl).fields, fields.AreEqual)
 }
 
 func Test_eventImpl_WithContext(t *testing.T) {

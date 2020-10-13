@@ -101,19 +101,19 @@ func Test_loggerImpl_log(t *testing.T) {
 			assert.ToBeEqualUsing(t,
 				NewEvent(givenLogger.getProvider(), c.level, 2),
 				givenLogger.loggedEvent(0),
-				IsEventEqual,
+				AreEventsEqual,
 			)
 			assert.ToBeEqualUsing(t,
 				NewEvent(givenLogger.getProvider(), c.level, 2).
 					With(messageKey, 1),
 				givenLogger.loggedEvent(1),
-				IsEventEqual,
+				AreEventsEqual,
 			)
 			assert.ToBeEqualUsing(t,
 				NewEvent(givenLogger.getProvider(), c.level, 2).
 					With(messageKey, []interface{}{1, 2, 3}),
 				givenLogger.loggedEvent(2),
-				IsEventEqual,
+				AreEventsEqual,
 			)
 		})
 	}
@@ -150,13 +150,13 @@ func Test_loggerImpl_logf(t *testing.T) {
 				NewEvent(givenLogger.getProvider(), c.level, 2).
 					With(messageKey, fields.LazyFormat("hello")),
 				givenLogger.loggedEvent(0),
-				IsEventEqual,
+				AreEventsEqual,
 			)
 			assert.ToBeEqualUsing(t,
 				NewEvent(givenLogger.getProvider(), c.level, 2).
 					With(messageKey, fields.LazyFormat("hello %d", 1)),
 				givenLogger.loggedEvent(1),
-				IsEventEqual,
+				AreEventsEqual,
 			)
 		})
 	}
@@ -236,7 +236,7 @@ func Test_loggerImpl_WithAll(t *testing.T) {
 		With("a", 1).
 		With("b", 2).
 		With("c", 3),
-		actual.(*loggerImpl).fields, fields.IsEqual)
+		actual.(*loggerImpl).fields, fields.AreEqual)
 }
 
 func Test_loggerImpl_Without(t *testing.T) {
@@ -252,7 +252,7 @@ func Test_loggerImpl_Without(t *testing.T) {
 	assert.ToBeEqualUsing(t, fields.
 		With("a", 1).
 		With("c", 3),
-		actual.(*loggerImpl).fields, fields.IsEqual)
+		actual.(*loggerImpl).fields, fields.AreEqual)
 }
 
 func newLoggerImpl(in *mockCoreLogger) *loggerImpl {

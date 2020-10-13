@@ -9,6 +9,19 @@ import (
 	"github.com/echocat/slf4g/fields"
 )
 
+// IsFallbackProvider will return true of the given Provider is the fallback
+// provider. This usually indicates that currently there is no other
+// implementation of slf4g registered.
+func IsFallbackProvider(candidate Provider) bool {
+	for candidate != nil {
+		if _, ok := candidate.(*fallbackProvider); ok {
+			return true
+		}
+		candidate = UnwrapProvider(candidate)
+	}
+	return false
+}
+
 type fallbackProvider struct {
 	cache LoggerCache
 	level level.Level

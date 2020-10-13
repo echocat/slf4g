@@ -8,8 +8,15 @@ import (
 // Logger (by calling GetLogger(name string)) or the same root Logger (by
 // calling GetRootLogger()).
 type LoggerCache interface {
+	// GetLogger returns a Logger for the given name.
 	GetLogger(name string) Logger
+
+	// GetRootLogger returns the root Logger.
 	GetRootLogger() Logger
+
+	// GetNames returns all names for all already known Logger which are
+	// already received using GetLogger(name).
+	GetNames() []string
 }
 
 // NewLoggerCache creates a new instance of LoggerCache by the given
@@ -67,4 +74,19 @@ func (instance *loggerCache) GetLogger(name string) Logger {
 	instance.loggers[name] = l
 
 	return l
+}
+
+func (instance *loggerCache) GetNames() (result []string) {
+	instance.mutex.RLock()
+	defer instance.mutex.RUnlock()
+
+	result = make([]string, len(instance.loggers))
+
+	i := 0
+	for name := range instance.loggers {
+		result[i] = name
+		i++
+	}
+
+	return
 }

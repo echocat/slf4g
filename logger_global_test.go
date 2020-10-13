@@ -85,19 +85,19 @@ func Test_Log(t *testing.T) {
 			assert.ToBeEqualUsing(t,
 				NewEvent(givenLogger.GetProvider(), c.level, 3),
 				givenLogger.loggedEvent(0),
-				IsEventEqual,
+				AreEventsEqual,
 			)
 			assert.ToBeEqualUsing(t,
 				NewEvent(givenLogger.GetProvider(), c.level, 3).
 					With(messageKey, 1),
 				givenLogger.loggedEvent(1),
-				IsEventEqual,
+				AreEventsEqual,
 			)
 			assert.ToBeEqualUsing(t,
 				NewEvent(givenLogger.GetProvider(), c.level, 3).
 					With(messageKey, []interface{}{1, 2, 3}),
 				givenLogger.loggedEvent(2),
-				IsEventEqual,
+				AreEventsEqual,
 			)
 		})
 	}
@@ -135,13 +135,13 @@ func Test_Logf(t *testing.T) {
 				NewEvent(givenLogger.GetProvider(), c.level, 3).
 					With(messageKey, fields.LazyFormat("hello")),
 				givenLogger.loggedEvent(0),
-				IsEventEqual,
+				AreEventsEqual,
 			)
 			assert.ToBeEqualUsing(t,
 				NewEvent(givenLogger.GetProvider(), c.level, 3).
 					With(messageKey, fields.LazyFormat("hello %d", 1)),
 				givenLogger.loggedEvent(1),
-				IsEventEqual,
+				AreEventsEqual,
 			)
 		})
 	}
@@ -227,7 +227,7 @@ func Test_WithAll(t *testing.T) {
 		With("a", 1).
 		With("b", 2).
 		With("c", 3),
-		actual.(*loggerImpl).fields, fields.IsEqual)
+		actual.(*loggerImpl).fields, fields.AreEqual)
 }
 
 var providerVLock = new(sync.Mutex)

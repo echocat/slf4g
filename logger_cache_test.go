@@ -1,6 +1,7 @@
 package log
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/echocat/slf4g/internal/test/assert"
@@ -86,4 +87,23 @@ func Test_loggerCache_GetLogger_returnsRootIfFactoryReturnsNil(t *testing.T) {
 
 	assert.ToBeSame(t, givenRootLogger, actual1)
 	assert.ToBeSame(t, givenRootLogger, actual2)
+}
+
+func Test_loggerCache_GetNames(t *testing.T) {
+	instance := &loggerCache{
+		root:    newMockLogger("root"),
+		loggers: make(map[string]Logger),
+		factory: func(name string) Logger { return newMockLogger(name) },
+	}
+
+	actualBefore := instance.GetNames()
+	assert.ToBeEqual(t, []string{}, actualBefore)
+
+	assert.ToBeNotNil(t, instance.GetRootLogger())
+	assert.ToBeNotNil(t, instance.GetLogger("foo"))
+	assert.ToBeNotNil(t, instance.GetLogger("bar"))
+
+	actualAfter := instance.GetNames()
+	sort.Strings(actualAfter)
+	assert.ToBeEqual(t, []string{"bar", "foo"}, actualAfter)
 }

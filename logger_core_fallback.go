@@ -25,6 +25,19 @@ var (
 	pid = os.Getpid()
 )
 
+// IsFallbackLogger will return true of the given (Core)Logger is the fallback
+// logger. This usually indicates that currently there is no other
+// implementation of slf4g registered.
+func IsFallbackLogger(candidate CoreLogger) bool {
+	for candidate != nil {
+		if _, ok := candidate.(*fallbackCoreLogger); ok {
+			return true
+		}
+		candidate = UnwrapCoreLogger(candidate)
+	}
+	return false
+}
+
 type fallbackCoreLogger struct {
 	*fallbackProvider
 	name  string
@@ -164,8 +177,8 @@ func (instance *fallbackCoreLogger) formatValue(v interface{}) ([]byte, error) {
 	return json.Marshal(v)
 }
 
-func (instance *fallbackCoreLogger) IsLevelEnabled(level level.Level) bool {
-	return instance.GetLevel().CompareTo(level) <= 0
+func (instance *fallbackCoreLogger) IsLevelEnabled(v level.Level) bool {
+	return instance.GetLevel().CompareTo(v) <= 0
 }
 
 func (instance *fallbackCoreLogger) GetName() string {

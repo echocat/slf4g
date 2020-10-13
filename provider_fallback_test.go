@@ -8,6 +8,23 @@ import (
 	"github.com/echocat/slf4g/internal/test/assert"
 )
 
+func Test_IsFallbackProvider(t *testing.T) {
+	previous := SetProvider(nil)
+	defer SetProvider(previous)
+
+	assert.ToBeEqual(t, true, IsFallbackProvider(fallbackProviderV))
+	assert.ToBeEqual(t, true, IsFallbackProvider(GetProvider()))
+	assert.ToBeEqual(t, []Provider{}, GetAllProviders())
+
+	SetProvider(newMockProvider("foo"))
+
+	assert.ToBeEqual(t, false, IsFallbackProvider(GetProvider()))
+
+	SetProvider(nil)
+
+	assert.ToBeEqual(t, true, IsFallbackProvider(GetProvider()))
+}
+
 func Test_fallbackProvider_GetName(t *testing.T) {
 	actual := fallbackProviderV.GetName()
 

@@ -20,7 +20,7 @@ type CoreLogger interface {
 	GetName() string
 
 	// GetProvider will return the Provider where this (Core)Logger belongs to.
-	// This is for example used to access the Levels or fields.KeysSpec used
+	// This is for example used to access the AllLevels or fields.KeysSpec used
 	// by this (Core)Logger.
 	GetProvider() Provider
 }
