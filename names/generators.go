@@ -9,11 +9,16 @@ import (
 
 // FullLoggerNameGenerator creates a meaningful name for loggers with the full
 // name out of given objects.
-var FullLoggerNameGenerator = defaultFullLoggerNameGenerator
+var FullLoggerNameGenerator func(something interface{}) string
 
 // CurrentPackageLoggerNameGenerator creates a meaningful name for loggers with
 // the package of the caller who calls this method (respecting the frameToSkip).
-var CurrentPackageLoggerNameGenerator = defaultCurrentPackageLoggerNameGenerator
+var CurrentPackageLoggerNameGenerator func(framesToSkip int) string
+
+func init() {
+	FullLoggerNameGenerator = defaultFullLoggerNameGenerator
+	CurrentPackageLoggerNameGenerator = defaultCurrentPackageLoggerNameGenerator
+}
 
 func defaultFullLoggerNameGenerator(something interface{}) (result string) {
 	switch v := something.(type) {
