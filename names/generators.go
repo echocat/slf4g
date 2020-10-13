@@ -9,18 +9,10 @@ import (
 
 // FullLoggerNameGenerator creates a meaningful name for loggers with the full
 // name out of given objects.
-var FullLoggerNameGenerator func(something interface{}) string
-
-// CurrentPackageLoggerNameGenerator creates a meaningful name for loggers with
-// the package of the caller who calls this method (respecting the frameToSkip).
-var CurrentPackageLoggerNameGenerator func(framesToSkip int) string
-
-func init() {
-	FullLoggerNameGenerator = defaultFullLoggerNameGenerator
-	CurrentPackageLoggerNameGenerator = defaultCurrentPackageLoggerNameGenerator
-}
-
-func defaultFullLoggerNameGenerator(something interface{}) (result string) {
+func FullLoggerNameGenerator(something interface{}) string {
+	if f := FullLoggerNameCustomizer; f != nil {
+		return f(something)
+	}
 	switch v := something.(type) {
 	case string:
 		return v
@@ -32,6 +24,7 @@ func defaultFullLoggerNameGenerator(something interface{}) (result string) {
 	for t != nil && t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
+	var result string
 	if t != nil {
 		result = t.PkgPath() + "." + t.Name()
 	}
@@ -41,7 +34,12 @@ func defaultFullLoggerNameGenerator(something interface{}) (result string) {
 	return result
 }
 
-func defaultCurrentPackageLoggerNameGenerator(framesToSkip int) string {
+// CurrentPackageLoggerNameGenerator creates a meaningful name for loggers with
+// the package of the caller who calls this method (respecting the frameToSkip).
+func CurrentPackageLoggerNameGenerator(framesToSkip int) string {
+	if f := CurrentPackageLoggerNameCustomizer; f != nil {
+		return f(framesToSkip + 1)
+	}
 	pcs := make([]uintptr, 3)
 	depth := runtime.Callers(framesToSkip+2, pcs)
 	frames := runtime.CallersFrames(pcs[:depth])
@@ -62,3 +60,11 @@ func defaultCurrentPackageLoggerNameGenerator(framesToSkip int) string {
 
 	return result
 }
+
+// FullLoggerNameCustomizer will override the default behavior of
+// FullLoggerNameGenerator if set.
+var FullLoggerNameCustomizer func(something interface{}) string
+
+// CurrentPackageLoggerNameCustomizer will override the default behavior of
+// CurrentPackageLoggerNameGenerator if set.
+var CurrentPackageLoggerNameCustomizer func(framesToSkip int) string

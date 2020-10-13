@@ -10,6 +10,23 @@ import (
 
 var forPackageSomethingFromInit = CurrentPackageLoggerNameGenerator(0)
 
+func Test_FullLoggerNameGenerator_usesCustomizer(t *testing.T) {
+	before := FullLoggerNameCustomizer
+	defer func() { FullLoggerNameCustomizer = before }()
+
+	givenSomething := struct{ foo string }{"bar"}
+	called := false
+	FullLoggerNameCustomizer = func(something interface{}) string {
+		assert.ToBeEqual(t, givenSomething, something)
+		called = true
+		return "xyz"
+	}
+
+	actual := FullLoggerNameGenerator(givenSomething)
+	assert.ToBeEqual(t, true, called)
+	assert.ToBeEqual(t, "xyz", actual)
+}
+
 func Test_FullLoggerNameGenerator_panics_withNil(t *testing.T) {
 	assert.Execution(t, func() {
 		FullLoggerNameGenerator(nil)
@@ -34,6 +51,22 @@ func Test_FullLoggerNameGenerator_regularCases(t *testing.T) {
 	assert.ToBeEqual(t, "github.com/echocat/slf4g/names.someStruct", FullLoggerNameGenerator(someStruct{}))
 	assert.ToBeEqual(t, "github.com/echocat/slf4g/names.someStruct", FullLoggerNameGenerator((*someStruct)(nil)))
 	assert.ToBeEqual(t, "github.com/echocat/slf4g/fields.empty", FullLoggerNameGenerator(fields.Empty()))
+}
+
+func Test_CurrentPackageLoggerNameGenerator_usesCustomizer(t *testing.T) {
+	before := CurrentPackageLoggerNameCustomizer
+	defer func() { CurrentPackageLoggerNameCustomizer = before }()
+
+	called := false
+	CurrentPackageLoggerNameCustomizer = func(framesToSkip int) string {
+		assert.ToBeEqual(t, 124, framesToSkip)
+		called = true
+		return "xyz"
+	}
+
+	actual := CurrentPackageLoggerNameGenerator(123)
+	assert.ToBeEqual(t, true, called)
+	assert.ToBeEqual(t, "xyz", actual)
 }
 
 func Test_CurrentPackageLoggerNameGenerator(t *testing.T) {
