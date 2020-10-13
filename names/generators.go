@@ -9,7 +9,13 @@ import (
 
 // FullLoggerNameGenerator creates a meaningful name for loggers with the full
 // name out of given objects.
-var FullLoggerNameGenerator = func(something interface{}) (result string) {
+var FullLoggerNameGenerator = defaultFullLoggerNameGenerator
+
+// CurrentPackageLoggerNameGenerator creates a meaningful name for loggers with
+// the package of the caller who calls this method (respecting the frameToSkip).
+var CurrentPackageLoggerNameGenerator = defaultCurrentPackageLoggerNameGenerator
+
+func defaultFullLoggerNameGenerator(something interface{}) (result string) {
 	switch v := something.(type) {
 	case string:
 		return v
@@ -30,9 +36,7 @@ var FullLoggerNameGenerator = func(something interface{}) (result string) {
 	return result
 }
 
-// CurrentPackageLoggerNameGenerator creates a meaningful name for loggers with
-// the package of the caller who calls this method (respecting the frameToSkip).
-var CurrentPackageLoggerNameGenerator = func(framesToSkip int) string {
+func defaultCurrentPackageLoggerNameGenerator(framesToSkip int) string {
 	pcs := make([]uintptr, 3)
 	depth := runtime.Callers(framesToSkip+2, pcs)
 	frames := runtime.CallersFrames(pcs[:depth])
