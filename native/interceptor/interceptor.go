@@ -1,12 +1,13 @@
 package interceptor
 
 import (
-	log "github.com/echocat/slf4g"
 	"math"
 	"sort"
+
+	log "github.com/echocat/slf4g"
 )
 
-var Default Interceptor = Interceptors{}
+var Default Interceptors
 
 type Interceptor interface {
 	OnBeforeLog(log.Event, log.Provider) (intercepted log.Event)
@@ -101,4 +102,13 @@ func (instance *noop) OnAfterLog(log.Event, log.Provider) (canContinue bool) {
 
 func (instance *noop) GetPriority() int16 {
 	return math.MaxInt16
+}
+
+type Aware interface {
+	GetInterceptor() Interceptor
+}
+
+type MutableAware interface {
+	Aware
+	SetInterceptor(Interceptor)
 }

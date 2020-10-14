@@ -1,65 +1,135 @@
 package native
 
 import (
-	"fmt"
-	"os"
+	"sync/atomic"
+	"unsafe"
 
 	"github.com/echocat/slf4g/level"
 
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/native/consumer"
-	"github.com/echocat/slf4g/native/formatter"
-	"github.com/echocat/slf4g/native/interceptor"
 	nlevel "github.com/echocat/slf4g/native/level"
 	"github.com/echocat/slf4g/native/location"
 )
 
-var DefaultProvider = NewProvider("native")
-var _ = log.RegisterProvider(DefaultProvider)
+var DefaultProvider = &Provider{}
 
+// Provider implements log.Provider of the slf4g framework for the "native"
+// implementation.
+//
+// Usually you should not be required to create by your self. Either use simply
+// log.GetProvider() (which will return this provider once you imported this
+// package at least one time somewhere) or if you want to customize its behavior
+// simply modify DefaultProvider.
 type Provider struct {
-	Cache log.LoggerCache
-	Name  string
+	// Name represents the name of this Provider. If empty it will be "native"
+	// by default.
+	Name string
 
-	Level         level.Level
-	LevelNames    nlevel.Names
+	// Level represents the level.Level of this Provider that is at least
+	// required that the loggers managed by this Provider will respect logged
+	// events. This can be overwritten by individual loggers. If this value is
+	// not set it will be log.Info by default.
+	Level level.Level
+
+	// LevelNames is used to format the levels as human readable
+	// representations. If this is not set it will be level.DefaultNames by
+	// default.
+	LevelNames nlevel.Names
+
+	// LevelProvider is used to determine the log.Levels support by this
+	// Provider and all of its managed loggers. If this is not set it will be
+	// level.GetProvider() by default.
 	LevelProvider level.Provider
 
-	Formatter       formatter.Formatter
-	Interceptor     interceptor.Interceptor
-	Consumer        consumer.Consumer
-	LocationFactory location.Factory
-	FieldsKeysSpec  FieldsKeysSpec
+	// Consumer is used to handle the logged events with. If this is not set it
+	// will be consumer.Default by default.
+	Consumer consumer.Consumer
+
+	// LocationDiscovery is used to discover the location.Location where events
+	// are happen. If this is not set it will be location.DefaultDiscovery by
+	// default.
+	LocationDiscovery location.Discovery
+
+	// FieldsKeysSpec defines what are the keys of the major fields managed by
+	// this Provider and its managed loggers. If this is not set it will be
+	// DefaultFieldKeysSpec by default.
+	FieldsKeysSpec FieldKeysSpec
+
+	// CoreLoggerCustomizer will be called in every moment a logger instance
+	// needs to be created (if configured).
+	CoreLoggerCustomizer CoreLoggerCustomizer
+
+	cachePointer unsafe.Pointer
 }
 
-func NewProvider(name string) *Provider {
-	result := &Provider{
-		Name: name,
-
-		Level:         level.Info,
-		LevelNames:    nlevel.DefaultLevelNamesFacade,
-		LevelProvider: level.GetProvider(),
-
-		Formatter:       formatter.DefaultFacade,
-		LocationFactory: location.DefaultFactoryFacade,
-		FieldsKeysSpec:  DefaultFieldsKeySpecFacade,
-	}
-	result.Cache = log.NewLoggerCache(result.rootFactory, result.factory)
-	result.Consumer = consumer.NewWritingConsumer(result, os.Stderr)
-	return result
-}
-
+// GetName implements log.Provider#GetName()
 func (instance *Provider) GetName() string {
-	return instance.Name
+	if v := instance.Name; v != "" {
+		return v
+	}
+	return "native"
 }
 
+// GetRootLogger implements log.Provider#GetRootLogger()
 func (instance *Provider) GetRootLogger() log.Logger {
-	return instance.Cache.GetRootLogger()
+	return instance.getCache().GetRootLogger()
 }
 
+// GetLogger implements log.Provider#GetLogger()
 func (instance *Provider) GetLogger(name string) log.Logger {
-	return instance.Cache.GetLogger(name)
+	return instance.getCache().GetLogger(name)
+}
+
+// SetLevel changes the current level.Level of this log.Provider. If set to
+// 0 it will force this Provider to use log.Info.
+func (instance *Provider) SetLevel(level level.Level) {
+	instance.Level = level
+}
+
+// GetLevel returns the current level.Level where this log.Provider is set to.
+func (instance *Provider) GetLevel() level.Level {
+	if v := instance.Level; v != 0 {
+		return v
+	}
+	return level.Info
+}
+
+// GetFieldKeysSpec implements log.Provider#GetFieldKeysSpec()
+func (instance *Provider) GetFieldKeysSpec() fields.KeysSpec {
+	return instance.getFieldKeysSpec()
+}
+
+// GetLevelNames returns an instance of level.Names that support by formatting
+// level.Level managed by this Provider.
+func (instance *Provider) GetLevelNames() nlevel.Names {
+	if v := instance.LevelNames; v != nil {
+		return v
+	}
+	if v := nlevel.DefaultNames; v != nil {
+		return v
+	}
+	return nlevel.NewNames()
+}
+
+// GetAllLevels implements log.Provider#GetAllLevels()
+func (instance *Provider) GetAllLevels() level.Levels {
+	p := instance.LevelProvider
+	if p == nil {
+		p = level.GetProvider()
+	}
+	return p.GetLevels()
+}
+
+func (instance *Provider) getFieldKeysSpec() FieldKeysSpec {
+	if v := instance.FieldsKeysSpec; v != nil {
+		return v
+	}
+	if v := DefaultFieldKeysSpec; v != nil {
+		return v
+	}
+	return &FieldKeysSpecImpl{}
 }
 
 func (instance *Provider) rootFactory() log.Logger {
@@ -71,77 +141,51 @@ func (instance *Provider) factory(name string) log.Logger {
 		provider: instance,
 		name:     name,
 	}
+	if c := instance.CoreLoggerCustomizer; c != nil {
+		return log.NewLogger(c(instance, cl))
+	}
 	return log.NewLogger(cl)
 }
 
-func (instance *Provider) SetLevel(level level.Level) {
-	instance.Level = level
-}
-
-func (instance *Provider) GetLevel() level.Level {
-	return instance.Level
-}
-
-func (instance *Provider) GetInterceptor() interceptor.Interceptor {
-	return instance.Interceptor
-}
-
-func (instance *Provider) SetInterceptor(v interceptor.Interceptor) {
-	instance.Interceptor = v
-}
-
-func (instance *Provider) GetConsumer() consumer.Consumer {
-	return instance.Consumer
-}
-
-func (instance *Provider) SetConsumer(v consumer.Consumer) {
-	if v == nil {
-		panic(fmt.Sprintf("Provider %s cannot handle a consumer of nil.", instance.GetName()))
+func (instance *Provider) getLocationDiscovery() location.Discovery {
+	if v := instance.LocationDiscovery; v != nil {
+		return v
 	}
-	instance.Consumer = v
+	if v := location.DefaultDiscovery; v != nil {
+		return v
+	}
+	return location.NoopDiscovery()
 }
 
 func (instance *Provider) getConsumer() consumer.Consumer {
-	if c := instance.GetConsumer(); c != nil {
-		return c
+	if v := instance.Consumer; v != nil {
+		return v
 	}
-	panic(fmt.Sprintf("There is no consume for provider %s configured.", instance.GetName()))
-}
-
-func (instance *Provider) GetFormatter() formatter.Formatter {
-	return instance.Formatter
-}
-
-func (instance *Provider) SetFormatter(v formatter.Formatter) {
-	instance.Formatter = v
-}
-
-func (instance *Provider) GetAllLevels() level.Levels {
-	if p := instance.LevelProvider; p != nil {
-		return p.GetLevels()
+	if v := consumer.Default; v != nil {
+		return v
 	}
-	return level.GetProvider().GetLevels()
+	return consumer.Noop()
 }
 
-func (instance *Provider) GetLocationFactory() location.Factory {
-	return instance.LocationFactory
-}
+func (instance *Provider) getCache() log.LoggerCache {
+	for {
+		v := (*log.LoggerCache)(atomic.LoadPointer(&instance.cachePointer))
+		if v != nil && *v != nil {
+			return *v
+		}
 
-func (instance *Provider) SetLocationFactory(v location.Factory) {
-	instance.LocationFactory = v
-}
+		c := log.NewLoggerCache(instance.rootFactory, instance.factory)
 
-func (instance *Provider) getLocationFactory() location.Factory {
-	if f := instance.GetLocationFactory(); f != nil {
-		return f
+		if atomic.CompareAndSwapPointer(&instance.cachePointer, unsafe.Pointer(v), unsafe.Pointer(&c)) {
+			return c
+		}
 	}
-	return location.NoopFactory
 }
 
-func (instance *Provider) GetFieldKeysSpec() fields.KeysSpec {
-	return instance.FieldsKeysSpec
-}
+// CoreLoggerCustomizer can be used by the Provider to customize created
+// instances of CoreLogger. See Provider.CoreLoggerCustomizer
+type CoreLoggerCustomizer func(*Provider, *CoreLogger) log.CoreLogger
 
-func (instance *Provider) GetLevelNames() nlevel.Names {
-	return instance.LevelNames
+func init() {
+	log.RegisterProvider(DefaultProvider)
 }

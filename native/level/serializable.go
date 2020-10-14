@@ -1,4 +1,4 @@
-package nlevel
+package level
 
 import (
 	"encoding"
@@ -8,8 +8,8 @@ import (
 	"github.com/echocat/slf4g/level"
 )
 
-func AsSerializable(level *level.Level, aware NamesAware) Serializable {
-	return &serializable{level, aware.GetLevelNames()}
+func AsSerializable(in *level.Level, aware NamesAware) Serializable {
+	return &serializableImpl{in, aware.GetLevelNames()}
 }
 
 type Serializable interface {
@@ -20,25 +20,25 @@ type Serializable interface {
 	AsLevel() *level.Level
 }
 
-type serializable struct {
+type serializableImpl struct {
 	*level.Level
-	levelNames Names
+	names Names
 }
 
-func (instance serializable) AsLevel() *level.Level {
+func (instance serializableImpl) AsLevel() *level.Level {
 	return instance.Level
 }
 
-func (instance serializable) MarshalText() (text []byte, err error) {
-	name, err := instance.levelNames.FromOrdinal(uint16(*instance.Level))
+func (instance serializableImpl) MarshalText() (text []byte, err error) {
+	name, err := instance.names.FromOrdinal(uint16(*instance.Level))
 	if err != nil {
 		return nil, err
 	}
 	return []byte(name), nil
 }
 
-func (instance serializable) UnmarshalText(text []byte) error {
-	ordinal, err := instance.levelNames.ToOrdinal(string(text))
+func (instance serializableImpl) UnmarshalText(text []byte) error {
+	ordinal, err := instance.names.ToOrdinal(string(text))
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func (instance serializable) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func (instance serializable) String() string {
+func (instance serializableImpl) String() string {
 	if text, err := instance.MarshalText(); err != nil {
 		return fmt.Sprintf("illegal-level-%d", instance)
 	} else {
@@ -55,6 +55,6 @@ func (instance serializable) String() string {
 	}
 }
 
-func (instance *serializable) Set(plain string) error {
+func (instance *serializableImpl) Set(plain string) error {
 	return instance.UnmarshalText([]byte(plain))
 }

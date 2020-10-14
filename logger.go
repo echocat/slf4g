@@ -114,8 +114,12 @@ type Logger interface {
 }
 
 // NewLogger create a new fully implemented instance of a logger out of a given
-// CoreLogger instance.
+// CoreLogger instance. If the given CoreLogger is already a fully implemented
+// Logger it will be returned instantly.
 func NewLogger(cl CoreLogger) Logger {
+	if l, ok := cl.(Logger); ok {
+		return l
+	}
 	return NewLoggerFacade(func() CoreLogger { return cl })
 }
 

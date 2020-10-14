@@ -16,10 +16,6 @@ const (
 	DefaultLevelKey = "level"
 )
 
-var (
-	DefaultJson = NewJson()
-)
-
 type Json struct {
 	LevelKey          string
 	PrintGlobalLogger bool

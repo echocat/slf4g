@@ -6,22 +6,51 @@ import (
 	"strings"
 )
 
+// ErrIllegalMode will be returned in situations where illegal values or
+// representations if a Mode are provided.
+var ErrIllegalMode = errors.New("illegal color-mode")
+
+// Mode defines how colors should be used.
 type Mode uint8
 
-var (
-	ErrIllegalMode = errors.New("illegal color-mode")
-)
-
 const (
-	ModeAuto   Mode = 0
+	// ModeAuto will result in that the application tries to detect
+	// automatically if it is possible and meaningful to use colors in the
+	// a given terminal.
+	ModeAuto Mode = 0
+
+	// ModeAlways tells the application to always use colorful output (if
+	// supported).
 	ModeAlways Mode = 1
-	ModeNever  Mode = 2
+
+	// ModeNever tells the application to never use colorful output.
+	ModeNever Mode = 2
 )
 
-func (instance Mode) IsEnabled(support Support) bool {
+// AllModes returns all possible values of Mode.
+func AllModes() Modes {
+	return Modes{ModeAuto, ModeAlways, ModeNever}
+}
+
+// ShouldColorizeByCheckingHints will check for the given hints if output should
+// be colorized or not. If the ModeAuto is used it will use the given hints to
+// detect if colorization is meaningful or not.
+func (instance Mode) ShouldColorizeByCheckingHints(hints interface{}) bool {
+	support := SupportedNone
+	if aware, ok := hints.(interface {
+		GetColorSupport() Supported
+	}); ok {
+		support = aware.GetColorSupport()
+	}
+	return instance.ShouldColorize(support)
+}
+
+// ShouldColorize will check for the given combination of this instance and the
+// given Support value if the output should be colorized.
+func (instance Mode) ShouldColorize(checking Supported) bool {
 	switch instance {
 	case ModeAuto:
-		return support.IsSupported()
+		return checking.IsSupported()
 	case ModeAlways:
 		return true
 	default:
@@ -29,6 +58,7 @@ func (instance Mode) IsEnabled(support Support) bool {
 	}
 }
 
+// MarshalText implements encoding.TextMarshaler
 func (instance Mode) MarshalText() (text []byte, err error) {
 	switch instance {
 	case ModeAuto:
@@ -42,6 +72,7 @@ func (instance Mode) MarshalText() (text []byte, err error) {
 	}
 }
 
+// UnmarshalText implements encoding.TextMarshaler
 func (instance *Mode) UnmarshalText(text []byte) error {
 	switch strings.ToLower(string(text)) {
 	case "auto", "automatic", "detect":
@@ -58,6 +89,7 @@ func (instance *Mode) UnmarshalText(text []byte) error {
 	}
 }
 
+// String prints out a meaningful representation of this instance.
 func (instance Mode) String() string {
 	if text, err := instance.MarshalText(); err != nil {
 		return fmt.Sprintf("illegal-color-mode-%d", instance)
@@ -66,6 +98,24 @@ func (instance Mode) String() string {
 	}
 }
 
-func (instance Mode) Set(plain string) error {
+// Set will set this instance to the given plain value or errors.
+func (instance *Mode) Set(plain string) error {
 	return instance.UnmarshalText([]byte(plain))
+}
+
+// Modes is a multiple version of Mode.
+type Modes []Mode
+
+// Strings returns a meaningful representation of all of it's values.
+func (instance Modes) Strings() []string {
+	result := make([]string, len(instance))
+	for i, v := range instance {
+		result[i] = v.String()
+	}
+	return result
+}
+
+// String returns a meaningful representation of this instance.
+func (instance Modes) String() string {
+	return strings.Join(instance.Strings(), ",")
 }

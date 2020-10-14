@@ -1,4 +1,4 @@
-package nlevel
+package level
 
 import (
 	"errors"
@@ -10,11 +10,8 @@ import (
 )
 
 var (
-	ErrIllegalLevel               = errors.New("illegal level")
-	DefaultLevelNames       Names = &defaultNames{}
-	DefaultLevelNamesFacade       = NewNamesFacade(func() Names {
-		return DefaultLevelNames
-	})
+	ErrIllegalLevel = errors.New("illegal level")
+	DefaultNames    = NewNames()
 )
 
 type Names interface {
@@ -22,8 +19,12 @@ type Names interface {
 	ToOrdinal(string) (uint16, error)
 }
 
-func NewNamesFacade(provider func() Names) Names {
+func NewLevelNamesFacade(provider func() Names) Names {
 	return namesFacade(provider)
+}
+
+func NewNames() Names {
+	return &defaultNames{}
 }
 
 type defaultNames struct{}

@@ -58,8 +58,7 @@ func Test_UnwrapLogger_withCoreUnwrapMethod(t *testing.T) {
 
 	actual := UnwrapLogger(given)
 
-	assert.ToBeOfType(t, &loggerImpl{}, actual)
-	assert.ToBeEqual(t, wrapped, actual.(*loggerImpl).coreProvider())
+	assert.ToBeSame(t, wrapped, actual)
 }
 
 func Test_UnwrapLogger_withUnwrapMethod(t *testing.T) {

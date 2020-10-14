@@ -15,44 +15,36 @@ import (
 	nlevel "github.com/echocat/slf4g/native/level"
 )
 
-var (
-	DefaultConsole = NewConsole()
-)
+const DefaultTimeLayout = "15:04:05.000"
+const DefaultLevelWidth = int8(-5)
+const DefaultMinMessageWidth = int16(50)
+const DefaultMultiLineMessageAfterFields = true
+const DefaultAllowMultiLineMessage = true
+const DefaultPrintGlobalLogger = false
 
 type Console struct {
-	ColorMode           color.Mode
-	LevelBasedColorizer color.LevelBasedColorizer
+	ColorMode      color.Mode
+	LevelColorizer nlevel.Colorizer
 
 	TimeLayout string
 
-	LevelWidth int8
+	LevelWidth *int8
 
-	MinMessageWidth             int16
-	MultiLineMessageAfterFields bool
-	AllowMultiLineMessage       bool
+	MinMessageWidth             *int16
+	MultiLineMessageAfterFields *bool
+	AllowMultiLineMessage       *bool
 
-	PrintGlobalLogger   bool
-	FieldValueFormatter ValueFormatter
-	FieldSorter         fields.KeySorter
+	PrintGlobalLogger *bool
+	ValueFormatter    ValueFormatter
+	FieldSorter       fields.KeySorter
 }
 
-func NewConsole() *Console {
-	return &Console{
-		LevelBasedColorizer: color.DefaultLevelBasedColorizer,
-		ColorMode:           color.ModeAuto,
-
-		TimeLayout: "15:04:05.000",
-
-		LevelWidth: -5,
-
-		MinMessageWidth:             50,
-		MultiLineMessageAfterFields: true,
-		AllowMultiLineMessage:       true,
-
-		FieldValueFormatter: DefaultValueFormatter,
-		PrintGlobalLogger:   false,
-		FieldSorter:         fields.DefaultKeySorter,
+func NewConsole(customizer ...func(*Console)) *Console {
+	result := &Console{}
+	for _, c := range customizer {
+		c(result)
 	}
+	return result
 }
 
 func (instance *Console) Format(event log.Event, using log.Provider, h hints.Hints) (_ []byte, err error) {
@@ -63,7 +55,11 @@ func (instance *Console) Format(event log.Event, using log.Provider, h hints.Hin
 	if message != nil {
 		message = instance.formatMessage(message)
 		if strings.ContainsRune(*message, '\n') {
-			multiLineMessage = instance.MultiLineMessageAfterFields
+			if v := instance.MultiLineMessageAfterFields; v != nil {
+				multiLineMessage = *instance.MultiLineMessageAfterFields
+			} else {
+				multiLineMessage = DefaultMultiLineMessageAfterFields
+			}
 		} else {
 			// Multiline message could be printed on a dedicated line
 			*message = instance.ensureMessageWidth(*message)
@@ -116,29 +112,16 @@ func (instance *Console) formatMessage(message *string) *string {
 	*message = strings.TrimFunc(*message, func(r rune) bool {
 		return r == '\r' || !unicode.IsGraphic(r)
 	})
-	if !instance.AllowMultiLineMessage {
+	if (instance.AllowMultiLineMessage != nil && *instance.AllowMultiLineMessage) ||
+		(instance.AllowMultiLineMessage == nil && DefaultAllowMultiLineMessage) {
 		*message = strings.ReplaceAll(*message, "\n", "\u23CE")
 	}
 	return message
 }
 
-func (instance *Console) shouldColorize(h hints.Hints) bool {
-	switch instance.ColorMode {
-	case color.ModeAlways:
-		return true
-	case color.ModeAuto:
-		if ca, ok := h.(hints.ColorsSupport); ok {
-			return ca.GetColorSupport().IsSupported()
-		}
-		return false
-	default:
-		return false
-	}
-}
-
 func (instance *Console) printTimestamp(event log.Event, buf *bytes.Buffer, using log.Provider, h hints.Hints) (cn int, err error) {
 	if ts := log.GetTimestampOf(event, using); ts != nil {
-		if instance.shouldColorize(h) {
+		if instance.ColorMode.ShouldColorizeByCheckingHints(h) {
 			_, err = buf.WriteString(`[30;1m` + instance.formatTime(*ts) + `[0m `)
 			cn = len(instance.formatTime(*ts)) + 1
 		} else {
@@ -161,18 +144,24 @@ func (instance *Console) printLevel(event log.Event, buf *bytes.Buffer, using lo
 func (instance *Console) printFields(event log.Event, buf *bytes.Buffer, using log.Provider, h hints.Hints) (printed bool, err error) {
 	formatter := instance.getFieldValueFormatter()
 
-	messageKey := using.GetFieldKeysSpec().GetMessage()
-	loggerKey := using.GetFieldKeysSpec().GetLogger()
-	timestampKey := using.GetFieldKeysSpec().GetTimestamp()
+	keysSpec := using.GetFieldKeysSpec()
+	messageKey := keysSpec.GetMessage()
+	loggerKey := keysSpec.GetLogger()
+	timestampKey := keysSpec.GetTimestamp()
 
-	err = fields.SortedForEach(event, instance.FieldSorter, func(k string, v interface{}) error {
+	printGlobalLogger := DefaultPrintGlobalLogger
+	if v := instance.PrintGlobalLogger; v != nil {
+		printGlobalLogger = *v
+	}
+
+	err = fields.SortedForEach(event, instance.getFieldSorter(), func(k string, v interface{}) error {
 		if vl, ok := v.(fields.Lazy); ok {
 			v = vl.Get()
 		}
 		if v == nil {
 			return nil
 		}
-		if !instance.PrintGlobalLogger && k == loggerKey && v == "ROOT" {
+		if !printGlobalLogger && k == loggerKey && v == "ROOT" {
 			return nil
 		}
 		if k == messageKey || k == timestampKey {
@@ -195,32 +184,52 @@ func (instance *Console) printField(event log.Event, key string, value interface
 }
 
 func (instance *Console) colorize(event log.Event, message string, h hints.Hints) string {
-	if instance.shouldColorize(h) {
-		return instance.getLevelBasedColorizer().Colorize(event.GetLevel(), message)
+	if instance.ColorMode.ShouldColorizeByCheckingHints(h) {
+		return instance.getLevelColorizer().ColorizeByLevel(event.GetLevel(), message)
 	}
 	return message
 }
 
-func (instance *Console) getLevelBasedColorizer() color.LevelBasedColorizer {
-	if v := instance.LevelBasedColorizer; v != nil {
+func (instance *Console) getLevelColorizer() nlevel.Colorizer {
+	if v := instance.LevelColorizer; v != nil {
 		return v
 	}
-	return color.DefaultLevelBasedColorizer
+	if v := nlevel.DefaultColorizer; v != nil {
+		return v
+	}
+	return nlevel.NoopColorizer()
 }
 
 func (instance *Console) getFieldValueFormatter() ValueFormatter {
-	if v := instance.FieldValueFormatter; v != nil {
+	if v := instance.ValueFormatter; v != nil {
 		return v
 	}
 	return DefaultValueFormatter
 }
 
+func (instance *Console) getFieldSorter() fields.KeySorter {
+	if v := instance.FieldSorter; v != nil {
+		return v
+	}
+	if v := fields.DefaultKeySorter; v != nil {
+		return v
+	}
+	return func([]string) {}
+}
+
 func (instance *Console) formatTime(time time.Time) string {
-	return time.Format(instance.TimeLayout)
+	lt := instance.TimeLayout
+	if lt == "" {
+		lt = DefaultTimeLayout
+	}
+	return time.Format(lt)
 }
 
 func (instance *Console) ensureMessageWidth(str string) string {
-	width := instance.MinMessageWidth
+	width := DefaultMinMessageWidth
+	if v := instance.MinMessageWidth; v != nil {
+		width = *v
+	}
 	l2r := true
 	if width < 0 {
 		width *= -1
@@ -264,7 +273,11 @@ func (instance *Console) printWithIdent(str string, firstLine, otherLines string
 
 func (instance *Console) ensureLevelWidth(l level.Level, using log.Provider) string {
 	str := nlevel.AsSerializable(&l, using.(nlevel.NamesAware)).String()
-	width := instance.LevelWidth
+	width := DefaultLevelWidth
+	if v := instance.LevelWidth; v != nil {
+		width = *v
+	}
+
 	l2r := true
 	if width < 0 {
 		width *= -1

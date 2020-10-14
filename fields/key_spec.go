@@ -19,5 +19,25 @@ type KeysSpec interface {
 	GetLogger() string
 }
 
-// KeysSpecProvider provides a populated instance of KeysSpec.
-type KeysSpecProvider func() KeysSpec
+// NewKeysSpecFacade creates a facade of KeysSpec using the given provider.
+func NewKeysSpecFacade(provider func() KeysSpec) KeysSpec {
+	return keysSpecFacade(provider)
+}
+
+type keysSpecFacade func() KeysSpec
+
+func (instance keysSpecFacade) GetTimestamp() string {
+	return instance().GetTimestamp()
+}
+
+func (instance keysSpecFacade) GetMessage() string {
+	return instance().GetMessage()
+}
+
+func (instance keysSpecFacade) GetError() string {
+	return instance().GetError()
+}
+
+func (instance keysSpecFacade) GetLogger() string {
+	return instance().GetLogger()
+}
