@@ -15,7 +15,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install golangci-lingt
+      - name: Install golangci-lint
         run: |
           go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.31.0
           golangci-lint --version
@@ -70,14 +70,14 @@ jobs:
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          goveralls -coverprofile=profile.cov -service=github -parallel -flagname=go-${{ matrix.go-version }}-${{ matrix.os }}-slf4g
+          goveralls "-coverprofile=profile.cov" "-service=github" "-parallel" "-flagname=go-${{ matrix.go-version }}-${{ matrix.os }}-slf4g"
 
       - name: Send coverage slf4g/native
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd native
-          goveralls -coverprofile=profile.cov -service=github -parallel -flagname=go-${{ matrix.go-version }}-${{ matrix.os }}-slf4g-native
+          goveralls "-coverprofile=profile.cov" "-service=github" "-parallel" "-flagname=go-${{ matrix.go-version }}-${{ matrix.os }}-slf4g-native"
 
   # notifies that all test jobs are finished.
   finish:
@@ -98,4 +98,4 @@ jobs:
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          goveralls -parallel-finish -service=github
+          goveralls "-parallel-finish" "-service=github"
