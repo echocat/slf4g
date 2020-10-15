@@ -57,6 +57,7 @@ jobs:
           cp profile.cov.tmp3 profile.cov
 
       - name: Test slf4g/native
+        run: |
           cd native
 
           go test --tags=mock -v -race -covermode atomic "-coverprofile=profile.cov.tmp1" ./...
