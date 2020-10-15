@@ -15,73 +15,73 @@ This is the native/reference implementation of [Simple Log Framework for Golang 
 
    This should be only done in `main/main.go`:
 
-   ```go
-   package main
+    ```go
+    package main
    
-   import (
-      _ "github.com/echocat/slf4g/native"
-   )
+    import (
+    	_ "github.com/echocat/slf4g/native"
+    )
    
-   func main() {
-      // do your stuff...
-   }
-   ```
+    func main() {
+    	// do your stuff...
+    }
+    ```
 
 3. In each package create a logger variable, in best case you create a file named `common.go` or `package.go` which will contain it:
 
-   ```go
-   package foo
+    ```go
+    package foo
    
-   import (
-      "github.com/echocat/slf4g"
-   )
+    import (
+    	"github.com/echocat/slf4g"
+    )
    
-   var logger = log.GetLoggerForCurrentPackage()
-   ```
+    var logger = log.GetLoggerForCurrentPackage()
+    ```
 
 4. Now you're ready to go. In every file of this package you can do stuff, like:
 
-   ```go
-   package foo
+    ```go
+    package foo
    
-   func MyFunction() {
-      logger.Info("Hello, world!")
+    func MyFunction() {
+    	logger.Info("Hello, world!")
 
-      if !loaded {
-         logger.With("field", 123).
-                Warn("That's not great.")
-      }
+    	if !loaded {
+    		logger.With("field", 123).
+    		       Warn("That's not great.")
+    	}
 
-      if err := doSomething(); err != nil {
-         logger.WithError(err).
-                Error("Doh!")
-      }
-   }
-   ```
+    	if err := doSomething(); err != nil {
+    		logger.WithError(err).
+    		       Error("Doh!")
+    	}
+    }
+    ```
 
    For sure, you're able to simply do stuff like that (although to ensure interoperability this is not recommended):
 
-   ```go
-   package foo
-   
-   import (
-      "github.com/echocat/slf4g"
-   )
-   
-   func MyFunction() {
-      log.Info("Hello, world!")
+    ```go
+    package foo
+    
+    import (
+    	"github.com/echocat/slf4g"
+    )
+    
+    func MyFunction() {
+    	log.Info("Hello, world!")
+    
+    	if !loaded {
+    		log.With("field", 123).
+    		    Warn("That's not great.")
+    	}
 
-      if !loaded {
-         log.With("field", 123).
-             Warn("That's not great.")
-      }
-
-      if err := doSomething(); err != nil {
-         log.WithError(err).
-             Error("Doh!")
-      }
-   }
-   ```
+    	if err := doSomething(); err != nil {
+    		log.WithError(err).
+    		    Error("Doh!")
+    	}
+    }
+    ```
 
 ## Customization
 
@@ -95,11 +95,11 @@ Configure the text formatter to be used.
 
 ```go
 formatter.Default = formatter.NewText(func (v *formatter.Text) {
-// ... which never colorizes something.
-v.ColorMode = color.ModeNever
+	// ... which never colorizes something.
+	v.ColorMode = color.ModeNever
 
-// ... and just prints hours, minutes and seconds
-v.TimeLayout = "150405"
+	// ... and just prints hours, minutes and seconds
+	v.TimeLayout = "150405"
 })
 ```
 
@@ -119,7 +119,7 @@ Change the location.Discovery to log everything detail instead of simplified (wh
 
 ```go
 location.DefaultDiscovery = location.NewCallerDiscovery(func (t *location.CallerDiscovery) {
-t.ReportingDetail = location.CallerReportingDetailDetailed
+	t.ReportingDetail = location.CallerReportingDetailDetailed
 })
 ```
 

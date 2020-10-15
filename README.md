@@ -76,73 +76,73 @@ It is very easy to use slf4g (as the naming is promising ☺️):
 
    This should be only done in `main/main.go`:
 
-   ```go
-   package main
+    ```go
+    package main
    
-   import (
-      _ "github.com/echocat/slf4g/native"
-   )
+    import (
+    	_ "github.com/echocat/slf4g/native"
+    )
    
-   func main() {
-      // do your stuff...
-   }
-   ```
+    func main() {
+    	// do your stuff...
+    }
+    ```
 
 4. In each package create a logger variable, in best case you create a file named `common.go` or `package.go` which will contain it:
 
-   ```go
-   package foo
+    ```go
+    package foo
    
-   import (
-      "github.com/echocat/slf4g"
-   )
+    import (
+    	"github.com/echocat/slf4g"
+    )
    
-   var logger = log.GetLoggerForCurrentPackage()
-   ```
+    var logger = log.GetLoggerForCurrentPackage()
+    ```
 
 5. Now you're ready to go. In every file of this package you can do stuff, like:
 
-   ```go
-   package foo
+    ```go
+    package foo
    
-   func MyFunction() {
-      logger.Info("Hello, world!")
+    func MyFunction() {
+    	logger.Info("Hello, world!")
 
-      if !loaded {
-         logger.With("field", 123).
-                Warn("That's not great.")
-      }
+    	if !loaded {
+    		logger.With("field", 123).
+    		       Warn("That's not great.")
+    	}
 
-      if err := doSomething(); err != nil {
-         logger.WithError(err).
-                Error("Doh!")
-      }
-   }
-   ```
+    	if err := doSomething(); err != nil {
+    		logger.WithError(err).
+    		       Error("Doh!")
+    	}
+    }
+    ```
 
    For sure, you're able to simply do stuff like that (although to ensure interoperability this is not recommended):
 
-   ```go
-   package foo
-   
-   import (
-      "github.com/echocat/slf4g"
-   )
-   
-   func MyFunction() {
-      log.Info("Hello, world!")
+    ```go
+    package foo
+    
+    import (
+    	"github.com/echocat/slf4g"
+    )
+    
+    func MyFunction() {
+    	log.Info("Hello, world!")
+    
+    	if !loaded {
+    		log.With("field", 123).
+    		    Warn("That's not great.")
+    	}
 
-      if !loaded {
-         log.With("field", 123).
-             Warn("That's not great.")
-      }
-
-      if err := doSomething(); err != nil {
-         log.WithError(err).
-             Error("Doh!")
-      }
-   }
-   ```
+    	if err := doSomething(); err != nil {
+    		log.WithError(err).
+    		    Error("Doh!")
+    	}
+    }
+    ```
 
 Done. Enjoy!
 
