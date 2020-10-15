@@ -1,5 +1,5 @@
 on: [ push, pull_request ]
-name: Test
+name: Continuous Integration
 jobs:
   lint:
     strategy:
@@ -14,7 +14,7 @@ jobs:
 
       - name: Install golangci-lingt
         run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.31.0
+          go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.31.0
           golangci-lint --version
 
       - name: Checkout code
