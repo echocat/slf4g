@@ -20,7 +20,7 @@ func ExampleDetectSupportForWriter_detection() {
 }
 
 //goland:noinspection GoTestName
-func ExampleIsOnlyThereToPreventTheFullFileListedInDocs() {}
+func Examplecolorize() {}
 
 func colorize(_ []byte) []byte {
 	panic("should never be called.")
