@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	formatter.Default = formatter.NewConsole()
+	formatter.Default = formatter.NewText()
 
 	log.With("foo", "bar").Debug("hello, debug")
 	log.With("a", "foo").

@@ -32,19 +32,6 @@ func AllModes() Modes {
 	return Modes{ModeAuto, ModeAlways, ModeNever}
 }
 
-// ShouldColorizeByCheckingHints will check for the given hints if output should
-// be colorized or not. If the ModeAuto is used it will use the given hints to
-// detect if colorization is meaningful or not.
-func (instance Mode) ShouldColorizeByCheckingHints(hints interface{}) bool {
-	support := SupportedNone
-	if aware, ok := hints.(interface {
-		GetColorSupport() Supported
-	}); ok {
-		support = aware.GetColorSupport()
-	}
-	return instance.ShouldColorize(support)
-}
-
 // ShouldColorize will check for the given combination of this instance and the
 // given Support value if the output should be colorized.
 func (instance Mode) ShouldColorize(checking Supported) bool {

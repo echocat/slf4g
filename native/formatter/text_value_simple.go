@@ -8,11 +8,27 @@ import (
 	"github.com/echocat/slf4g/fields"
 )
 
-type SimpleValueFormatter struct {
+// SimpleTextValueFormatter is a simple implementation of
+// TextValueFormatter.
+type SimpleTextValueFormatter struct {
+	// QuoteType defines how values are quoted.
 	QuoteType QuoteType
 }
 
-func (instance *SimpleValueFormatter) FormatValue(v interface{}, _ log.Provider) ([]byte, error) {
+// NewSimpleTextValueFormatter creates a new instance of
+// SimpleTextValueFormatter which is ready to use.
+func NewSimpleTextValueFormatter(customizer ...func(*SimpleTextValueFormatter)) *SimpleTextValueFormatter {
+	result := &SimpleTextValueFormatter{
+		QuoteType: QuoteTypeMinimal,
+	}
+	for _, c := range customizer {
+		c(result)
+	}
+	return result
+}
+
+// FormatValue implements TextValueFormatter.FormatValue().
+func (instance *SimpleTextValueFormatter) FormatValue(v interface{}, _ log.Provider) ([]byte, error) {
 	if vl, ok := v.(fields.Lazy); ok {
 		v = vl.Get()
 	}
@@ -62,29 +78,4 @@ func (instance *SimpleValueFormatter) FormatValue(v interface{}, _ log.Provider)
 	}
 
 	return json.Marshal(v)
-}
-
-type QuoteType uint8
-
-const (
-	QuoteTypeMinimal    QuoteType = 0
-	QuoteTypeNormal     QuoteType = 1
-	QuoteTypeEverything QuoteType = 2
-)
-
-func stringNeedsQuoting(text string) bool {
-	for _, ch := range text {
-		if !((ch >= 'a' && ch <= 'z') ||
-			(ch >= 'A' && ch <= 'Z') ||
-			(ch >= '0' && ch <= '9') ||
-			ch == '-' || ch == '.' || ch == ',' || ch == '_' || ch == ':' ||
-			ch == '/' || ch == '\\' ||
-			ch == '@' || ch == '^' || ch == '+' || ch == '#' ||
-			ch == '(' || ch == ')' ||
-			ch == '[' || ch == ']' ||
-			ch == '{' || ch == '}') {
-			return true
-		}
-	}
-	return false
 }

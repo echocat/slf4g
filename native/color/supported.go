@@ -84,7 +84,7 @@ func (instance Supported) MarshalText() (text []byte, err error) {
 // UnmarshalText implements encoding.TextMarshaler
 func (instance *Supported) UnmarshalText(text []byte) error {
 	switch strings.ToLower(string(text)) {
-	case "none", "no", "0", "never":
+	case "none", "no", "0", "never", "off", "false":
 		*instance = SupportedNone
 		return nil
 	case "native":
@@ -108,7 +108,7 @@ func (instance Supported) String() string {
 }
 
 // Set will set this instance to the given plain value or errors.
-func (instance Supported) Set(plain string) error {
+func (instance *Supported) Set(plain string) error {
 	return instance.UnmarshalText([]byte(plain))
 }
 

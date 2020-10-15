@@ -1,4 +1,4 @@
-// +build appengine
+// +build !mock,appengine
 
 package color
 

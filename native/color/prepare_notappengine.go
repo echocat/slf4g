@@ -1,4 +1,4 @@
-// +build !appengine,!js,!windows,!nacl,!plan9
+// +build !mock,!appengine,!js,!windows,!nacl,!plan9
 
 package color
 

@@ -17,8 +17,8 @@ func Example_customization() {
 	// Set the log level globally to Debug
 	native.DefaultProvider.Level = level.Debug
 
-	// Configure the console formatter to be used.
-	formatter.Default = formatter.NewConsole(func(v *formatter.Console) {
+	// Configure the text formatter to be used.
+	formatter.Default = formatter.NewText(func(v *formatter.Text) {
 		// ... which never colorizes something.
 		v.ColorMode = color.ModeNever
 
@@ -36,7 +36,7 @@ func Example_customization() {
 
 	// Change the location.Discovery to log everything detail instead of
 	// simplified (which is the default).
-	location.DefaultDiscovery = location.NewCallerAwareDiscovery(func(t *location.CallerAwareDiscovery) {
-		t.Detail = location.CallerAwareDetailDetailed
+	location.DefaultDiscovery = location.NewCallerDiscovery(func(t *location.CallerDiscovery) {
+		t.ReportingDetail = location.CallerReportingDetailDetailed
 	})
 }

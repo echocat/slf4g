@@ -39,7 +39,11 @@ jobs:
       - name: Test slf4g/native
         run: |
           cd native
-          go test -v -covermode atomic "-coverprofile=profile.cov" ./...
+          go test --tags=mock -v -covermode atomic "-coverprofile=profile.cov.tmp1" ./...
+
+          cat profile.cov.tmp1 | grep -v "echocat/slf4g/native/internal/demo_" > profile.cov.tmp2
+          cat profile.cov.tmp2 | grep -v "echocat/slf4g/native/color/prepare_" > profile.cov.tmp3
+          cp profile.cov.tmp3 profile.cov
 
       - name: Send coverage slf4g/native
         uses: shogo82148/actions-goveralls@v1

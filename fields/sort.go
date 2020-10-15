@@ -42,3 +42,10 @@ func SortedForEach(input ForEachEnabled, sorter KeySorter, consumer func(key str
 
 // KeySorter is used to sort all keys. See Sort() for more details.
 type KeySorter func(keys []string)
+
+// NoopKeySorter provides a noop implementation of KeySorter.
+func NoopKeySorter() KeySorter {
+	return keySorterV
+}
+
+var keySorterV = func(what []string) {}

@@ -8,7 +8,7 @@ import (
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/native/color"
 	"github.com/echocat/slf4g/native/formatter"
-	"github.com/echocat/slf4g/native/formatter/hints"
+	"github.com/echocat/slf4g/native/hints"
 	"github.com/echocat/slf4g/native/interceptor"
 )
 
@@ -21,8 +21,8 @@ type Writer struct {
 
 	PrintErrorOnColorInitialization bool
 
-	colorSupport color.Supported
-	initOnce     sync.Once
+	colorSupported *color.Supported
+	mutex          sync.Mutex
 }
 
 func NewWriter(out io.Writer, customizer ...func(*Writer)) *Writer {
@@ -39,6 +39,10 @@ func (instance *Writer) Consume(event log.Event, source log.CoreLogger) {
 	if event == nil {
 		return
 	}
+
+	instance.mutex.Lock()
+	defer instance.mutex.Unlock()
+	instance.initIfRequired()
 
 	if event = instance.onBeforeLog(event, source); event == nil {
 		return
@@ -63,33 +67,18 @@ func (instance *Writer) Consume(event log.Event, source log.CoreLogger) {
 }
 
 func (instance *Writer) initIfRequired() {
-	instance.initOnce.Do(func() {
-		var err error
-		instance.out, instance.colorSupport, err = color.DetectSupportForWriter(instance.out)
+	if instance.colorSupported == nil {
+		out, supported, err := color.DetectSupportForWriter(instance.out)
 		if err != nil && instance.PrintErrorOnColorInitialization {
 			_, _ = fmt.Fprintf(instance.out, "ERR!!! Cannot intiate colors for target: %v\n", err)
 		}
-	})
+		instance.out = out
+		instance.colorSupported = &supported
+	}
 }
 
 func (instance *Writer) getOut() io.Writer {
 	return instance.out
-}
-
-func (instance *Writer) GetInterceptor() interceptor.Interceptor {
-	return instance.Interceptor
-}
-
-func (instance *Writer) SetInterceptor(v interceptor.Interceptor) {
-	instance.Interceptor = v
-}
-
-func (instance *Writer) GetFormatter() formatter.Formatter {
-	return instance.Formatter
-}
-
-func (instance *Writer) SetFormatter(v formatter.Formatter) {
-	instance.Formatter = v
 }
 
 func (instance *Writer) onBeforeLog(event log.Event, source log.CoreLogger) log.Event {
@@ -101,22 +90,23 @@ func (instance *Writer) onAfterLog(event log.Event, source log.CoreLogger) (canC
 }
 
 func (instance *Writer) getInterceptor() interceptor.Interceptor {
-	if v := instance.GetInterceptor(); v != nil {
+	if v := instance.Interceptor; v != nil {
 		return v
 	}
-	return interceptor.Default
+	if v := interceptor.Default; v != nil {
+		return v
+	}
+	return interceptor.Noop()
 }
 
 func (instance *Writer) getFormatter() formatter.Formatter {
-	if v := instance.GetFormatter(); v != nil {
+	if v := instance.Formatter; v != nil {
 		return v
 	}
 	if v := formatter.Default; v != nil {
 		return v
 	}
-	return formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
-		return nil, nil
-	})
+	return formatter.Noop()
 }
 
 func (instance *Writer) provideHints(event log.Event, source log.CoreLogger) hints.Hints {
@@ -130,7 +120,6 @@ type writingConsumerHints struct {
 	*Writer
 }
 
-func (instance *Writer) GetColorSupport() color.Supported {
-	instance.initIfRequired()
-	return instance.colorSupport
+func (instance *Writer) IsColorSupported() color.Supported {
+	return *instance.colorSupported
 }

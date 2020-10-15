@@ -9,22 +9,40 @@ import (
 
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
-	"github.com/echocat/slf4g/native/formatter/hints"
+	"github.com/echocat/slf4g/native/hints"
 )
 
 const (
-	DefaultLevelKey = "level"
+	// DefaultKeyLevel is the default key to write the level of log entries to
+	// the output with. See Json.KeyLevel for more information.
+	DefaultKeyLevel = "level"
 )
 
+// Json is an implementation of Formatter which formats given log entries in a
+// JSON format (https://en.wikipedia.org/wiki/JSON) where every log.Entry is one
+// line in the output.
 type Json struct {
-	LevelKey          string
-	PrintGlobalLogger bool
+	// KeyLevel is the key to write the level of log entries to the output with.
+	// If not set DefaultKeyLevel is used.
+	KeyLevel string
+
+	// PrintRootLogger will (if set to true) also print the field logger for the
+	// root logger. If set to false the logger field will be only printed for
+	// every logger but not for the root one. If not set set
+	// DefaultPrintRootLogger will be used.
+	PrintRootLogger *bool
 }
 
-func NewJson() *Json {
-	return &Json{}
+// NewJson creates a new instance of Text which is ready to use.
+func NewJson(customizer ...func(*Json)) *Json {
+	result := &Json{}
+	for _, c := range customizer {
+		c(result)
+	}
+	return result
 }
 
+// Format implements Formatter.Format()
 func (instance *Json) Format(event log.Event, using log.Provider, _ hints.Hints) ([]byte, error) {
 	fail := func(err error) ([]byte, error) {
 		return nil, fmt.Errorf("cannot format event (%v): %w", event, err)
@@ -41,13 +59,18 @@ func (instance *Json) Format(event log.Event, using log.Provider, _ hints.Hints)
 		return fail(err)
 	}
 
+	printRootLogger := DefaultPrintRootLogger
+	if v := instance.PrintRootLogger; v != nil {
+		printRootLogger = *v
+	}
+
 	loggerKey := using.GetFieldKeysSpec().GetLogger()
 	if err := event.ForEach(func(k string, v interface{}) error {
 		if vl, ok := v.(fields.Lazy); ok {
 			v = vl.Get()
 		}
 
-		if !instance.PrintGlobalLogger && k == loggerKey && v == "ROOT" {
+		if !printRootLogger && k == loggerKey && v == "ROOT" {
 			return nil
 		}
 		if _, err := to.Write([]byte(",")); err != nil {
@@ -93,8 +116,8 @@ func (instance *Json) encode(buf *bytes.Buffer, enc *json.Encoder, k string, v i
 }
 
 func (instance *Json) getLevelKey() string {
-	if v := instance.LevelKey; v != "" {
+	if v := instance.KeyLevel; v != "" {
 		return v
 	}
-	return DefaultLevelKey
+	return DefaultKeyLevel
 }

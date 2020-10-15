@@ -1,8 +1,6 @@
 package location
 
 import (
-	"fmt"
-	"os"
 	"path"
 	"runtime"
 	"strconv"
@@ -11,30 +9,60 @@ import (
 	log "github.com/echocat/slf4g"
 )
 
-type CallerAware interface {
+// Caller describes the Location of the caller which leads to the initial
+// creation of an log.Event.
+type Caller interface {
 	Location
 
+	// GetFrame provides the runtime.Frame of the initial caller.
 	GetFrame() runtime.Frame
 }
 
-type CallerAwareMode uint8
+// CallerReportingType defines how Caller should report the caller location, if
+// requested.
+type CallerReportingType uint8
 
 const (
-	CallerAwareModePreferFunction CallerAwareMode = 0
-	CallerAwareModePreferFile     CallerAwareMode = 1
+	// CallerReportingTypePrefersType will prefer to report the caller's type
+	// (package/type/function). If this is not possible the file will be
+	// reported instead.
+	CallerReportingTypePrefersType CallerReportingType = 0
+
+	// CallerReportingTypePrefersFile will prefer to report the caller's file.
+	// If this is not possible the type (package/type/function) will be used
+	// instead.
+	CallerReportingTypePrefersFile CallerReportingType = 1
 )
 
-type CallerAwareDetail uint8
+// CallerReportingDetail defines how detailed Caller will report the caller
+// location, of requested.
+type CallerReportingDetail uint8
 
 const (
-	CallerAwareDetailDetailed   CallerAwareDetail = 0
-	CallerAwareDetailSimplified CallerAwareDetail = 1
+	// CallerReportingDetailDetailed will report the full available details of
+	// the configured CallerReportingType.
+	CallerReportingDetailDetailed CallerReportingDetail = 0
+
+	// CallerReportingDetailSimplified will report a simplified version of all
+	// available details of the configured CallerReportingType. It is focussed
+	// to be still detailed enough to get a meaningful understanding about the
+	// location but still keep it short.
+	CallerReportingDetailSimplified CallerReportingDetail = 1
 )
 
-func NewCallerAwareDiscovery(customizer ...func(*CallerAwareDiscovery)) *CallerAwareDiscovery {
-	result := &CallerAwareDiscovery{
-		Mode:   CallerAwareModePreferFunction,
-		Detail: CallerAwareDetailSimplified,
+// CallerDiscovery implements Discovery that discovers the Caller's Location of
+// a provided log.Event.
+type CallerDiscovery struct {
+	ReportingType   CallerReportingType
+	ReportingDetail CallerReportingDetail
+}
+
+// NewCallerDiscovery create a new instance of CallerDiscovery which is ready to
+// use.
+func NewCallerDiscovery(customizer ...func(*CallerDiscovery)) *CallerDiscovery {
+	result := &CallerDiscovery{
+		ReportingType:   CallerReportingTypePrefersType,
+		ReportingDetail: CallerReportingDetailSimplified,
 	}
 	for _, c := range customizer {
 		c(result)
@@ -42,46 +70,41 @@ func NewCallerAwareDiscovery(customizer ...func(*CallerAwareDiscovery)) *CallerA
 	return result
 }
 
-type CallerAwareDiscovery struct {
-	Mode   CallerAwareMode
-	Detail CallerAwareDetail
-}
-
-func (instance *CallerAwareDiscovery) DiscoveryLocation(event log.Event, callDepth int) Location {
+// DiscoverLocation implements Discovery.DiscoverLocation().
+func (instance *CallerDiscovery) DiscoverLocation(event log.Event, extraCallDepth int) Location {
 	if event == nil {
 		return nil
 	}
 
 	pcs := make([]uintptr, 2)
-	depth := runtime.Callers(callDepth+2, pcs)
+	depth := runtime.Callers(extraCallDepth+2, pcs)
 	frames := runtime.CallersFrames(pcs[:depth])
 
 	frame, _ := frames.Next()
-
-	doDebugCallerAwareFactory(callDepth)
 
 	if frame.Line < 0 {
 		frame.Line = 0
 	}
 
-	return &callerAwareImpl{instance, &frame}
-}
-
-type callerAwareImpl struct {
-	*CallerAwareDiscovery
-
-	frame *runtime.Frame
-}
-
-func (instance callerAwareImpl) Get() interface{} {
-	if instance.Mode == CallerAwareModePreferFunction && instance.frame.Function != "" {
-		return instance.formatFunction()
+	return &callerImpl{
+		frame: &frame,
 	}
-	if instance.Mode == CallerAwareModePreferFile && instance.frame.File != "" {
+}
+
+type callerImpl struct {
+	discovery *CallerDiscovery
+	frame     *runtime.Frame
+}
+
+func (instance callerImpl) Get() interface{} {
+	if instance.discovery.ReportingType == CallerReportingTypePrefersType && instance.frame.Function != "" {
+		return instance.formatType()
+	}
+	if instance.discovery.ReportingType == CallerReportingTypePrefersFile && instance.frame.File != "" {
 		return instance.formatFile()
 	}
 	if instance.frame.Function != "" {
-		return instance.formatFunction()
+		return instance.formatType()
 	}
 	if instance.frame.File != "" {
 		return instance.formatFile()
@@ -89,48 +112,38 @@ func (instance callerAwareImpl) Get() interface{} {
 	return nil
 }
 
-func (instance callerAwareImpl) formatFile() string {
+func (instance callerImpl) formatFile() string {
 	file := instance.frame.File
-	if instance.Detail == CallerAwareDetailSimplified {
+	if instance.discovery.ReportingDetail == CallerReportingDetailSimplified {
 		file = path.Base(file)
 	}
-	return file
+	result := file
+	if instance.frame.Line > 0 {
+		result += ":" + strconv.Itoa(instance.frame.Line)
+	}
+	return result
 }
 
-func (instance callerAwareImpl) formatFunction() string {
+func (instance callerImpl) formatType() string {
 	aPackage := strings.Split(instance.frame.Function, "/")
 	lastPart := aPackage[len(aPackage)-1]
 	lastSubParts := strings.SplitN(lastPart, ".", 3)
 
 	var p string
-	if instance.Detail == CallerAwareDetailSimplified {
+	if instance.discovery.ReportingDetail == CallerReportingDetailSimplified {
 		p = lastSubParts[0]
 	} else {
 		aPackage[len(aPackage)-1] = lastSubParts[0]
 		p = strings.Join(aPackage, "/")
 	}
 
-	return p + "." + strings.Join(lastSubParts[1:], ".") + ":" + strconv.Itoa(instance.frame.Line)
-}
-
-func (instance *callerAwareImpl) GetFrame() runtime.Frame {
-	return *instance.frame
-}
-
-var debugCallerAwareFactory = false
-
-func doDebugCallerAwareFactory(callDepth int) {
-	//goland:noinspection GoBoolExpressions
-	if debugCallerAwareFactory {
-		pcs := make([]uintptr, 20)
-		depth := runtime.Callers(0, pcs)
-		frames := runtime.CallersFrames(pcs[:depth])
-
-		_, _ = fmt.Fprintf(os.Stderr, "callerDepth: %d\n", callDepth+2)
-		i := 1
-		for f, again := frames.Next(); again; f, again = frames.Next() {
-			_, _ = fmt.Fprintf(os.Stderr, "\t[%d] %s:%d\n", i, f.File, f.Line)
-			i++
-		}
+	result := p + "." + strings.Join(lastSubParts[1:], ".")
+	if instance.frame.Line > 0 {
+		result += ":" + strconv.Itoa(instance.frame.Line)
 	}
+	return result
+}
+
+func (instance *callerImpl) GetFrame() runtime.Frame {
+	return *instance.frame
 }
