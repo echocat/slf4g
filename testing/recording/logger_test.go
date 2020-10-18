@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/echocat/slf4g/fields"
+
 	"github.com/echocat/slf4g/level"
 
 	log "github.com/echocat/slf4g"
@@ -84,4 +86,46 @@ func Test_Logger_LogEvent(t *testing.T) {
 
 	assert.ToBeEqual(t, 1, instance.Len())
 	assert.ToBeEqual(t, true, instance.MustContains(expected))
+}
+
+func Test_Logger_NewEvent(t *testing.T) {
+	instance := NewLogger()
+	instance.Provider = NewProvider()
+
+	assert.ToBeEqual(t, &event{
+		provider: instance.Provider,
+		fields:   fields.Empty(),
+		level:    level.Fatal,
+	}, instance.NewEvent(level.Fatal, nil))
+
+	assert.ToBeEqual(t, &event{
+		provider: instance.Provider,
+		fields:   fields.WithAll(map[string]interface{}{"foo": "bar"}),
+		level:    level.Fatal,
+	}, instance.NewEvent(level.Fatal, map[string]interface{}{"foo": "bar"}))
+}
+
+func Test_Logger_NewEventWithFields(t *testing.T) {
+	instance := NewLogger()
+	instance.Provider = NewProvider()
+
+	assert.ToBeEqual(t, &event{
+		provider: instance.Provider,
+		fields:   fields.Empty(),
+		level:    level.Fatal,
+	}, instance.NewEventWithFields(level.Fatal, nil))
+
+	assert.ToBeEqual(t, &event{
+		provider: instance.Provider,
+		fields:   fields.With("foo", "bar"),
+		level:    level.Fatal,
+	}, instance.NewEventWithFields(level.Fatal, fields.With("foo", "bar")))
+}
+
+func Test_Logger_Accepts(t *testing.T) {
+	instance := NewLogger()
+	instance.Provider = NewProvider()
+
+	assert.ToBeEqual(t, false, instance.Accepts(nil))
+	assert.ToBeEqual(t, true, instance.Accepts(&event{}))
 }

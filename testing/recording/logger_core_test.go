@@ -305,3 +305,42 @@ func Test_CoreLogger_SetLevel(t *testing.T) {
 	instance.SetLevel(0)
 	assert.ToBeEqual(t, level.Level(0), instance.Level)
 }
+
+func Test_CoreLogger_NewEvent(t *testing.T) {
+	instance := NewCoreLogger()
+
+	assert.ToBeEqual(t, &event{
+		provider: instance.Provider,
+		fields:   fields.Empty(),
+		level:    level.Fatal,
+	}, instance.NewEvent(level.Fatal, nil))
+
+	assert.ToBeEqual(t, &event{
+		provider: instance.Provider,
+		fields:   fields.WithAll(map[string]interface{}{"foo": "bar"}),
+		level:    level.Fatal,
+	}, instance.NewEvent(level.Fatal, map[string]interface{}{"foo": "bar"}))
+}
+
+func Test_CoreLogger_NewEventWithFields(t *testing.T) {
+	instance := NewCoreLogger()
+
+	assert.ToBeEqual(t, &event{
+		provider: instance.Provider,
+		fields:   fields.Empty(),
+		level:    level.Fatal,
+	}, instance.NewEventWithFields(level.Fatal, nil))
+
+	assert.ToBeEqual(t, &event{
+		provider: instance.Provider,
+		fields:   fields.With("foo", "bar"),
+		level:    level.Fatal,
+	}, instance.NewEventWithFields(level.Fatal, fields.With("foo", "bar")))
+}
+
+func Test_CoreLogger_Accepts(t *testing.T) {
+	instance := NewCoreLogger()
+
+	assert.ToBeEqual(t, false, instance.Accepts(nil))
+	assert.ToBeEqual(t, true, instance.Accepts(&event{}))
+}

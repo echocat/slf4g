@@ -100,6 +100,20 @@ func Test_SortedForEach_withEmptyFields(t *testing.T) {
 	assert.ToBeEqual(t, expected, actualEntries)
 }
 
+func Test_NoopKeySorter(t *testing.T) {
+	actual := NoopKeySorter()
+
+	assert.ToBeEqual(t, noopKeySorterV, actual)
+}
+
+func Test_noopKeySorterV(t *testing.T) {
+	givenStrings := []string{"c", "d", "e"}
+
+	noopKeySorterV(givenStrings)
+
+	assert.ToBeEqual(t, []string{"c", "d", "e"}, givenStrings)
+}
+
 type entries []entry
 
 func (instance *entries) add(k string, v interface{}) {

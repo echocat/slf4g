@@ -45,7 +45,7 @@ type KeySorter func(keys []string)
 
 // NoopKeySorter provides a noop implementation of KeySorter.
 func NoopKeySorter() KeySorter {
-	return keySorterV
+	return noopKeySorterV
 }
 
-var keySorterV = func(what []string) {}
+var noopKeySorterV = func(what []string) {}
