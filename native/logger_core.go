@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/echocat/slf4g/fields"
+
 	"github.com/echocat/slf4g/level"
 
 	log "github.com/echocat/slf4g"
@@ -85,6 +87,29 @@ func (instance *CoreLogger) GetName() string {
 // GetProvider implements log.CoreLogger#GetProvider()
 func (instance *CoreLogger) GetProvider() log.Provider {
 	return instance.getProvider()
+}
+
+// NewEvent implements log.CoreLogger#NewEvent()
+func (instance *CoreLogger) NewEvent(l level.Level, values map[string]interface{}) log.Event {
+	return instance.NewEventWithFields(l, fields.WithAll(values))
+}
+
+// NewEventWithFields provides a shortcut if an event should directly created
+// from fields.
+func (instance *CoreLogger) NewEventWithFields(l level.Level, f fields.Fields) log.Event {
+	if f == nil {
+		f = fields.Empty()
+	}
+	return &event{
+		provider: instance.provider,
+		fields:   f,
+		level:    l,
+	}
+}
+
+// Accepts implements log.CoreLogger#Accepts()
+func (instance *CoreLogger) Accepts(e log.Event) bool {
+	return e != nil
 }
 
 func (instance *CoreLogger) getConsumer() consumer.Consumer {

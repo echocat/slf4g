@@ -12,12 +12,12 @@ import (
 )
 
 func Test_AreEventsEqual_isEqual(t *testing.T) {
-	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error).
+	givenLogger := newMockLogger("foo")
+	givenLeft := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error).
+	givenRight := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
@@ -29,12 +29,12 @@ func Test_AreEventsEqual_isEqual(t *testing.T) {
 }
 
 func Test_AreEventsEqual_isNotEqual(t *testing.T) {
-	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error).
+	givenLogger := newMockLogger("foo")
+	givenLeft := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error).
+	givenRight := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 666)
@@ -52,12 +52,12 @@ func Test_AreEventsEqual_withNilDefaultEventEquality(t *testing.T) {
 	}()
 	DefaultEventEquality = nil
 
-	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error).
+	givenLogger := newMockLogger("foo")
+	givenLeft := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error).
+	givenRight := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
@@ -69,12 +69,12 @@ func Test_AreEventsEqual_withNilDefaultEventEquality(t *testing.T) {
 }
 
 func Test_EventEqualityImpl_AreEventsEqual_withNilInstance(t *testing.T) {
-	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error).
+	givenLogger := newMockLogger("foo")
+	givenLeft := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error).
+	givenRight := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
@@ -87,12 +87,12 @@ func Test_EventEqualityImpl_AreEventsEqual_withNilInstance(t *testing.T) {
 	assert.ToBeEqual(t, false, actual)
 }
 func Test_EventEqualityImpl_AreEventsEqual_withNilFunction(t *testing.T) {
-	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error).
+	givenLogger := newMockLogger("foo")
+	givenLeft := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error).
+	givenRight := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 666)
@@ -108,16 +108,16 @@ func Test_EventEqualityImpl_AreEventsEqual_withNilFunction(t *testing.T) {
 }
 
 func Test_EventEqualityImpl_AreEventsEqual_Level_respecting(t *testing.T) {
-	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error).
+	givenLogger := newMockLogger("foo")
+	givenLeft := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight1 := NewEvent(givenProvider, level.Info).
+	givenRight1 := givenLogger.NewEvent(level.Info, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight2 := NewEvent(givenProvider, level.Error).
+	givenRight2 := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
@@ -136,16 +136,16 @@ func Test_EventEqualityImpl_AreEventsEqual_Level_respecting(t *testing.T) {
 }
 
 func Test_EventEqualityImpl_AreEventsEqual_Level_ignoring(t *testing.T) {
-	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error).
+	givenLogger := newMockLogger("foo")
+	givenLeft := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight1 := NewEvent(givenProvider, level.Info).
+	givenRight1 := givenLogger.NewEvent(level.Info, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight2 := NewEvent(givenProvider, level.Error).
+	givenRight2 := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
@@ -164,12 +164,12 @@ func Test_EventEqualityImpl_AreEventsEqual_Level_ignoring(t *testing.T) {
 }
 
 func Test_EventEqualityImpl_AreEventsEqual_moreEntries(t *testing.T) {
-	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error).
+	givenLogger := newMockLogger("foo")
+	givenLeft := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error).
+	givenRight := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3).
@@ -186,12 +186,12 @@ func Test_EventEqualityImpl_AreEventsEqual_moreEntries(t *testing.T) {
 }
 
 func Test_EventEqualityImpl_AreEventsEqual_lessEntries(t *testing.T) {
-	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error).
+	givenLogger := newMockLogger("foo")
+	givenLeft := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error).
+	givenRight := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2)
 	instance := EventEqualityImpl{
@@ -206,12 +206,12 @@ func Test_EventEqualityImpl_AreEventsEqual_lessEntries(t *testing.T) {
 }
 
 func Test_EventEqualityImpl_AreEventsEqual_oneDifferentValue(t *testing.T) {
-	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error).
+	givenLogger := newMockLogger("foo")
+	givenLeft := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error).
+	givenRight := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 666)
@@ -227,12 +227,12 @@ func Test_EventEqualityImpl_AreEventsEqual_oneDifferentValue(t *testing.T) {
 }
 
 func Test_EventEqualityImpl_AreEventsEqual_oneDifferentKeys(t *testing.T) {
-	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error).
+	givenLogger := newMockLogger("foo")
+	givenLeft := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error).
+	givenRight := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("xyz", 3)
@@ -248,8 +248,8 @@ func Test_EventEqualityImpl_AreEventsEqual_oneDifferentKeys(t *testing.T) {
 }
 
 func Test_EventEqualityImpl_AreEventsEqual_leftEmptyRightNil(t *testing.T) {
-	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error).
+	givenLogger := newMockLogger("foo")
+	givenLeft := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
@@ -266,9 +266,9 @@ func Test_EventEqualityImpl_AreEventsEqual_leftEmptyRightNil(t *testing.T) {
 }
 
 func Test_EventEqualityImpl_AreEventsEqual_leftNilRightEmpty(t *testing.T) {
-	givenProvider := newMockProvider("test")
+	givenLogger := newMockLogger("foo")
 	var givenLeft Event
-	givenRight := NewEvent(givenProvider, level.Error).
+	givenRight := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("xyz", 3)
@@ -294,12 +294,12 @@ func Test_EventEqualityImpl_AreEventsEqual_bothNil(t *testing.T) {
 }
 
 func Test_EventEqualityImpl_AreEventsEqual_functionWithErr(t *testing.T) {
-	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error).
+	givenLogger := newMockLogger("foo")
+	givenLeft := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error).
+	givenRight := givenLogger.NewEvent(level.Error, nil).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
@@ -326,9 +326,9 @@ func Test_EventEqualityImpl_AreEventsEqual_WithIgnoringKeys(t *testing.T) {
 }
 
 func Test_EventEqualityFunc_AreEventsEqual(t *testing.T) {
-	givenProvider := newMockProvider("foo")
-	givenLeft := NewEvent(givenProvider, level.Info)
-	givenRight := NewEvent(givenProvider, level.Warn)
+	givenLogger := newMockLogger("foo")
+	givenLeft := givenLogger.NewEvent(level.Info, nil)
+	givenRight := givenLogger.NewEvent(level.Warn, nil)
 	givenErr := errors.New("expected")
 
 	instance := EventEqualityFunc(func(left, right Event) (bool, error) {
@@ -364,9 +364,9 @@ func Test_NewEventEqualityFacade(t *testing.T) {
 }
 
 func Test_eventEqualityFacade_AreEventsEqual(t *testing.T) {
-	givenProvider := newMockProvider("foo")
-	givenLeft := NewEvent(givenProvider, level.Info)
-	givenRight := NewEvent(givenProvider, level.Warn)
+	givenLogger := newMockLogger("foo")
+	givenLeft := givenLogger.NewEvent(level.Info, nil)
+	givenRight := givenLogger.NewEvent(level.Warn, nil)
 	givenErr := errors.New("expected")
 	givenEquality := EventEqualityFunc(func(left, right Event) (bool, error) {
 		assert.ToBeSame(t, givenLeft, left)
@@ -395,11 +395,11 @@ func Test_eventEqualityFacade_AreEventsEqual_WithIgnoringKeys(t *testing.T) {
 }
 
 func Test_ignoringKeysEventEquality_AreEventsEqual(t *testing.T) {
-	givenProvider := newMockProvider("foo")
-	givenLeft := NewEvent(givenProvider, level.Info).
+	givenLogger := newMockLogger("foo")
+	givenLeft := givenLogger.NewEvent(level.Info, nil).
 		With("foo", 1).
 		With("bar", 2)
-	givenRight := NewEvent(givenProvider, level.Warn).
+	givenRight := givenLogger.NewEvent(level.Warn, nil).
 		With("foo", 1).
 		With("bar", 2)
 	givenError := errors.New("expected")
@@ -435,8 +435,8 @@ func Test_ignoringKeysEventEquality_AreEventsEqual_bothNil(t *testing.T) {
 }
 
 func Test_ignoringKeysEventEquality_AreEventsEqual_leftNil(t *testing.T) {
-	givenProvider := newMockProvider("foo")
-	givenLeft := NewEvent(givenProvider, level.Info).
+	givenLogger := newMockLogger("foo")
+	givenLeft := givenLogger.NewEvent(level.Info, nil).
 		With("foo", 1).
 		With("bar", 2)
 	var givenRight Event
@@ -454,9 +454,9 @@ func Test_ignoringKeysEventEquality_AreEventsEqual_leftNil(t *testing.T) {
 }
 
 func Test_ignoringKeysEventEquality_AreEventsEqual_rightNil(t *testing.T) {
-	givenProvider := newMockProvider("foo")
+	givenLogger := newMockLogger("foo")
 	var givenLeft Event
-	givenRight := NewEvent(givenProvider, level.Warn).
+	givenRight := givenLogger.NewEvent(level.Warn, nil).
 		With("foo", 1).
 		With("bar", 2)
 

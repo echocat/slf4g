@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/echocat/slf4g/fields"
+
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/level"
 )
@@ -190,6 +192,25 @@ func (instance *CoreLogger) GetProvider() log.Provider {
 		return v
 	}
 	return log.GetProvider()
+}
+
+func (instance *CoreLogger) NewEvent(l level.Level, values map[string]interface{}) log.Event {
+	return instance.NewEventWithFields(l, fields.WithAll(values))
+}
+
+func (instance *CoreLogger) NewEventWithFields(l level.Level, f fields.Fields) log.Event {
+	if f == nil {
+		f = fields.Empty()
+	}
+	return &event{
+		provider: instance.Provider,
+		fields:   f,
+		level:    l,
+	}
+}
+
+func (instance *CoreLogger) Accepts(e log.Event) bool {
+	return e != nil
 }
 
 func (instance *CoreLogger) defaultEventEquality() log.EventEquality {

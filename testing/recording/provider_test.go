@@ -49,12 +49,12 @@ func Test_Provider_MustContains(t *testing.T) {
 	instanceRootLogger := instance.GetRootLogger()
 	instanceLogger := instance.GetLogger("foo")
 
-	expectedEvent1 := log.NewEvent(instance, level.Info).
+	expectedEvent1 := instanceRootLogger.NewEvent(level.Info, nil).
 		With("message", "a")
-	expectedEvent2 := log.NewEvent(instance, level.Warn).
+	expectedEvent2 := instanceRootLogger.NewEvent(level.Warn, nil).
 		With("message", "b").
 		With("foo", 1)
-	unExpectedEvent3 := log.NewEvent(instance, level.Info).
+	unExpectedEvent3 := instanceRootLogger.NewEvent(level.Info, nil).
 		With("message", "b").
 		With("foo", 1)
 
@@ -87,7 +87,7 @@ func Test_Provider_MustContains_panicsOnErrorsForRoot(t *testing.T) {
 	instance.GetRootLogger().Info("root")
 	instance.GetLogger("bar").Info("fromOther")
 
-	givenEvent := log.NewEvent(instance, level.Info).
+	givenEvent := instance.GetRootLogger().NewEvent(level.Info, nil).
 		With("message", "something")
 
 	assert.Execution(t, func() {
@@ -109,7 +109,7 @@ func Test_Provider_MustContains_panicsOnErrors(t *testing.T) {
 	instance.GetRootLogger().Info("root")
 	instance.GetLogger("bar").Info("fromOther")
 
-	givenEvent := log.NewEvent(instance, level.Info).
+	givenEvent := instance.GetRootLogger().NewEvent(level.Info, nil).
 		With("message", "something")
 
 	assert.Execution(t, func() {
@@ -123,15 +123,15 @@ func Test_Provider_MustContainsCustom(t *testing.T) {
 	instanceLogger := instance.GetLogger("foo")
 	givenEquality := log.DefaultEventEquality.WithIgnoringKeys("foo", "timestamp", "logger")
 
-	expectedEvent1 := log.NewEvent(instance, level.Info).
+	expectedEvent1 := instanceRootLogger.NewEvent(level.Info, nil).
 		With("message", "a").
 		With("foo", 666).
 		With("bar", 2)
-	expectedEvent2 := log.NewEvent(instance, level.Warn).
+	expectedEvent2 := instanceRootLogger.NewEvent(level.Warn, nil).
 		With("message", "b").
 		With("foo", 666).
 		With("bar", 2)
-	unExpectedEvent3 := log.NewEvent(instance, level.Info).
+	unExpectedEvent3 := instanceRootLogger.NewEvent(level.Info, nil).
 		With("message", "b").
 		With("foo", 666).
 		With("bar", 2)
@@ -167,7 +167,7 @@ func Test_Provider_MustContainsCustom_panics(t *testing.T) {
 	instance := NewProvider()
 	instance.GetRootLogger().Info("foo")
 
-	givenEvent := log.NewEvent(instance, level.Info).
+	givenEvent := instance.GetRootLogger().NewEvent(level.Info, nil).
 		With("message", "foo")
 
 	assert.Execution(t, func() {
@@ -213,11 +213,11 @@ func Test_Provider_GetAll(t *testing.T) {
 	actual := instance.GetAll()
 
 	assert.ToBeEqual(t, 2, len(actual))
-	assert.ToBeEqualUsing(t, log.NewEvent(instance, level.Info).
+	assert.ToBeEqualUsing(t, instanceRootLogger.NewEvent(level.Info, nil).
 		With("message", "a").
 		With("foo", 1).
 		With("bar", 2), actual[0], instance.defaultEventEquality().AreEventsEqual)
-	assert.ToBeEqualUsing(t, log.NewEvent(instance, level.Warn).
+	assert.ToBeEqualUsing(t, instanceRootLogger.NewEvent(level.Warn, nil).
 		With("message", "b").
 		With("foo", 1).
 		With("bar", 2), actual[1], instance.defaultEventEquality().AreEventsEqual)
@@ -246,11 +246,11 @@ func Test_Provider_GetAllRoot(t *testing.T) {
 	actual := instance.GetAllRoot()
 
 	assert.ToBeEqual(t, 2, len(actual))
-	assert.ToBeEqualUsing(t, log.NewEvent(instance, level.Info).
+	assert.ToBeEqualUsing(t, instanceRootLogger.NewEvent(level.Info, nil).
 		With("message", "a").
 		With("foo", 1).
 		With("bar", 2), actual[0], instance.defaultEventEquality().AreEventsEqual)
-	assert.ToBeEqualUsing(t, log.NewEvent(instance, level.Warn).
+	assert.ToBeEqualUsing(t, instanceRootLogger.NewEvent(level.Warn, nil).
 		With("message", "b").
 		With("foo", 1).
 		With("bar", 2), actual[1], instance.defaultEventEquality().AreEventsEqual)
@@ -279,11 +279,11 @@ func Test_Provider_GetOf(t *testing.T) {
 	actual1 := instance.GetAllOf("foo")
 
 	assert.ToBeEqual(t, 2, len(actual1))
-	assert.ToBeEqualUsing(t, log.NewEvent(instance, level.Warn).
+	assert.ToBeEqualUsing(t, instanceRootLogger.NewEvent(level.Warn, nil).
 		With("message", "b").
 		With("foo", 1).
 		With("bar", 2), actual1[0], instance.defaultEventEquality().AreEventsEqual)
-	assert.ToBeEqualUsing(t, log.NewEvent(instance, level.Error).
+	assert.ToBeEqualUsing(t, instanceRootLogger.NewEvent(level.Error, nil).
 		With("message", "c").
 		With("foo", 1).
 		With("bar", 2), actual1[1], instance.defaultEventEquality().AreEventsEqual)

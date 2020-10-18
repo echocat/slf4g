@@ -32,8 +32,9 @@ func (instance *LoggingWriter) Write(p []byte) (int, error) {
 			return 0, err
 		}
 
-		event := NewEvent(provider, lvl).
-			With(provider.GetFieldKeysSpec().GetMessage(), string(p))
+		event := instance.Logger.NewEvent(lvl, map[string]interface{}{
+			provider.GetFieldKeysSpec().GetMessage(): string(p),
+		})
 
 		instance.Logger.Log(event, instance.SkipFrames+1)
 	}

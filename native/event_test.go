@@ -1,4 +1,4 @@
-package log
+package native
 
 import (
 	"errors"
@@ -11,7 +11,7 @@ import (
 )
 
 func Test_eventImpl_ForEach(t *testing.T) {
-	instance := &eventImpl{fields: fields.
+	instance := &event{fields: fields.
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)}
@@ -24,7 +24,7 @@ func Test_eventImpl_ForEach(t *testing.T) {
 }
 
 func Test_eventImpl_Get(t *testing.T) {
-	instance := &eventImpl{fields: fields.
+	instance := &event{fields: fields.
 		With("a", 1).
 		With("b", 2)}
 
@@ -40,7 +40,7 @@ func Test_eventImpl_Get(t *testing.T) {
 }
 
 func Test_eventImpl_Len(t *testing.T) {
-	instance := &eventImpl{fields: fields.
+	instance := &event{fields: fields.
 		With("a", 1).
 		With("b", 2)}
 
@@ -50,51 +50,42 @@ func Test_eventImpl_Len(t *testing.T) {
 }
 
 func Test_eventImpl_GetLevel(t *testing.T) {
-	instance := &eventImpl{level: level.Error}
+	instance := &event{level: level.Error}
 
 	actual := instance.GetLevel()
 
 	assert.ToBeEqual(t, level.Error, actual)
 }
 
-func Test_eventImpl_GetContext(t *testing.T) {
-	givenContext := &struct{ foo string }{"bar"}
-	instance := &eventImpl{context: givenContext}
-
-	actual := instance.GetContext()
-
-	assert.ToBeEqual(t, givenContext, actual)
-}
-
 func Test_eventImpl_With(t *testing.T) {
 	expected := fields.With("a", 1).With("b", 2)
-	instance := &eventImpl{fields: fields.With("a", 1)}
+	instance := &event{fields: fields.With("a", 1)}
 
 	actual := instance.With("b", 2)
 
-	assert.ToBeEqualUsing(t, expected, actual.(*eventImpl).fields, fields.AreEqual)
+	assert.ToBeEqualUsing(t, expected, actual.(*event).fields, fields.AreEqual)
 }
 
 func Test_eventImpl_Withf(t *testing.T) {
 	expected := fields.With("a", 1).Withf("b", "%d", 2)
-	instance := &eventImpl{fields: fields.With("a", 1)}
+	instance := &event{fields: fields.With("a", 1)}
 
 	actual := instance.Withf("b", "%d", 2)
 
-	assert.ToBeEqualUsing(t, expected, actual.(*eventImpl).fields, fields.AreEqual)
+	assert.ToBeEqualUsing(t, expected, actual.(*event).fields, fields.AreEqual)
 }
 
 func Test_eventImpl_WithError(t *testing.T) {
 	givenError := errors.New("expected")
-	expected := fields.With("a", 1).With("anErrorKey", givenError)
-	instance := &eventImpl{
+	expected := fields.With("a", 1).With("error", givenError)
+	instance := &event{
 		fields:   fields.With("a", 1),
-		provider: &mockProvider{fieldKeysSpec: &mockFieldKeysSpec{error: "anErrorKey"}},
+		provider: &Provider{},
 	}
 
 	actual := instance.WithError(givenError)
 
-	assert.ToBeEqualUsing(t, expected, actual.(*eventImpl).fields, fields.AreEqual)
+	assert.ToBeEqualUsing(t, expected, actual.(*event).fields, fields.AreEqual)
 }
 
 func Test_eventImpl_WithAll(t *testing.T) {
@@ -103,16 +94,16 @@ func Test_eventImpl_WithAll(t *testing.T) {
 		"c": 3,
 	}
 	expected := fields.With("a", 1).WithAll(givenMap)
-	instance := &eventImpl{fields: fields.With("a", 1)}
+	instance := &event{fields: fields.With("a", 1)}
 
 	actual := instance.WithAll(givenMap)
 
-	assert.ToBeEqualUsing(t, expected, actual.(*eventImpl).fields, fields.AreEqual)
+	assert.ToBeEqualUsing(t, expected, actual.(*event).fields, fields.AreEqual)
 }
 
 func Test_eventImpl_Without(t *testing.T) {
 	expected := fields.With("b", 2).With("d", 4)
-	instance := &eventImpl{fields: fields.
+	instance := &event{fields: fields.
 		With("a", 1).
 		With("b", 2).
 		With("c", 3).
@@ -120,15 +111,23 @@ func Test_eventImpl_Without(t *testing.T) {
 
 	actual := instance.Without("a", "c")
 
-	assert.ToBeEqualUsing(t, expected, actual.(*eventImpl).fields, fields.AreEqual)
+	assert.ToBeEqualUsing(t, expected, actual.(*event).fields, fields.AreEqual)
 }
 
-func Test_eventImpl_WithContext(t *testing.T) {
-	givenContextBefore := &struct{ foo string }{"bar"}
-	givenContextAfter := &struct{ foo string }{"other"}
-	instance := &eventImpl{context: givenContextBefore}
+type entries []entry
 
-	actual := instance.WithContext(givenContextAfter)
+func (instance *entries) add(key string, value interface{}) {
+	*instance = append(*instance, entry{key, value})
+}
 
-	assert.ToBeSame(t, givenContextAfter, actual.(*eventImpl).context)
+func (instance *entries) consumer() func(key string, value interface{}) error {
+	return func(key string, value interface{}) error {
+		instance.add(key, value)
+		return nil
+	}
+}
+
+type entry struct {
+	key   string
+	value interface{}
 }

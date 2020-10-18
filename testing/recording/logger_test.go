@@ -73,7 +73,7 @@ func Test_Logger_LogEvent(t *testing.T) {
 	instance := NewLogger()
 	instance.Provider = NewProvider()
 
-	givenEvent := log.NewEvent(instance.Provider, level.Warn).
+	givenEvent := instance.NewEvent(level.Warn, nil).
 		With("timestamp", time.Now()).
 		With("logger", "foo")
 	expected := givenEvent

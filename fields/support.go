@@ -37,6 +37,12 @@ func asMap(f ForEachEnabled) (mapped, error) {
 	return result, nil
 }
 
+// AsMap converts a given object which contains is ForEachEnabled and converts
+// it to a map[string]interface{}
+func AsMap(f ForEachEnabled) (map[string]interface{}, error) {
+	return asMap(f)
+}
+
 func mustAsMap(f ForEachEnabled) mapped {
 	if m, err := asMap(f); err != nil {
 		panic(err)

@@ -1,6 +1,7 @@
 package log
 
 import (
+	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/level"
 )
 
@@ -32,6 +33,18 @@ func (instance *mockCoreLogger) Log(e Event, _ uint16) {
 		return
 	}
 	panic("not implemented in tests")
+}
+
+func (instance *mockCoreLogger) NewEvent(level level.Level, values map[string]interface{}) Event {
+	return &fallbackEvent{
+		provider: instance.provider,
+		level:    level,
+		fields:   fields.WithAll(values),
+	}
+}
+
+func (instance *mockCoreLogger) Accepts(e Event) bool {
+	return e != nil
 }
 
 func (instance *mockCoreLogger) IsLevelEnabled(l level.Level) bool {

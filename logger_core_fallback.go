@@ -199,3 +199,22 @@ func (instance *fallbackCoreLogger) GetLevel() level.Level {
 func (instance *fallbackCoreLogger) SetLevel(in level.Level) {
 	instance.level = in
 }
+
+func (instance *fallbackCoreLogger) NewEvent(l level.Level, values map[string]interface{}) Event {
+	return instance.NewEventWithFields(l, fields.WithAll(values))
+}
+
+func (instance *fallbackCoreLogger) NewEventWithFields(l level.Level, f fields.Fields) Event {
+	if f == nil {
+		f = fields.Empty()
+	}
+	return &fallbackEvent{
+		provider: instance,
+		fields:   f,
+		level:    l,
+	}
+}
+
+func (instance *fallbackCoreLogger) Accepts(e Event) bool {
+	return e != nil
+}

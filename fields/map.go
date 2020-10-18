@@ -9,6 +9,9 @@ package fields
 // breaking the basic contracts of Fields: Be immutable. So it is only recommend
 // to use this when it really makes sense out of readability or performance.
 func WithAll(of map[string]interface{}) Fields {
+	if of == nil || len(of) == 0 {
+		return Empty()
+	}
 	return mapped(of)
 }
 

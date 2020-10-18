@@ -174,15 +174,21 @@ func log(l level.Level, args ...interface{}) {
 	}
 
 	p := GetProvider()
-	e := NewEvent(p, l)
 
-	if len(args) == 1 {
-		e = e.With(p.GetFieldKeysSpec().GetMessage(), args[0])
-	} else if len(args) > 0 {
-		e = e.With(p.GetFieldKeysSpec().GetMessage(), args)
+	var values map[string]interface{}
+
+	if len(args) > 0 {
+		values = make(map[string]interface{}, 1)
+		if len(args) == 1 {
+			values[p.GetFieldKeysSpec().GetMessage()] = args[0]
+		} else {
+			values[p.GetFieldKeysSpec().GetMessage()] = args
+		}
 	}
 
-	GetRootLogger().Log(e, 2)
+	logger := p.GetRootLogger()
+	e := logger.NewEvent(l, values)
+	logger.Log(e, 2)
 }
 
 func logf(l level.Level, format string, args ...interface{}) {
@@ -191,8 +197,12 @@ func logf(l level.Level, format string, args ...interface{}) {
 	}
 
 	p := GetProvider()
-	e := NewEvent(p, l).
-		With(GetProvider().GetFieldKeysSpec().GetMessage(), fields.LazyFormat(format, args...))
 
-	GetRootLogger().Log(e, 2)
+	values := map[string]interface{}{
+		p.GetFieldKeysSpec().GetMessage(): fields.LazyFormat(format, args...),
+	}
+
+	logger := p.GetRootLogger()
+	e := logger.NewEvent(l, values)
+	logger.Log(e, 2)
 }

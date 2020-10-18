@@ -3,6 +3,8 @@ package sdk
 import (
 	"os"
 
+	"github.com/echocat/slf4g/fields"
+
 	"github.com/echocat/slf4g/level"
 
 	log "github.com/echocat/slf4g"
@@ -46,26 +48,35 @@ type LoggerImpl struct {
 }
 
 func (instance *LoggerImpl) log(l level.Level, args ...interface{}) log.Event {
-	provider := instance.Delegate.GetProvider()
+	logger := instance.Delegate
 
-	e := log.NewEvent(provider, l)
-	if len(args) == 1 {
-		e = e.With(provider.GetFieldKeysSpec().GetMessage(), args[0])
-	} else if len(args) > 1 {
-		e = e.With(provider.GetFieldKeysSpec().GetMessage(), args)
+	var values map[string]interface{}
+	if len(args) > 0 {
+		values = make(map[string]interface{}, 1)
+
+		if len(args) == 1 {
+			values[logger.GetProvider().GetFieldKeysSpec().GetMessage()] = args[0]
+		} else if len(args) > 1 {
+			values[logger.GetProvider().GetFieldKeysSpec().GetMessage()] = args
+		}
+
 	}
+	e := logger.NewEvent(l, values)
 
-	instance.Delegate.Log(e, 2)
+	logger.Log(e, 2)
+
 	return e
 }
 
 func (instance *LoggerImpl) logf(l level.Level, format string, args ...interface{}) log.Event {
-	provider := instance.Delegate.GetProvider()
+	logger := instance.Delegate
 
-	e := log.NewEvent(provider, l).
-		Withf(provider.GetFieldKeysSpec().GetMessage(), format, args...)
+	e := logger.NewEvent(l, map[string]interface{}{
+		logger.GetProvider().GetFieldKeysSpec().GetMessage(): fields.LazyFormat(format, args...),
+	})
 
-	instance.Delegate.Log(e, 2)
+	logger.Log(e, 2)
+
 	return e
 }
 

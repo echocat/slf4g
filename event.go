@@ -1,7 +1,6 @@
 package log
 
 import (
-	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/level"
 )
 
@@ -9,8 +8,7 @@ import (
 //
 // Contents
 //
-// Events containing always present content provided by GetLevel() and
-// GetCallDepth().
+// Events containing always present content provided by GetLevel().
 //
 // They are providing additionally dynamic content (messages, errors, ...)
 // which are accessible via ForEach() and Get(). None of this fields are
@@ -26,20 +24,13 @@ import (
 //
 // Immutability
 //
-// Fields are defined as immutable. Calling the methods With, Withf, WithAll,
-// Without, WithCallDepth and WithContext always results in a new instance of
-// Event that could be either brand new, a copy of the source one or do inherit
-// some stuff of the original called one; but it never modifies the called
-// instance.
+// Fields are defined as immutable. Calling the methods With, Withf, WithAll
+// and  Without always results in a new instance of Event that could be either
+// brand new, a copy of the source one or do inherit some stuff of the original
+// called one; but it never modifies the called instance.
 type Event interface {
 	// GetLevel returns the Level of this event.
 	GetLevel() level.Level
-
-	// GetContext returns an optional context of this event. This is stuff which
-	// should not be represented and/or reported and/or could contain hints for
-	// the actual logger. Therefore and can be <nil>. This can altered by
-	// WithContext().
-	GetContext() interface{}
 
 	// ForEach will call the provided consumer for each field which is provided
 	// by this Fields instance.
@@ -77,39 +68,4 @@ type Event interface {
 	// call either fields.Fields.ForEach() or fields.Fields.Get() nothing with
 	// this key(s) will be returned.
 	Without(keys ...string) Event
-
-	// WithContext returns an variant of this Event with the given
-	// context is replaced with the existing one of this Event. All other values
-	// remaining the same.
-	WithContext(ctx interface{}) Event
-}
-
-// NewEvent creates a new instance of Event from the given Provider, Level,
-// callDepth and fields.Fields.
-func NewEvent(provider Provider, level level.Level, f ...fields.Fields) Event {
-	var tf fields.Fields
-	if len(f) > 0 {
-		tf = f[0]
-	} else {
-		tf = fields.Empty()
-	}
-
-	var result Event = &eventImpl{
-		provider: provider,
-		level:    level,
-		fields:   tf,
-	}
-
-	if len(f) > 1 {
-		for _, sf := range f[1:] {
-			if err := sf.ForEach(func(k string, v interface{}) error {
-				result = result.With(k, v)
-				return nil
-			}); err != nil {
-				panic(err)
-			}
-		}
-	}
-
-	return result
 }

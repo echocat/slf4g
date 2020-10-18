@@ -60,6 +60,17 @@ func (instance *mockProvider) GetFieldKeysSpec() fields.KeysSpec {
 	panic("not implemented in tests")
 }
 
+func (instance *mockProvider) newEvent(l level.Level) Event {
+	return instance.GetRootLogger().NewEvent(l, nil)
+}
+
+func (instance *mockProvider) withRootLogger() *mockProvider {
+	instance.rootProvider = func() Logger {
+		return newMockLogger("ROOT")
+	}
+	return instance
+}
+
 func newWrappingProvider(in Provider) *wrappingProvider {
 	return &wrappingProvider{in}
 }

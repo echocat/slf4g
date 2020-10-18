@@ -113,18 +113,18 @@ func Test_Log(t *testing.T) {
 
 			assert.ToBeEqual(t, 3, len(givenLogger.loggedEvents()))
 			assert.ToBeEqualUsing(t,
-				NewEvent(givenLogger.GetProvider(), c.level),
+				givenLogger.NewEvent(c.level, nil),
 				givenLogger.loggedEvent(0),
 				AreEventsEqual,
 			)
 			assert.ToBeEqualUsing(t,
-				NewEvent(givenLogger.GetProvider(), c.level).
+				givenLogger.NewEvent(c.level, nil).
 					With(messageKey, 1),
 				givenLogger.loggedEvent(1),
 				AreEventsEqual,
 			)
 			assert.ToBeEqualUsing(t,
-				NewEvent(givenLogger.GetProvider(), c.level).
+				givenLogger.NewEvent(c.level, nil).
 					With(messageKey, []interface{}{1, 2, 3}),
 				givenLogger.loggedEvent(2),
 				AreEventsEqual,
@@ -162,13 +162,13 @@ func Test_Logf(t *testing.T) {
 
 			assert.ToBeEqual(t, 2, len(givenLogger.loggedEvents()))
 			assert.ToBeEqualUsing(t,
-				NewEvent(givenLogger.GetProvider(), c.level).
+				givenLogger.NewEvent(c.level, nil).
 					With(messageKey, fields.LazyFormat("hello")),
 				givenLogger.loggedEvent(0),
 				AreEventsEqual,
 			)
 			assert.ToBeEqualUsing(t,
-				NewEvent(givenLogger.GetProvider(), c.level).
+				givenLogger.NewEvent(c.level, nil).
 					With(messageKey, fields.LazyFormat("hello %d", 1)),
 				givenLogger.loggedEvent(1),
 				AreEventsEqual,

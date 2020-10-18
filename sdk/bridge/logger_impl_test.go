@@ -14,7 +14,7 @@ import (
 )
 
 func Test_DefaultOnPanic(t *testing.T) {
-	givenEvent := log.NewEvent(log.GetProvider(), level.Warn)
+	givenEvent := log.GetRootLogger().NewEvent(level.Warn, nil)
 
 	defer func() {
 		r := recover()
@@ -61,7 +61,7 @@ func Test_LoggerImpl_Print_withNoArgs(t *testing.T) {
 	horror.nothingShouldBeHappen(t)
 	assert.ToBeEqual(t, 1, logger.Len())
 	assert.ToBeEqual(t, true, logger.MustContains(
-		log.NewEvent(logger.GetProvider(), level.Warn),
+		logger.NewEvent(level.Warn, nil),
 	))
 }
 
@@ -74,7 +74,7 @@ func Test_LoggerImpl_Print_configuredLevel(t *testing.T) {
 	horror.nothingShouldBeHappen(t)
 	assert.ToBeEqual(t, 1, logger.Len())
 	assert.ToBeEqual(t, true, logger.MustContains(
-		log.NewEvent(logger.GetProvider(), level.Warn),
+		logger.NewEvent(level.Warn, nil),
 	))
 }
 
@@ -86,7 +86,7 @@ func Test_LoggerImpl_Print_noConfiguredLevel(t *testing.T) {
 	horror.nothingShouldBeHappen(t)
 	assert.ToBeEqual(t, 1, logger.Len())
 	assert.ToBeEqual(t, true, logger.MustContains(
-		log.NewEvent(logger.GetProvider(), level.Info),
+		logger.NewEvent(level.Info, nil),
 	))
 }
 
@@ -99,7 +99,7 @@ func Test_LoggerImpl_Print_with1Arg(t *testing.T) {
 	horror.nothingShouldBeHappen(t)
 	assert.ToBeEqual(t, 1, logger.Len())
 	assert.ToBeEqual(t, true, logger.MustContains(
-		log.NewEvent(logger.GetProvider(), level.Warn).
+		logger.NewEvent(level.Warn, nil).
 			With("message", "a"),
 	))
 }
@@ -113,7 +113,7 @@ func Test_LoggerImpl_Print_with3Arg(t *testing.T) {
 	horror.nothingShouldBeHappen(t)
 	assert.ToBeEqual(t, 1, logger.Len())
 	assert.ToBeEqual(t, true, logger.MustContains(
-		log.NewEvent(logger.GetProvider(), level.Warn).
+		logger.NewEvent(level.Warn, nil).
 			With("message", []interface{}{"a", 1, "c"}),
 	))
 }
@@ -127,7 +127,7 @@ func Test_LoggerImpl_Printf(t *testing.T) {
 	horror.nothingShouldBeHappen(t)
 	assert.ToBeEqual(t, 1, logger.Len())
 	assert.ToBeEqual(t, true, logger.MustContains(
-		log.NewEvent(logger.GetProvider(), level.Error).
+		logger.NewEvent(level.Error, nil).
 			Withf("message", "fmt %d %s", 1, "c"),
 	))
 }
@@ -141,14 +141,14 @@ func Test_LoggerImpl_Println(t *testing.T) {
 	horror.nothingShouldBeHappen(t)
 	assert.ToBeEqual(t, 1, logger.Len())
 	assert.ToBeEqual(t, true, logger.MustContains(
-		log.NewEvent(logger.GetProvider(), level.Info).
+		logger.NewEvent(level.Info, nil).
 			With("message", []interface{}{"a", 1, "c"}),
 	))
 }
 
 func Test_LoggerImpl_Fatal(t *testing.T) {
 	instance, logger, horror := prepareLoggerImpl()
-	expected := log.NewEvent(logger.GetProvider(), level.Fatal).
+	expected := logger.NewEvent(level.Fatal, nil).
 		With("message", []interface{}{"a", 1, "c"})
 
 	instance.Fatal("a", 1, "c")
@@ -161,7 +161,7 @@ func Test_LoggerImpl_Fatal(t *testing.T) {
 
 func Test_LoggerImpl_Fatalf(t *testing.T) {
 	instance, logger, horror := prepareLoggerImpl()
-	expected := log.NewEvent(logger.GetProvider(), level.Fatal).
+	expected := logger.NewEvent(level.Fatal, nil).
 		Withf("message", "fmt %d %s", 1, "c")
 
 	instance.Fatalf("fmt %d %s", 1, "c")
@@ -174,7 +174,7 @@ func Test_LoggerImpl_Fatalf(t *testing.T) {
 
 func Test_LoggerImpl_Fatalln(t *testing.T) {
 	instance, logger, horror := prepareLoggerImpl()
-	expected := log.NewEvent(logger.GetProvider(), level.Fatal).
+	expected := logger.NewEvent(level.Fatal, nil).
 		With("message", []interface{}{"a", 1, "c"})
 
 	instance.Fatalln("a", 1, "c")
@@ -187,7 +187,7 @@ func Test_LoggerImpl_Fatalln(t *testing.T) {
 
 func Test_LoggerImpl_Panic(t *testing.T) {
 	instance, logger, horror := prepareLoggerImpl()
-	expected := log.NewEvent(logger.GetProvider(), level.Fatal).
+	expected := logger.NewEvent(level.Fatal, nil).
 		With("message", []interface{}{"a", 1, "c"})
 
 	instance.Panic("a", 1, "c")
@@ -200,7 +200,7 @@ func Test_LoggerImpl_Panic(t *testing.T) {
 
 func Test_LoggerImpl_Panicf(t *testing.T) {
 	instance, logger, horror := prepareLoggerImpl()
-	expected := log.NewEvent(logger.GetProvider(), level.Fatal).
+	expected := logger.NewEvent(level.Fatal, nil).
 		Withf("message", "fmt %d %s", 1, "c")
 
 	instance.Panicf("fmt %d %s", 1, "c")
@@ -213,7 +213,7 @@ func Test_LoggerImpl_Panicf(t *testing.T) {
 
 func Test_LoggerImpl_Panicln(t *testing.T) {
 	instance, logger, horror := prepareLoggerImpl()
-	expected := log.NewEvent(logger.GetProvider(), level.Fatal).
+	expected := logger.NewEvent(level.Fatal, nil).
 		With("message", []interface{}{"a", 1, "c"})
 
 	instance.Panicln("a", 1, "c")
@@ -225,7 +225,7 @@ func Test_LoggerImpl_Panicln(t *testing.T) {
 }
 
 func Test_LoggerImpl_onFatal_configured(t *testing.T) {
-	givenEvent := log.NewEvent(log.GetProvider(), level.Fatal).
+	givenEvent := log.GetRootLogger().NewEvent(level.Fatal, nil).
 		Withf("message", "fmt %d %s", 1, "c")
 
 	called := false
@@ -247,7 +247,7 @@ func Test_LoggerImpl_onFatal_configured(t *testing.T) {
 }
 
 func Test_LoggerImpl_onFatal_notConfigured(t *testing.T) {
-	givenEvent := log.NewEvent(log.GetProvider(), level.Fatal).
+	givenEvent := log.GetRootLogger().NewEvent(level.Fatal, nil).
 		Withf("message", "fmt %d %s", 1, "c")
 
 	called := false
@@ -267,7 +267,7 @@ func Test_LoggerImpl_onFatal_notConfigured(t *testing.T) {
 }
 
 func Test_LoggerImpl_onPanic_configured(t *testing.T) {
-	givenEvent := log.NewEvent(log.GetProvider(), level.Fatal).
+	givenEvent := log.GetRootLogger().NewEvent(level.Fatal, nil).
 		Withf("message", "fmt %d %s", 1, "c")
 
 	called := false
@@ -289,7 +289,7 @@ func Test_LoggerImpl_onPanic_configured(t *testing.T) {
 }
 
 func Test_LoggerImpl_onPanic_notConfigured(t *testing.T) {
-	givenEvent := log.NewEvent(log.GetProvider(), level.Fatal).
+	givenEvent := log.GetRootLogger().NewEvent(level.Fatal, nil).
 		Withf("message", "fmt %d %s", 1, "c")
 
 	called := false
@@ -331,7 +331,7 @@ type horrorEventsHook struct {
 
 func (instance *horrorEventsHook) onPanic(event log.Event) {
 	if event == nil {
-		event = log.NewEvent(log.GetProvider(), level.Fatal).
+		event = log.GetRootLogger().NewEvent(level.Fatal, nil).
 			With("message", "NIL EVENT")
 	}
 	instance.panicCalledWith = event
@@ -339,7 +339,7 @@ func (instance *horrorEventsHook) onPanic(event log.Event) {
 
 func (instance *horrorEventsHook) onFatal(event log.Event) {
 	if event == nil {
-		event = log.NewEvent(log.GetProvider(), level.Fatal).
+		event = log.GetRootLogger().NewEvent(level.Fatal, nil).
 			With("message", "NIL EVENT")
 	}
 	instance.fatalCalledWith = event

@@ -1,6 +1,8 @@
 package log
 
 import (
+	"fmt"
+
 	"github.com/echocat/slf4g/level"
 
 	"github.com/echocat/slf4g/fields"
@@ -23,6 +25,28 @@ func (instance *loggerImpl) Log(event Event, skipFrames uint16) {
 	instance.Unwrap().Log(event, skipFrames+1)
 }
 
+func (instance *loggerImpl) NewEvent(l level.Level, values map[string]interface{}) Event {
+	return instance.Unwrap().NewEvent(l, values)
+}
+
+func (instance *loggerImpl) NewEventWithFields(l level.Level, f fields.Fields) Event {
+	target := instance.Unwrap()
+	if wf, ok := target.(interface {
+		NewEventWithFields(l level.Level, f fields.Fields) Event
+	}); ok {
+		return wf.NewEventWithFields(l, f)
+	}
+	asMap, err := fields.AsMap(f)
+	if err != nil {
+		panic(fmt.Errorf("cannot make a map out of %v: %w", f, err))
+	}
+	return target.NewEvent(l, asMap)
+}
+
+func (instance *loggerImpl) Accepts(event Event) bool {
+	return instance.Unwrap().Accepts(event)
+}
+
 func (instance *loggerImpl) IsLevelEnabled(level level.Level) bool {
 	return instance.Unwrap().IsLevelEnabled(level)
 }
@@ -36,7 +60,7 @@ func (instance *loggerImpl) log(level level.Level, args ...interface{}) {
 		return
 	}
 	provider := instance.GetProvider()
-	e := NewEvent(provider, level, instance.fields)
+	e := instance.NewEventWithFields(level, instance.fields)
 
 	if len(args) == 1 {
 		e = e.With(provider.GetFieldKeysSpec().GetMessage(), args[0])
@@ -52,7 +76,7 @@ func (instance *loggerImpl) logf(level level.Level, format string, args ...inter
 		return
 	}
 	provider := instance.GetProvider()
-	e := NewEvent(provider, level, instance.fields).
+	e := instance.NewEventWithFields(level, instance.fields).
 		Withf(provider.GetFieldKeysSpec().GetMessage(), format, args...)
 
 	instance.Unwrap().Log(e, 2)

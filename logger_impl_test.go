@@ -37,9 +37,9 @@ func Test_loggerImpl_Log(t *testing.T) {
 			givenCoreLogger.initLoggedEvents()
 			instance := newLoggerImpl(givenCoreLogger)
 
-			givenEvent := NewEvent(givenCoreLogger.provider, l).
+			givenEvent := givenCoreLogger.NewEvent(l, nil).
 				With("a", 1)
-			expectedEvent := NewEvent(givenCoreLogger.provider, l).
+			expectedEvent := givenCoreLogger.NewEvent(l, nil).
 				With("a", 1)
 
 			givenCoreLogger.level = 1
@@ -100,18 +100,18 @@ func Test_loggerImpl_log(t *testing.T) {
 
 			assert.ToBeEqual(t, 3, len(givenLogger.loggedEvents()))
 			assert.ToBeEqualUsing(t,
-				NewEvent(givenLogger.getProvider(), c.level),
+				givenLogger.NewEvent(c.level, nil),
 				givenLogger.loggedEvent(0),
 				AreEventsEqual,
 			)
 			assert.ToBeEqualUsing(t,
-				NewEvent(givenLogger.getProvider(), c.level).
+				givenLogger.NewEvent(c.level, nil).
 					With(messageKey, 1),
 				givenLogger.loggedEvent(1),
 				AreEventsEqual,
 			)
 			assert.ToBeEqualUsing(t,
-				NewEvent(givenLogger.getProvider(), c.level).
+				givenLogger.NewEvent(c.level, nil).
 					With(messageKey, []interface{}{1, 2, 3}),
 				givenLogger.loggedEvent(2),
 				AreEventsEqual,
@@ -148,13 +148,13 @@ func Test_loggerImpl_logf(t *testing.T) {
 
 			assert.ToBeEqual(t, 2, len(givenLogger.loggedEvents()))
 			assert.ToBeEqualUsing(t,
-				NewEvent(givenLogger.getProvider(), c.level).
+				givenLogger.NewEvent(c.level, nil).
 					With(messageKey, fields.LazyFormat("hello")),
 				givenLogger.loggedEvent(0),
 				AreEventsEqual,
 			)
 			assert.ToBeEqualUsing(t,
-				NewEvent(givenLogger.getProvider(), c.level).
+				givenLogger.NewEvent(c.level, nil).
 					With(messageKey, fields.LazyFormat("hello %d", 1)),
 				givenLogger.loggedEvent(1),
 				AreEventsEqual,
