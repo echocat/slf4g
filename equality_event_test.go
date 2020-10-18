@@ -13,11 +13,11 @@ import (
 
 func Test_AreEventsEqual_isEqual(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error, 3).
+	givenLeft := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error, 3).
+	givenRight := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
@@ -30,11 +30,11 @@ func Test_AreEventsEqual_isEqual(t *testing.T) {
 
 func Test_AreEventsEqual_isNotEqual(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error, 3).
+	givenLeft := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error, 3).
+	givenRight := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 666)
@@ -53,11 +53,11 @@ func Test_AreEventsEqual_withNilDefaultEventEquality(t *testing.T) {
 	DefaultEventEquality = nil
 
 	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error, 3).
+	givenLeft := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error, 3).
+	givenRight := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
@@ -70,11 +70,11 @@ func Test_AreEventsEqual_withNilDefaultEventEquality(t *testing.T) {
 
 func Test_EventEqualityImpl_AreEventsEqual_withNilInstance(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error, 3).
+	givenLeft := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error, 3).
+	givenRight := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
@@ -88,17 +88,16 @@ func Test_EventEqualityImpl_AreEventsEqual_withNilInstance(t *testing.T) {
 }
 func Test_EventEqualityImpl_AreEventsEqual_withNilFunction(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error, 3).
+	givenLeft := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error, 3).
+	givenRight := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 666)
 	instance := EventEqualityImpl{
 		CompareLevel:       true,
-		CompareCallDepth:   true,
 		CompareValuesUsing: nil,
 	}
 
@@ -110,21 +109,20 @@ func Test_EventEqualityImpl_AreEventsEqual_withNilFunction(t *testing.T) {
 
 func Test_EventEqualityImpl_AreEventsEqual_Level_respecting(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error, 3).
+	givenLeft := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight1 := NewEvent(givenProvider, level.Info, 3).
+	givenRight1 := NewEvent(givenProvider, level.Info).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight2 := NewEvent(givenProvider, level.Error, 3).
+	givenRight2 := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
 	instance := EventEqualityImpl{
 		CompareLevel:       true,
-		CompareCallDepth:   true,
 		CompareValuesUsing: nil,
 	}
 
@@ -139,79 +137,20 @@ func Test_EventEqualityImpl_AreEventsEqual_Level_respecting(t *testing.T) {
 
 func Test_EventEqualityImpl_AreEventsEqual_Level_ignoring(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error, 3).
+	givenLeft := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight1 := NewEvent(givenProvider, level.Info, 3).
+	givenRight1 := NewEvent(givenProvider, level.Info).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight2 := NewEvent(givenProvider, level.Error, 3).
+	givenRight2 := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
 	instance := EventEqualityImpl{
 		CompareLevel:       false,
-		CompareCallDepth:   true,
-		CompareValuesUsing: nil,
-	}
-
-	actual1, actualErr1 := instance.AreEventsEqual(givenLeft, givenRight1)
-	assert.ToBeNil(t, actualErr1)
-	assert.ToBeEqual(t, true, actual1)
-
-	actual2, actualErr2 := instance.AreEventsEqual(givenLeft, givenRight2)
-	assert.ToBeNil(t, actualErr2)
-	assert.ToBeEqual(t, true, actual2)
-}
-
-func Test_EventEqualityImpl_AreEventsEqual_callDepth_respecting(t *testing.T) {
-	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error, 3).
-		With("a", 1).
-		With("b", 2).
-		With("c", 3)
-	givenRight1 := NewEvent(givenProvider, level.Error, 4).
-		With("a", 1).
-		With("b", 2).
-		With("c", 3)
-	givenRight2 := NewEvent(givenProvider, level.Error, 3).
-		With("a", 1).
-		With("b", 2).
-		With("c", 3)
-	instance := EventEqualityImpl{
-		CompareLevel:       true,
-		CompareCallDepth:   true,
-		CompareValuesUsing: nil,
-	}
-
-	actual1, actualErr1 := instance.AreEventsEqual(givenLeft, givenRight1)
-	assert.ToBeNil(t, actualErr1)
-	assert.ToBeEqual(t, false, actual1)
-
-	actual2, actualErr2 := instance.AreEventsEqual(givenLeft, givenRight2)
-	assert.ToBeNil(t, actualErr2)
-	assert.ToBeEqual(t, true, actual2)
-}
-
-func Test_EventEqualityImpl_AreEventsEqual_callDepth_ignoring(t *testing.T) {
-	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error, 3).
-		With("a", 1).
-		With("b", 2).
-		With("c", 3)
-	givenRight1 := NewEvent(givenProvider, level.Error, 4).
-		With("a", 1).
-		With("b", 2).
-		With("c", 3)
-	givenRight2 := NewEvent(givenProvider, level.Error, 3).
-		With("a", 1).
-		With("b", 2).
-		With("c", 3)
-	instance := EventEqualityImpl{
-		CompareLevel:       true,
-		CompareCallDepth:   false,
 		CompareValuesUsing: nil,
 	}
 
@@ -226,18 +165,17 @@ func Test_EventEqualityImpl_AreEventsEqual_callDepth_ignoring(t *testing.T) {
 
 func Test_EventEqualityImpl_AreEventsEqual_moreEntries(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error, 3).
+	givenLeft := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error, 3).
+	givenRight := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3).
 		With("d", 4)
 	instance := EventEqualityImpl{
 		CompareLevel:       true,
-		CompareCallDepth:   true,
 		CompareValuesUsing: fields.DefaultValueEquality,
 	}
 
@@ -249,16 +187,15 @@ func Test_EventEqualityImpl_AreEventsEqual_moreEntries(t *testing.T) {
 
 func Test_EventEqualityImpl_AreEventsEqual_lessEntries(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error, 3).
+	givenLeft := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error, 3).
+	givenRight := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2)
 	instance := EventEqualityImpl{
 		CompareLevel:       true,
-		CompareCallDepth:   true,
 		CompareValuesUsing: fields.DefaultValueEquality,
 	}
 
@@ -270,17 +207,16 @@ func Test_EventEqualityImpl_AreEventsEqual_lessEntries(t *testing.T) {
 
 func Test_EventEqualityImpl_AreEventsEqual_oneDifferentValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error, 3).
+	givenLeft := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error, 3).
+	givenRight := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 666)
 	instance := EventEqualityImpl{
 		CompareLevel:       true,
-		CompareCallDepth:   true,
 		CompareValuesUsing: fields.DefaultValueEquality,
 	}
 
@@ -292,17 +228,16 @@ func Test_EventEqualityImpl_AreEventsEqual_oneDifferentValue(t *testing.T) {
 
 func Test_EventEqualityImpl_AreEventsEqual_oneDifferentKeys(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error, 3).
+	givenLeft := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error, 3).
+	givenRight := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("xyz", 3)
 	instance := EventEqualityImpl{
 		CompareLevel:       true,
-		CompareCallDepth:   true,
 		CompareValuesUsing: fields.DefaultValueEquality,
 	}
 
@@ -314,14 +249,13 @@ func Test_EventEqualityImpl_AreEventsEqual_oneDifferentKeys(t *testing.T) {
 
 func Test_EventEqualityImpl_AreEventsEqual_leftEmptyRightNil(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error, 3).
+	givenLeft := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
 	var givenRight Event
 	instance := EventEqualityImpl{
 		CompareLevel:       true,
-		CompareCallDepth:   true,
 		CompareValuesUsing: fields.DefaultValueEquality,
 	}
 
@@ -334,7 +268,7 @@ func Test_EventEqualityImpl_AreEventsEqual_leftEmptyRightNil(t *testing.T) {
 func Test_EventEqualityImpl_AreEventsEqual_leftNilRightEmpty(t *testing.T) {
 	givenProvider := newMockProvider("test")
 	var givenLeft Event
-	givenRight := NewEvent(givenProvider, level.Error, 3).
+	givenRight := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("xyz", 3)
@@ -350,7 +284,6 @@ func Test_EventEqualityImpl_AreEventsEqual_bothNil(t *testing.T) {
 	var givenRight Event
 	instance := EventEqualityImpl{
 		CompareLevel:       true,
-		CompareCallDepth:   true,
 		CompareValuesUsing: fields.DefaultValueEquality,
 	}
 
@@ -362,18 +295,17 @@ func Test_EventEqualityImpl_AreEventsEqual_bothNil(t *testing.T) {
 
 func Test_EventEqualityImpl_AreEventsEqual_functionWithErr(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenLeft := NewEvent(givenProvider, level.Error, 3).
+	givenLeft := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
-	givenRight := NewEvent(givenProvider, level.Error, 3).
+	givenRight := NewEvent(givenProvider, level.Error).
 		With("a", 1).
 		With("b", 2).
 		With("c", 3)
 	givenErr := errors.New("expected")
 	instance := EventEqualityImpl{
-		CompareLevel:     true,
-		CompareCallDepth: true,
+		CompareLevel: true,
 		CompareValuesUsing: fields.ValueEqualityFunc(func(key string, left, right interface{}) (bool, error) {
 			return false, givenErr
 		}),
@@ -395,8 +327,8 @@ func Test_EventEqualityImpl_AreEventsEqual_WithIgnoringKeys(t *testing.T) {
 
 func Test_EventEqualityFunc_AreEventsEqual(t *testing.T) {
 	givenProvider := newMockProvider("foo")
-	givenLeft := NewEvent(givenProvider, level.Info, 1)
-	givenRight := NewEvent(givenProvider, level.Warn, 2)
+	givenLeft := NewEvent(givenProvider, level.Info)
+	givenRight := NewEvent(givenProvider, level.Warn)
 	givenErr := errors.New("expected")
 
 	instance := EventEqualityFunc(func(left, right Event) (bool, error) {
@@ -433,8 +365,8 @@ func Test_NewEventEqualityFacade(t *testing.T) {
 
 func Test_eventEqualityFacade_AreEventsEqual(t *testing.T) {
 	givenProvider := newMockProvider("foo")
-	givenLeft := NewEvent(givenProvider, level.Info, 1)
-	givenRight := NewEvent(givenProvider, level.Warn, 2)
+	givenLeft := NewEvent(givenProvider, level.Info)
+	givenRight := NewEvent(givenProvider, level.Warn)
 	givenErr := errors.New("expected")
 	givenEquality := EventEqualityFunc(func(left, right Event) (bool, error) {
 		assert.ToBeSame(t, givenLeft, left)
@@ -464,10 +396,10 @@ func Test_eventEqualityFacade_AreEventsEqual_WithIgnoringKeys(t *testing.T) {
 
 func Test_ignoringKeysEventEquality_AreEventsEqual(t *testing.T) {
 	givenProvider := newMockProvider("foo")
-	givenLeft := NewEvent(givenProvider, level.Info, 1).
+	givenLeft := NewEvent(givenProvider, level.Info).
 		With("foo", 1).
 		With("bar", 2)
-	givenRight := NewEvent(givenProvider, level.Warn, 2).
+	givenRight := NewEvent(givenProvider, level.Warn).
 		With("foo", 1).
 		With("bar", 2)
 	givenError := errors.New("expected")
@@ -504,7 +436,7 @@ func Test_ignoringKeysEventEquality_AreEventsEqual_bothNil(t *testing.T) {
 
 func Test_ignoringKeysEventEquality_AreEventsEqual_leftNil(t *testing.T) {
 	givenProvider := newMockProvider("foo")
-	givenLeft := NewEvent(givenProvider, level.Info, 1).
+	givenLeft := NewEvent(givenProvider, level.Info).
 		With("foo", 1).
 		With("bar", 2)
 	var givenRight Event
@@ -524,7 +456,7 @@ func Test_ignoringKeysEventEquality_AreEventsEqual_leftNil(t *testing.T) {
 func Test_ignoringKeysEventEquality_AreEventsEqual_rightNil(t *testing.T) {
 	givenProvider := newMockProvider("foo")
 	var givenLeft Event
-	givenRight := NewEvent(givenProvider, level.Warn, 2).
+	givenRight := NewEvent(givenProvider, level.Warn).
 		With("foo", 1).
 		With("bar", 2)
 

@@ -48,24 +48,24 @@ type LoggerImpl struct {
 func (instance *LoggerImpl) log(l level.Level, args ...interface{}) log.Event {
 	provider := instance.Delegate.GetProvider()
 
-	e := log.NewEvent(provider, l, 2)
+	e := log.NewEvent(provider, l)
 	if len(args) == 1 {
 		e = e.With(provider.GetFieldKeysSpec().GetMessage(), args[0])
 	} else if len(args) > 1 {
 		e = e.With(provider.GetFieldKeysSpec().GetMessage(), args)
 	}
 
-	instance.Delegate.Log(e)
+	instance.Delegate.Log(e, 2)
 	return e
 }
 
 func (instance *LoggerImpl) logf(l level.Level, format string, args ...interface{}) log.Event {
 	provider := instance.Delegate.GetProvider()
 
-	e := log.NewEvent(provider, l, 2).
+	e := log.NewEvent(provider, l).
 		Withf(provider.GetFieldKeysSpec().GetMessage(), format, args...)
 
-	instance.Delegate.Log(e)
+	instance.Delegate.Log(e, 2)
 	return e
 }
 

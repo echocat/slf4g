@@ -10,7 +10,11 @@ import "github.com/echocat/slf4g/level"
 type CoreLogger interface {
 	// Log is called to log the given Event. It depends on the implementation
 	// if this action will be synchronous or asynchronous.
-	Log(Event)
+	//
+	// skipFrames defines how many frame should be skipped to determine the real
+	// caller of the log event from the call stack. In cse of delegating do not
+	// forget to increase.
+	Log(event Event, skipFrames uint16)
 
 	// IsLevelEnabled returns <true> if the given Level is enabled to be logged
 	// with this (Core)Logger.

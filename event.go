@@ -35,12 +35,6 @@ type Event interface {
 	// GetLevel returns the Level of this event.
 	GetLevel() level.Level
 
-	// GetCallDepth returns the call depth inside of the call stack that should
-	// be ignored before capturing the caller position (if required). This could
-	// be increased (if delegating from instance to instance) by calling
-	// WithCallDepth().
-	GetCallDepth() int
-
 	// GetContext returns an optional context of this event. This is stuff which
 	// should not be represented and/or reported and/or could contain hints for
 	// the actual logger. Therefore and can be <nil>. This can altered by
@@ -84,11 +78,6 @@ type Event interface {
 	// this key(s) will be returned.
 	Without(keys ...string) Event
 
-	// WithCallDepth returns an variant of this Event with the given
-	// call depth is added to the existing one of this Event. All other values
-	// remaining the same.
-	WithCallDepth(int) Event
-
 	// WithContext returns an variant of this Event with the given
 	// context is replaced with the existing one of this Event. All other values
 	// remaining the same.
@@ -97,7 +86,7 @@ type Event interface {
 
 // NewEvent creates a new instance of Event from the given Provider, Level,
 // callDepth and fields.Fields.
-func NewEvent(provider Provider, level level.Level, callDepth int, f ...fields.Fields) Event {
+func NewEvent(provider Provider, level level.Level, f ...fields.Fields) Event {
 	var tf fields.Fields
 	if len(f) > 0 {
 		tf = f[0]
@@ -106,10 +95,9 @@ func NewEvent(provider Provider, level level.Level, callDepth int, f ...fields.F
 	}
 
 	var result Event = &eventImpl{
-		provider:  provider,
-		level:     level,
-		fields:    tf,
-		callDepth: callDepth,
+		provider: provider,
+		level:    level,
+		fields:   tf,
 	}
 
 	if len(f) > 1 {

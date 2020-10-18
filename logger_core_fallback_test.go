@@ -22,22 +22,22 @@ func Test_fallbackCoreLogger_Log(t *testing.T) {
 
 	// WARNING! Do not move these lines, because the test relies on it.
 	// I know this could be better... ;-)
-	instance.Log(NewEvent(instance.GetProvider(), level.Trace, 0).
+	instance.Log(NewEvent(instance.GetProvider(), level.Trace).
 		With("a", 11).
 		With("b", 12).
 		With("message", "hello").
-		With("timestamp", t1))
-	instance.Log(NewEvent(instance.GetProvider(), level.Info, 0).
+		With("timestamp", t1), 0)
+	instance.Log(NewEvent(instance.GetProvider(), level.Info).
 		With("a", 11).
 		With("b", 12).
 		With("timestamp", t1).
-		With("logger", fallbackRootLoggerName))
-	instance.Log(NewEvent(instance.GetProvider(), level.Error, 0).
+		With("logger", fallbackRootLoggerName), 0)
+	instance.Log(NewEvent(instance.GetProvider(), level.Error).
 		With("a", 21).
 		With("c", 23).
 		With("message", "  hello    ").
 		WithError(givenError).
-		With("timestamp", t2))
+		With("timestamp", t2), 0)
 
 	assert.ToBeEqual(t, fmt.Sprintf(strings.TrimLeft(`
 I%s %d logger_core_fallback_test.go:30] a=11 b=12
@@ -51,7 +51,7 @@ E%s %d logger_core_fallback_test.go:35]   hello a=21 c=23 error="expected" logge
 func Test_fallbackCoreLogger_Log_withoutTimestamp(t *testing.T) {
 	instance, buf := newFallbackCoreLogger("foo")
 
-	instance.Log(NewEvent(instance.GetProvider(), level.Info, 0))
+	instance.Log(NewEvent(instance.GetProvider(), level.Info), 0)
 
 	assert.ToBeMatching(t, `^I\d{2}\d{2} \d{2}:\d{2}:\d{2}\.\d{6} \d+ logger_core_fallback_test.go:\d+] logger="foo"`, buf.String())
 }
@@ -59,8 +59,8 @@ func Test_fallbackCoreLogger_Log_withoutTimestamp(t *testing.T) {
 func Test_fallbackCoreLogger_Log_withLazyValue(t *testing.T) {
 	instance, buf := newFallbackCoreLogger("foo")
 
-	instance.Log(NewEvent(instance.GetProvider(), level.Info, 0).
-		With("foo", lazyMock(666)))
+	instance.Log(NewEvent(instance.GetProvider(), level.Info).
+		With("foo", lazyMock(666)), 0)
 
 	assert.ToBeMatching(t, `^I.+logger_core_fallback_test.go:\d+] foo=666 logger="foo"`, buf.String())
 }
@@ -68,7 +68,7 @@ func Test_fallbackCoreLogger_Log_withLazyValue(t *testing.T) {
 func Test_fallbackCoreLogger_Log_brokenCallDepth(t *testing.T) {
 	instance, buf := newFallbackCoreLogger("foo")
 
-	instance.Log(NewEvent(instance.GetProvider(), level.Info, 10000))
+	instance.Log(NewEvent(instance.GetProvider(), level.Info), 10000)
 
 	assert.ToBeMatching(t, `^I.+ \d+ \?\?\?:1] logger="foo"`, buf.String())
 }
@@ -76,8 +76,8 @@ func Test_fallbackCoreLogger_Log_brokenCallDepth(t *testing.T) {
 func Test_fallbackCoreLogger_Log_withErrorWhileMarshalling(t *testing.T) {
 	instance, buf := newFallbackCoreLogger("foo")
 
-	instance.Log(NewEvent(instance.GetProvider(), level.Info, 0).
-		With("foo", failingJsonMarshalling("expected")))
+	instance.Log(NewEvent(instance.GetProvider(), level.Info).
+		With("foo", failingJsonMarshalling("expected")), 0)
 
 	assert.ToBeMatching(t, `^ERR!! Cannot format event.+: expected`, buf.String())
 }
@@ -100,7 +100,7 @@ func Test_fallbackCoreLogger_Log_levels(t *testing.T) {
 			instance, buf := newFallbackCoreLogger("foo")
 			instance.level = 1
 
-			instance.Log(NewEvent(instance.GetProvider(), c.level, 0))
+			instance.Log(NewEvent(instance.GetProvider(), c.level), 0)
 
 			assert.ToBeMatching(t, `^`+c.expectedC+`\d{2}\d{2} \d{2}:\d{2}:\d{2}\.\d{6} \d+ logger_core_fallback_test.go:\d+] logger="foo"`, buf.String())
 		})

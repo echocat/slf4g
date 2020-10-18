@@ -24,7 +24,7 @@ func Test_GetMessageOf_withNilEvent(t *testing.T) {
 
 func Test_GetMessageOf_withNilValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0)
+	givenEvent := NewEvent(givenProvider, level.Info)
 
 	actual := GetMessageOf(givenEvent, givenProvider)
 
@@ -33,7 +33,7 @@ func Test_GetMessageOf_withNilValue(t *testing.T) {
 
 func Test_GetMessageOf_withStringValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetMessage(), "value")
 
 	actual := GetMessageOf(givenEvent, givenProvider)
@@ -44,7 +44,7 @@ func Test_GetMessageOf_withStringValue(t *testing.T) {
 func Test_GetMessageOf_withPStringValue(t *testing.T) {
 	givenValue := support.PString("value")
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetMessage(), givenValue)
 
 	actual := GetMessageOf(givenEvent, givenProvider)
@@ -54,7 +54,7 @@ func Test_GetMessageOf_withPStringValue(t *testing.T) {
 
 func Test_GetMessageOf_withStringerValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetMessage(), stringerMock("value"))
 
 	actual := GetMessageOf(givenEvent, givenProvider)
@@ -64,7 +64,7 @@ func Test_GetMessageOf_withStringerValue(t *testing.T) {
 
 func Test_GetMessageOf_withFmtValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetMessage(), 666)
 
 	actual := GetMessageOf(givenEvent, givenProvider)
@@ -74,7 +74,7 @@ func Test_GetMessageOf_withFmtValue(t *testing.T) {
 
 func Test_GetMessageOf_withLazyValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetMessage(), lazyMock(666))
 
 	actual := GetMessageOf(givenEvent, givenProvider)
@@ -92,7 +92,7 @@ func Test_GetErrorOf_withNilEvent(t *testing.T) {
 
 func Test_GetErrorOf_withNilValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0)
+	givenEvent := NewEvent(givenProvider, level.Info)
 
 	actual := GetErrorOf(givenEvent, givenProvider)
 
@@ -102,7 +102,7 @@ func Test_GetErrorOf_withNilValue(t *testing.T) {
 func Test_GetErrorOf_withErrorValue(t *testing.T) {
 	givenError := errors.New("test")
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetError(), givenError)
 
 	actual := GetErrorOf(givenEvent, givenProvider)
@@ -112,7 +112,7 @@ func Test_GetErrorOf_withErrorValue(t *testing.T) {
 
 func Test_GetErrorOf_withStringValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetError(), "value")
 
 	actual := GetErrorOf(givenEvent, givenProvider)
@@ -122,7 +122,7 @@ func Test_GetErrorOf_withStringValue(t *testing.T) {
 
 func Test_GetErrorOf_withPStringValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetError(), support.PString("value"))
 
 	actual := GetErrorOf(givenEvent, givenProvider)
@@ -132,7 +132,7 @@ func Test_GetErrorOf_withPStringValue(t *testing.T) {
 
 func Test_GetErrorOf_withStringerValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetError(), stringerMock("value"))
 
 	actual := GetErrorOf(givenEvent, givenProvider)
@@ -142,7 +142,7 @@ func Test_GetErrorOf_withStringerValue(t *testing.T) {
 
 func Test_GetErrorOf_withFmtValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetError(), 666)
 
 	actual := GetErrorOf(givenEvent, givenProvider)
@@ -152,7 +152,7 @@ func Test_GetErrorOf_withFmtValue(t *testing.T) {
 
 func Test_GetErrorOf_withLazyValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetError(), lazyMock(666))
 
 	actual := GetErrorOf(givenEvent, givenProvider)
@@ -170,7 +170,7 @@ func Test_GetTimestampOf_withNilEvent(t *testing.T) {
 
 func Test_GetTimestampOf_withNilValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0)
+	givenEvent := NewEvent(givenProvider, level.Info)
 
 	actual := GetTimestampOf(givenEvent, givenProvider)
 
@@ -180,7 +180,7 @@ func Test_GetTimestampOf_withNilValue(t *testing.T) {
 func Test_GetTimestampOf_withTimeValue(t *testing.T) {
 	givenTimestamp := time.Now()
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetTimestamp(), givenTimestamp)
 
 	actual := GetTimestampOf(givenEvent, givenProvider)
@@ -191,7 +191,7 @@ func Test_GetTimestampOf_withTimeValue(t *testing.T) {
 func Test_GetTimestampOf_withZeroTimeValue(t *testing.T) {
 	givenTimestamp := time.Time{}
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetTimestamp(), givenTimestamp)
 
 	actual := GetTimestampOf(givenEvent, givenProvider)
@@ -202,7 +202,7 @@ func Test_GetTimestampOf_withZeroTimeValue(t *testing.T) {
 func Test_GetTimestampOf_withPTimeValue(t *testing.T) {
 	givenTimestamp := support.PTime(time.Now())
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetTimestamp(), givenTimestamp)
 
 	actual := GetTimestampOf(givenEvent, givenProvider)
@@ -213,7 +213,7 @@ func Test_GetTimestampOf_withPTimeValue(t *testing.T) {
 func Test_GetTimestampOf_withPZeroTimeValue(t *testing.T) {
 	givenTimestamp := support.PTime(time.Time{})
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetTimestamp(), givenTimestamp)
 
 	actual := GetTimestampOf(givenEvent, givenProvider)
@@ -224,7 +224,7 @@ func Test_GetTimestampOf_withPZeroTimeValue(t *testing.T) {
 func Test_GetTimestampOf_withLazyValue(t *testing.T) {
 	givenTimestamp := support.PTime(time.Now())
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetTimestamp(), fields.LazyFunc(func() interface{} {
 			return givenTimestamp
 		}))
@@ -244,7 +244,7 @@ func Test_GetLoggerOf_withNilEvent(t *testing.T) {
 
 func Test_GetLoggerOf_withNilValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0)
+	givenEvent := NewEvent(givenProvider, level.Info)
 
 	actual := GetLoggerOf(givenEvent, givenProvider)
 
@@ -254,7 +254,7 @@ func Test_GetLoggerOf_withNilValue(t *testing.T) {
 func Test_GetLoggerOf_withLoggerValue(t *testing.T) {
 	givenLogger := newMockLogger("foo")
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetLogger(), givenLogger)
 
 	actual := GetLoggerOf(givenEvent, givenProvider)
@@ -264,7 +264,7 @@ func Test_GetLoggerOf_withLoggerValue(t *testing.T) {
 
 func Test_GetLoggerOf_withStringValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetLogger(), "foo")
 
 	actual := GetLoggerOf(givenEvent, givenProvider)
@@ -274,7 +274,7 @@ func Test_GetLoggerOf_withStringValue(t *testing.T) {
 
 func Test_GetLoggerOf_withPStringValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetLogger(), support.PString("foo"))
 
 	actual := GetLoggerOf(givenEvent, givenProvider)
@@ -284,7 +284,7 @@ func Test_GetLoggerOf_withPStringValue(t *testing.T) {
 
 func Test_GetLoggerOf_withStringerValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetLogger(), stringerMock("value"))
 
 	actual := GetLoggerOf(givenEvent, givenProvider)
@@ -294,7 +294,7 @@ func Test_GetLoggerOf_withStringerValue(t *testing.T) {
 
 func Test_GetLoggerOf_withNamedValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetLogger(), namedMock("value"))
 
 	actual := GetLoggerOf(givenEvent, givenProvider)
@@ -304,7 +304,7 @@ func Test_GetLoggerOf_withNamedValue(t *testing.T) {
 
 func Test_GetLoggerOf_withFmtValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetLogger(), 666)
 
 	actual := GetLoggerOf(givenEvent, givenProvider)
@@ -314,7 +314,7 @@ func Test_GetLoggerOf_withFmtValue(t *testing.T) {
 
 func Test_GetLoggerOf_withLazyValue(t *testing.T) {
 	givenProvider := newMockProvider("test")
-	givenEvent := NewEvent(givenProvider, level.Info, 0).
+	givenEvent := NewEvent(givenProvider, level.Info).
 		With(givenProvider.fieldKeysSpec.GetLogger(), lazyMock(666))
 
 	actual := GetLoggerOf(givenEvent, givenProvider)

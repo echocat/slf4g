@@ -20,8 +20,7 @@ func AreEventsEqual(left, right Event) (bool, error) {
 // majority of the cases. There is also a shortcut function:
 // AreEventsEqual(left,right)
 var DefaultEventEquality EventEquality = &privateEventEqualityImpl{&EventEqualityImpl{
-	CompareLevel:     true,
-	CompareCallDepth: true,
+	CompareLevel: true,
 	CompareValuesUsing: fields.NewValueEqualityFacade(func() fields.ValueEquality {
 		return fields.DefaultValueEquality
 	}),
@@ -56,10 +55,6 @@ type EventEqualityImpl struct {
 	// events to be the same.
 	CompareLevel bool
 
-	// CompareCallDepth will configure to compare the Event.GetCallDepth() of
-	// both events to be the same.
-	CompareCallDepth bool
-
 	// CompareValuesUsing is used to compare the fields of the given events. If
 	// nil the values will not be compared.
 	CompareValuesUsing fields.ValueEquality
@@ -79,9 +74,6 @@ func (instance *EventEqualityImpl) AreEventsEqual(left, right Event) (bool, erro
 	}
 
 	if instance.CompareLevel && left.GetLevel() != right.GetLevel() {
-		return false, nil
-	}
-	if instance.CompareCallDepth && left.GetCallDepth() != right.GetCallDepth() {
 		return false, nil
 	}
 

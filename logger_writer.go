@@ -18,8 +18,8 @@ type LoggingWriter struct {
 	// use level.Info.
 	LevelExtractor level.LineExtractor
 
-	// CallDepth is used to create the event with. See Event.GetCallDepth().
-	CallDepth int
+	// SkipFrames is used to create the event with.
+	SkipFrames uint16
 }
 
 // Write implements io.Writer.
@@ -32,10 +32,10 @@ func (instance *LoggingWriter) Write(p []byte) (int, error) {
 			return 0, err
 		}
 
-		event := NewEvent(provider, lvl, instance.CallDepth+1).
+		event := NewEvent(provider, lvl).
 			With(provider.GetFieldKeysSpec().GetMessage(), string(p))
 
-		instance.Logger.Log(event)
+		instance.Logger.Log(event, instance.SkipFrames+1)
 	}
 	return len(p), nil
 }

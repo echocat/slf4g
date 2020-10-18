@@ -4,11 +4,13 @@ import (
 	log "github.com/echocat/slf4g"
 	_ "github.com/echocat/slf4g/native"
 	"github.com/echocat/slf4g/native/formatter"
+	"github.com/echocat/slf4g/native/location"
 	_ "github.com/echocat/slf4g/sdk/bridge/hook"
 )
 
 func main() {
 	formatter.Default = formatter.NewText()
+	location.DefaultDiscovery = location.NewCallerDiscovery()
 
 	log.With("foo", "bar").Debug("hello, debug")
 	log.With("a", "foo").

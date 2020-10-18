@@ -37,21 +37,22 @@ func Test_loggerImpl_Log(t *testing.T) {
 			givenCoreLogger.initLoggedEvents()
 			instance := newLoggerImpl(givenCoreLogger)
 
-			givenEvent := NewEvent(givenCoreLogger.provider, l, 3).
+			givenEvent := NewEvent(givenCoreLogger.provider, l).
 				With("a", 1)
-			expectedEvent := NewEvent(givenCoreLogger.provider, l, 4).
+			expectedEvent := NewEvent(givenCoreLogger.provider, l).
 				With("a", 1)
 
 			givenCoreLogger.level = 1
-			instance.Log(givenEvent)
+			instance.Log(givenEvent, 3)
 			givenCoreLogger.level = l
-			instance.Log(givenEvent)
+			instance.Log(givenEvent, 3)
 			givenCoreLogger.level = l + 1
-			instance.Log(givenEvent)
+			instance.Log(givenEvent, 3)
 
-			assert.ToBeEqual(t, 2, len(*givenCoreLogger.loggedEvents))
+			assert.ToBeEqual(t, 3, len(*givenCoreLogger.loggedEvents))
 			assert.ToBeEqual(t, expectedEvent, givenCoreLogger.loggedEvent(0))
 			assert.ToBeEqual(t, expectedEvent, givenCoreLogger.loggedEvent(1))
+			assert.ToBeEqual(t, expectedEvent, givenCoreLogger.loggedEvent(2))
 		})
 	}
 }
@@ -99,18 +100,18 @@ func Test_loggerImpl_log(t *testing.T) {
 
 			assert.ToBeEqual(t, 3, len(givenLogger.loggedEvents()))
 			assert.ToBeEqualUsing(t,
-				NewEvent(givenLogger.getProvider(), c.level, 2),
+				NewEvent(givenLogger.getProvider(), c.level),
 				givenLogger.loggedEvent(0),
 				AreEventsEqual,
 			)
 			assert.ToBeEqualUsing(t,
-				NewEvent(givenLogger.getProvider(), c.level, 2).
+				NewEvent(givenLogger.getProvider(), c.level).
 					With(messageKey, 1),
 				givenLogger.loggedEvent(1),
 				AreEventsEqual,
 			)
 			assert.ToBeEqualUsing(t,
-				NewEvent(givenLogger.getProvider(), c.level, 2).
+				NewEvent(givenLogger.getProvider(), c.level).
 					With(messageKey, []interface{}{1, 2, 3}),
 				givenLogger.loggedEvent(2),
 				AreEventsEqual,
@@ -147,13 +148,13 @@ func Test_loggerImpl_logf(t *testing.T) {
 
 			assert.ToBeEqual(t, 2, len(givenLogger.loggedEvents()))
 			assert.ToBeEqualUsing(t,
-				NewEvent(givenLogger.getProvider(), c.level, 2).
+				NewEvent(givenLogger.getProvider(), c.level).
 					With(messageKey, fields.LazyFormat("hello")),
 				givenLogger.loggedEvent(0),
 				AreEventsEqual,
 			)
 			assert.ToBeEqualUsing(t,
-				NewEvent(givenLogger.getProvider(), c.level, 2).
+				NewEvent(givenLogger.getProvider(), c.level).
 					With(messageKey, fields.LazyFormat("hello %d", 1)),
 				givenLogger.loggedEvent(1),
 				AreEventsEqual,

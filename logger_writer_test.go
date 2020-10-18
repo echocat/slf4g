@@ -25,7 +25,7 @@ func Test_LoggingWriter_Write(t *testing.T) {
 	instance := &LoggingWriter{
 		Logger:         givenLogger,
 		LevelExtractor: givenExtractor,
-		CallDepth:      666,
+		SkipFrames:     666,
 	}
 
 	actual1Written, actual1Err := instance.Write([]byte("I hello world!"))
@@ -39,12 +39,10 @@ func Test_LoggingWriter_Write(t *testing.T) {
 	assert.ToBeEqual(t, 2, len(*givenLogger.loggedEvents))
 
 	assert.ToBeEqual(t, level.Info, givenLogger.loggedEvent(0).GetLevel())
-	assert.ToBeEqual(t, 667, givenLogger.loggedEvent(0).GetCallDepth())
 	actualMessage0, _ := givenLogger.loggedEvent(0).Get(messageKey)
 	assert.ToBeEqual(t, "I hello world!", actualMessage0)
 
 	assert.ToBeEqual(t, level.Error, givenLogger.loggedEvent(1).GetLevel())
-	assert.ToBeEqual(t, 667, givenLogger.loggedEvent(1).GetCallDepth())
 	actualMessage1, _ := givenLogger.loggedEvent(1).Get(messageKey)
 	assert.ToBeEqual(t, "E hello world!", actualMessage1)
 }
@@ -54,8 +52,8 @@ func Test_LoggingWriter_Write_withoutLevelExtractor(t *testing.T) {
 	givenLogger.initLoggedEvents()
 	messageKey := givenLogger.GetProvider().GetFieldKeysSpec().GetMessage()
 	instance := &LoggingWriter{
-		Logger:    givenLogger,
-		CallDepth: 666,
+		Logger:     givenLogger,
+		SkipFrames: 666,
 	}
 
 	actual1Written, actual1Err := instance.Write([]byte("W hello world!"))
@@ -69,12 +67,10 @@ func Test_LoggingWriter_Write_withoutLevelExtractor(t *testing.T) {
 	assert.ToBeEqual(t, 2, len(*givenLogger.loggedEvents))
 
 	assert.ToBeEqual(t, level.Info, givenLogger.loggedEvent(0).GetLevel())
-	assert.ToBeEqual(t, 667, givenLogger.loggedEvent(0).GetCallDepth())
 	actualMessage0, _ := givenLogger.loggedEvent(0).Get(messageKey)
 	assert.ToBeEqual(t, "W hello world!", actualMessage0)
 
 	assert.ToBeEqual(t, level.Info, givenLogger.loggedEvent(1).GetLevel())
-	assert.ToBeEqual(t, 667, givenLogger.loggedEvent(1).GetCallDepth())
 	actualMessage1, _ := givenLogger.loggedEvent(1).Get(messageKey)
 	assert.ToBeEqual(t, "E hello world!", actualMessage1)
 }

@@ -71,13 +71,13 @@ func NewCallerDiscovery(customizer ...func(*CallerDiscovery)) *CallerDiscovery {
 }
 
 // DiscoverLocation implements Discovery.DiscoverLocation().
-func (instance *CallerDiscovery) DiscoverLocation(event log.Event, extraCallDepth int) Location {
+func (instance *CallerDiscovery) DiscoverLocation(event log.Event, skipFrames uint16) Location {
 	if event == nil {
 		return nil
 	}
 
 	pcs := make([]uintptr, 2)
-	depth := runtime.Callers(extraCallDepth+2, pcs)
+	depth := runtime.Callers(int(skipFrames)+2, pcs)
 	frames := runtime.CallersFrames(pcs[:depth])
 
 	frame, _ := frames.Next()
@@ -87,7 +87,8 @@ func (instance *CallerDiscovery) DiscoverLocation(event log.Event, extraCallDept
 	}
 
 	return &callerImpl{
-		frame: &frame,
+		discovery: instance,
+		frame:     &frame,
 	}
 }
 

@@ -37,6 +37,6 @@ func (instance *Logger) IsLevelEnabled(v level.Level) bool {
 }
 
 // Log implements log.Logger#Log()
-func (instance *Logger) Log(event log.Event) {
-	instance.CoreLogger.Log(event.WithCallDepth(1))
+func (instance *Logger) Log(event log.Event, skipFrames uint16) {
+	instance.CoreLogger.Log(event, skipFrames+1)
 }

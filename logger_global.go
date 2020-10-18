@@ -174,7 +174,7 @@ func log(l level.Level, args ...interface{}) {
 	}
 
 	p := GetProvider()
-	e := NewEvent(p, l, 2)
+	e := NewEvent(p, l)
 
 	if len(args) == 1 {
 		e = e.With(p.GetFieldKeysSpec().GetMessage(), args[0])
@@ -182,7 +182,7 @@ func log(l level.Level, args ...interface{}) {
 		e = e.With(p.GetFieldKeysSpec().GetMessage(), args)
 	}
 
-	GetRootLogger().Log(e)
+	GetRootLogger().Log(e, 2)
 }
 
 func logf(l level.Level, format string, args ...interface{}) {
@@ -191,8 +191,8 @@ func logf(l level.Level, format string, args ...interface{}) {
 	}
 
 	p := GetProvider()
-	e := NewEvent(p, l, 2).
+	e := NewEvent(p, l).
 		With(GetProvider().GetFieldKeysSpec().GetMessage(), fields.LazyFormat(format, args...))
 
-	GetRootLogger().Log(e)
+	GetRootLogger().Log(e, 2)
 }

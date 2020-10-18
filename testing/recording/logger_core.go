@@ -135,7 +135,7 @@ func (instance *CoreLogger) Reset() {
 }
 
 // Log implements log.CoreLogger#Log(event).
-func (instance *CoreLogger) Log(event log.Event) {
+func (instance *CoreLogger) Log(event log.Event, _ uint16) {
 	if !instance.IsLevelEnabled(event.GetLevel()) {
 		return
 	}

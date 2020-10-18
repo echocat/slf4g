@@ -57,14 +57,6 @@ func Test_eventImpl_GetLevel(t *testing.T) {
 	assert.ToBeEqual(t, level.Error, actual)
 }
 
-func Test_eventImpl_GetCallDepth(t *testing.T) {
-	instance := &eventImpl{callDepth: 666}
-
-	actual := instance.GetCallDepth()
-
-	assert.ToBeEqual(t, 666, actual)
-}
-
 func Test_eventImpl_GetContext(t *testing.T) {
 	givenContext := &struct{ foo string }{"bar"}
 	instance := &eventImpl{context: givenContext}
@@ -139,14 +131,4 @@ func Test_eventImpl_WithContext(t *testing.T) {
 	actual := instance.WithContext(givenContextAfter)
 
 	assert.ToBeSame(t, givenContextAfter, actual.(*eventImpl).context)
-}
-
-func Test_eventImpl_WithCallDepth(t *testing.T) {
-	instance := &eventImpl{callDepth: 666}
-
-	actual1 := instance.WithCallDepth(4)
-	assert.ToBeEqual(t, 670, actual1.(*eventImpl).callDepth)
-
-	actual2 := actual1.WithCallDepth(-70)
-	assert.ToBeEqual(t, 600, actual2.(*eventImpl).callDepth)
 }

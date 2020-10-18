@@ -19,11 +19,8 @@ func (instance *loggerImpl) GetName() string {
 	return instance.Unwrap().GetName()
 }
 
-func (instance *loggerImpl) Log(event Event) {
-	if !instance.IsLevelEnabled(event.GetLevel()) {
-		return
-	}
-	instance.Unwrap().Log(event.WithCallDepth(1))
+func (instance *loggerImpl) Log(event Event, skipFrames uint16) {
+	instance.Unwrap().Log(event, skipFrames+1)
 }
 
 func (instance *loggerImpl) IsLevelEnabled(level level.Level) bool {
@@ -39,7 +36,7 @@ func (instance *loggerImpl) log(level level.Level, args ...interface{}) {
 		return
 	}
 	provider := instance.GetProvider()
-	e := NewEvent(provider, level, 2, instance.fields)
+	e := NewEvent(provider, level, instance.fields)
 
 	if len(args) == 1 {
 		e = e.With(provider.GetFieldKeysSpec().GetMessage(), args[0])
@@ -47,7 +44,7 @@ func (instance *loggerImpl) log(level level.Level, args ...interface{}) {
 		e = e.With(provider.GetFieldKeysSpec().GetMessage(), args)
 	}
 
-	instance.Unwrap().Log(e)
+	instance.Unwrap().Log(e, 2)
 }
 
 func (instance *loggerImpl) logf(level level.Level, format string, args ...interface{}) {
@@ -55,10 +52,10 @@ func (instance *loggerImpl) logf(level level.Level, format string, args ...inter
 		return
 	}
 	provider := instance.GetProvider()
-	e := NewEvent(provider, level, 2, instance.fields).
+	e := NewEvent(provider, level, instance.fields).
 		Withf(provider.GetFieldKeysSpec().GetMessage(), format, args...)
 
-	instance.Unwrap().Log(e)
+	instance.Unwrap().Log(e, 2)
 }
 
 func (instance *loggerImpl) Trace(args ...interface{}) {

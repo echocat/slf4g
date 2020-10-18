@@ -44,7 +44,7 @@ type fallbackCoreLogger struct {
 	level level.Level
 }
 
-func (instance *fallbackCoreLogger) Log(event Event) {
+func (instance *fallbackCoreLogger) Log(event Event, skipFrames uint16) {
 	if !instance.IsLevelEnabled(event.GetLevel()) {
 		return
 	}
@@ -53,11 +53,11 @@ func (instance *fallbackCoreLogger) Log(event Event) {
 		event = event.With(instance.GetFieldKeysSpec().GetLogger(), instance.name)
 	}
 
-	b := instance.format(event)
+	b := instance.format(event, skipFrames+1)
 	_, _ = instance.out.Write(b)
 }
 
-func (instance *fallbackCoreLogger) format(event Event) []byte {
+func (instance *fallbackCoreLogger) format(event Event, skipFrames uint16) []byte {
 	buf := new(bytes.Buffer)
 
 	_ = buf.WriteByte(instance.formatLevel(event.GetLevel()))
@@ -65,7 +65,7 @@ func (instance *fallbackCoreLogger) format(event Event) []byte {
 	_ = buf.WriteByte(' ')
 	_, _ = buf.WriteString(*instance.formatPid())
 	_ = buf.WriteByte(' ')
-	_, _ = buf.WriteString(*instance.formatLocation(event))
+	_, _ = buf.WriteString(*instance.formatLocation(skipFrames + 1))
 	_ = buf.WriteByte(']')
 	_, _ = buf.WriteString(instance.formatMessage(event))
 	messageKey := instance.GetFieldKeysSpec().GetMessage()
@@ -125,8 +125,8 @@ func (instance *fallbackCoreLogger) formatPid() *string {
 	return &result
 }
 
-func (instance *fallbackCoreLogger) formatLocation(event Event) *string {
-	_, file, line, ok := runtime.Caller(3 + event.GetCallDepth())
+func (instance *fallbackCoreLogger) formatLocation(skipFrames uint16) *string {
+	_, file, line, ok := runtime.Caller(int(skipFrames + 1))
 	if !ok {
 		file = "???"
 		line = 1

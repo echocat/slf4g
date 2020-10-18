@@ -6,11 +6,10 @@ import (
 )
 
 type eventImpl struct {
-	provider  Provider
-	fields    fields.Fields
-	level     level.Level
-	callDepth int
-	context   interface{}
+	provider Provider
+	fields   fields.Fields
+	level    level.Level
+	context  interface{}
 }
 
 func (instance *eventImpl) ForEach(consumer func(key string, value interface{}) error) error {
@@ -27,10 +26,6 @@ func (instance *eventImpl) Len() int {
 
 func (instance *eventImpl) GetLevel() level.Level {
 	return instance.level
-}
-
-func (instance *eventImpl) GetCallDepth() int {
-	return instance.callDepth
 }
 
 func (instance *eventImpl) GetContext() interface{} {
@@ -69,30 +64,18 @@ func (instance *eventImpl) Without(keys ...string) Event {
 
 func (instance *eventImpl) WithContext(ctx interface{}) Event {
 	return &eventImpl{
-		provider:  instance.provider,
-		fields:    instance.fields,
-		level:     instance.level,
-		callDepth: instance.callDepth,
-		context:   ctx,
-	}
-}
-
-func (instance *eventImpl) WithCallDepth(add int) Event {
-	return &eventImpl{
-		provider:  instance.provider,
-		fields:    instance.fields,
-		level:     instance.level,
-		callDepth: instance.callDepth + add,
-		context:   instance.context,
+		provider: instance.provider,
+		fields:   instance.fields,
+		level:    instance.level,
+		context:  ctx,
 	}
 }
 
 func (instance *eventImpl) with(mod func(fields.Fields) fields.Fields) Event {
 	return &eventImpl{
-		provider:  instance.provider,
-		fields:    mod(instance.fields),
-		level:     instance.level,
-		callDepth: instance.callDepth,
-		context:   instance.context,
+		provider: instance.provider,
+		fields:   mod(instance.fields),
+		level:    instance.level,
+		context:  instance.context,
 	}
 }

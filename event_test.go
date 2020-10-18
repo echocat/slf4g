@@ -14,14 +14,12 @@ import (
 func Test_NewEvent_withoutFields(t *testing.T) {
 	givenProvider := newMockProvider("test")
 	givenLevel := level.Error
-	givenCallDepth := 66
 
-	actual := NewEvent(givenProvider, givenLevel, givenCallDepth)
+	actual := NewEvent(givenProvider, givenLevel)
 
 	assert.ToBeOfType(t, &eventImpl{}, actual)
 	assert.ToBeSame(t, givenProvider, actual.(*eventImpl).provider)
 	assert.ToBeEqual(t, givenLevel, actual.GetLevel())
-	assert.ToBeEqual(t, givenCallDepth, actual.GetCallDepth())
 	assert.ToBeEqual(t, fields.Empty(), actual.(*eventImpl).fields)
 	assert.ToBeNil(t, actual.GetContext())
 }
@@ -29,16 +27,14 @@ func Test_NewEvent_withoutFields(t *testing.T) {
 func Test_NewEvent_withOneFields(t *testing.T) {
 	givenProvider := newMockProvider("test")
 	givenLevel := level.Error
-	givenCallDepth := 66
 
 	givenFields1 := fields.With("a", "1")
 
-	actual := NewEvent(givenProvider, givenLevel, givenCallDepth, givenFields1)
+	actual := NewEvent(givenProvider, givenLevel, givenFields1)
 
 	assert.ToBeOfType(t, &eventImpl{}, actual)
 	assert.ToBeSame(t, givenProvider, actual.(*eventImpl).provider)
 	assert.ToBeEqual(t, givenLevel, actual.GetLevel())
-	assert.ToBeEqual(t, givenCallDepth, actual.GetCallDepth())
 	assert.ToBeSame(t, givenFields1, actual.(*eventImpl).fields)
 	assert.ToBeNil(t, actual.GetContext())
 }
@@ -46,18 +42,16 @@ func Test_NewEvent_withOneFields(t *testing.T) {
 func Test_NewEvent_with3Fields(t *testing.T) {
 	givenProvider := newMockProvider("test")
 	givenLevel := level.Error
-	givenCallDepth := 66
 
 	givenFields1 := fields.With("a", 1)
 	givenFields2 := fields.With("a", 2).With("b", 2)
 	givenFields3 := fields.With("a", 3).With("c", 3)
 
-	actual := NewEvent(givenProvider, givenLevel, givenCallDepth, givenFields1, givenFields2, givenFields3)
+	actual := NewEvent(givenProvider, givenLevel, givenFields1, givenFields2, givenFields3)
 
 	assert.ToBeOfType(t, &eventImpl{}, actual)
 	assert.ToBeSame(t, givenProvider, actual.(*eventImpl).provider)
 	assert.ToBeEqual(t, givenLevel, actual.GetLevel())
-	assert.ToBeEqual(t, givenCallDepth, actual.GetCallDepth())
 	assert.ToBeEqualUsing(t, fields.With("a", 3).With("b", 2).With("c", 3), actual.(*eventImpl).fields, fields.AreEqual)
 	assert.ToBeNil(t, actual.GetContext())
 }
@@ -65,14 +59,13 @@ func Test_NewEvent_with3Fields(t *testing.T) {
 func Test_NewEvent_withErrorInFieldsPanics(t *testing.T) {
 	givenProvider := newMockProvider("test")
 	givenLevel := level.Error
-	givenCallDepth := 66
 	givenError := errors.New("expected")
 
 	givenFields1 := fields.With("a", 1)
 	givenFields2 := &fieldsThatErrors{fields.With("a", 2), givenError}
 
 	assert.Execution(t, func() {
-		NewEvent(givenProvider, givenLevel, givenCallDepth, givenFields1, givenFields2)
+		NewEvent(givenProvider, givenLevel, givenFields1, givenFields2)
 	}).WillPanicWith("expected")
 }
 

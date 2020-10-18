@@ -32,7 +32,7 @@ type CoreLogger struct {
 }
 
 // Log implements log.CoreLogger#Log()
-func (instance *CoreLogger) Log(event log.Event) {
+func (instance *CoreLogger) Log(event log.Event, skipFrames uint16) {
 	if event == nil {
 		return
 	}
@@ -48,7 +48,7 @@ func (instance *CoreLogger) Log(event log.Event) {
 	if v := log.GetLoggerOf(event, provider); v == nil {
 		event = event.With(fieldKeysSpec.GetLogger(), instance.name)
 	}
-	if v := instance.getLocationDiscovery().DiscoverLocation(event, event.GetCallDepth()+1); v != nil {
+	if v := instance.getLocationDiscovery().DiscoverLocation(event, skipFrames+1); v != nil {
 		event = event.With(fieldKeysSpec.GetLocation(), v)
 	}
 

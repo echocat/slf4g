@@ -34,15 +34,15 @@ func Test_Configure(t *testing.T) {
 
 	assert.ToBeEqual(t, 3, provider.Len())
 	assert.ToBeEqual(t, true, provider.MustContains(
-		log.NewEvent(provider, level.Warn, 4).
+		log.NewEvent(provider, level.Warn).
 			With("message", "\n"),
 	))
 	assert.ToBeEqual(t, true, provider.MustContains(
-		log.NewEvent(provider, level.Warn, 4).
+		log.NewEvent(provider, level.Warn).
 			With("message", "a2c\n"),
 	))
 	assert.ToBeEqual(t, true, provider.MustContains(
-		log.NewEvent(provider, level.Warn, 4).
+		log.NewEvent(provider, level.Warn).
 			With("message", "a 3 c\n"),
 	))
 }
@@ -69,15 +69,15 @@ func Test_ConfigureWith(t *testing.T) {
 
 	assert.ToBeEqual(t, 3, logger.Len())
 	assert.ToBeEqual(t, true, logger.MustContains(
-		log.NewEvent(logger.GetProvider(), level.Warn, 4).
+		log.NewEvent(logger.GetProvider(), level.Warn).
 			With("message", "\n"),
 	))
 	assert.ToBeEqual(t, true, logger.MustContains(
-		log.NewEvent(logger.GetProvider(), level.Warn, 4).
+		log.NewEvent(logger.GetProvider(), level.Warn).
 			With("message", "a2c\n"),
 	))
 	assert.ToBeEqual(t, true, logger.MustContains(
-		log.NewEvent(logger.GetProvider(), level.Warn, 4).
+		log.NewEvent(logger.GetProvider(), level.Warn).
 			With("message", "a 3 c\n"),
 	))
 }
@@ -100,15 +100,15 @@ func Test_NewWrapper(t *testing.T) {
 
 	assert.ToBeEqual(t, 3, logger.Len())
 	assert.ToBeEqual(t, true, logger.MustContains(
-		log.NewEvent(logger.GetProvider(), level.Warn, 4).
+		log.NewEvent(logger.GetProvider(), level.Warn).
 			With("message", "\n"),
 	))
 	assert.ToBeEqual(t, true, logger.MustContains(
-		log.NewEvent(logger.GetProvider(), level.Warn, 4).
+		log.NewEvent(logger.GetProvider(), level.Warn).
 			With("message", "a2c\n"),
 	))
 	assert.ToBeEqual(t, true, logger.MustContains(
-		log.NewEvent(logger.GetProvider(), level.Warn, 4).
+		log.NewEvent(logger.GetProvider(), level.Warn).
 			With("message", "a 3 c\n"),
 	))
 }
