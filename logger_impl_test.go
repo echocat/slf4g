@@ -256,11 +256,72 @@ func Test_loggerImpl_Without(t *testing.T) {
 		actual.(*loggerImpl).fields, fields.AreEqual)
 }
 
+func Test_loggerImpl_Accepts(t *testing.T) {
+	givenCoreLogger := newMockCoreLogger("foo")
+	instance := newLoggerImpl(givenCoreLogger)
+	var givenEvent1 Event
+	givenEvent2 := givenCoreLogger.NewEvent(level.Fatal, nil)
+
+	assert.ToBeEqual(t, givenCoreLogger.Accepts(givenEvent1), instance.Accepts(givenEvent1))
+	assert.ToBeEqual(t, givenCoreLogger.Accepts(givenEvent2), instance.Accepts(givenEvent2))
+}
+
+func Test_loggerImpl_NewEvent(t *testing.T) {
+	givenCoreLogger := newMockCoreLogger("foo")
+	instance := newLoggerImpl(givenCoreLogger)
+	givenValues := map[string]interface{}{"foo": "bar"}
+
+	assert.ToBeEqual(t, givenCoreLogger.NewEvent(level.Fatal, givenValues), instance.NewEvent(level.Fatal, givenValues))
+}
+
+func Test_loggerImpl_NewEventWithFields_usingAsMap(t *testing.T) {
+	givenCoreLogger := newMockCoreLogger("foo")
+	instance := newLoggerImpl(givenCoreLogger)
+	giveValues := map[string]interface{}{"foo": "bar"}
+	givenFields := fields.WithAll(giveValues)
+
+	assert.ToBeEqual(t, givenCoreLogger.NewEvent(level.Fatal, giveValues), instance.NewEventWithFields(level.Fatal, givenFields))
+}
+func Test_loggerImpl_NewEventWithFields_usingFields(t *testing.T) {
+	givenCoreLogger := &mockCoreLoggerWithNewEventWithFields{newMockCoreLogger("foo")}
+	instance := newLoggerImpl(givenCoreLogger.mockCoreLogger)
+	givenFields := fields.WithAll(map[string]interface{}{"foo": "bar"})
+
+	assert.ToBeEqual(t, givenCoreLogger.NewEventWithFields(level.Fatal, givenFields), instance.NewEventWithFields(level.Fatal, givenFields))
+}
+
+func Test_loggerImpl_NewEventWithFields_panicsOnErrors(t *testing.T) {
+	givenCoreLogger := newMockCoreLogger("foo")
+	instance := newLoggerImpl(givenCoreLogger)
+
+	assert.Execution(t, func() {
+		instance.NewEventWithFields(level.Fatal, fields.ForEachFunc(func(func(string, interface{}) error) error {
+			return errors.New("expected")
+		}))
+	}).WillPanicWith("^cannot make .+: expected$")
+}
+
 func newLoggerImpl(in *mockCoreLogger) *loggerImpl {
 	return &loggerImpl{
 		coreProvider: func() CoreLogger {
 			return in
 		},
 		fields: fields.Empty(),
+	}
+}
+
+type mockCoreLoggerWithNewEventWithFields struct {
+	*mockCoreLogger
+}
+
+func (instance *mockCoreLoggerWithNewEventWithFields) NewEventWithFields(l level.Level, f fields.ForEachEnabled) Event {
+	asFields, err := fields.AsFields(f)
+	if err != nil {
+		panic(err)
+	}
+	return &fallbackEvent{
+		provider: instance.provider,
+		level:    l,
+		fields:   asFields,
 	}
 }

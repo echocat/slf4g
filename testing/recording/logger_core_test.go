@@ -338,6 +338,16 @@ func Test_CoreLogger_NewEventWithFields(t *testing.T) {
 	}, instance.NewEventWithFields(level.Fatal, fields.With("foo", "bar")))
 }
 
+func Test_CoreLogger_NewEventWithFields_panicsOnError(t *testing.T) {
+	instance := NewCoreLogger()
+
+	assert.Execution(t, func() {
+		instance.NewEventWithFields(level.Fatal, fields.ForEachFunc(func(func(string, interface{}) error) error {
+			return errors.New("expected")
+		}))
+	}).WillPanicWith("^expected$")
+}
+
 func Test_CoreLogger_Accepts(t *testing.T) {
 	instance := NewCoreLogger()
 

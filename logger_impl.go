@@ -29,10 +29,10 @@ func (instance *loggerImpl) NewEvent(l level.Level, values map[string]interface{
 	return instance.Unwrap().NewEvent(l, values)
 }
 
-func (instance *loggerImpl) NewEventWithFields(l level.Level, f fields.Fields) Event {
+func (instance *loggerImpl) NewEventWithFields(l level.Level, f fields.ForEachEnabled) Event {
 	target := instance.Unwrap()
 	if wf, ok := target.(interface {
-		NewEventWithFields(l level.Level, f fields.Fields) Event
+		NewEventWithFields(l level.Level, f fields.ForEachEnabled) Event
 	}); ok {
 		return wf.NewEventWithFields(l, f)
 	}

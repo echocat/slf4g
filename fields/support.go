@@ -43,6 +43,18 @@ func AsMap(f ForEachEnabled) (map[string]interface{}, error) {
 	return asMap(f)
 }
 
+// AsFields converts a given object which contains is ForEachEnabled and
+// converts it to a Fields instance.
+func AsFields(f ForEachEnabled) (Fields, error) {
+	if f == nil {
+		return Empty(), nil
+	}
+	if fields, ok := f.(Fields); ok {
+		return fields, nil
+	}
+	return asMap(f)
+}
+
 func mustAsMap(f ForEachEnabled) mapped {
 	if m, err := asMap(f); err != nil {
 		panic(err)

@@ -63,9 +63,9 @@ func (instance *fallbackCoreLogger) format(event Event, skipFrames uint16) []byt
 	_ = buf.WriteByte(instance.formatLevel(event.GetLevel()))
 	_, _ = buf.WriteString(*instance.formatTime(event))
 	_ = buf.WriteByte(' ')
-	_, _ = buf.WriteString(*instance.formatPid())
+	_, _ = buf.WriteString(instance.formatPid())
 	_ = buf.WriteByte(' ')
-	_, _ = buf.WriteString(*instance.formatLocation(skipFrames + 1))
+	_, _ = buf.WriteString(instance.formatLocation(skipFrames + 1))
 	_ = buf.WriteByte(']')
 	_, _ = buf.WriteString(instance.formatMessage(event))
 	messageKey := instance.GetFieldKeysSpec().GetMessage()
@@ -120,24 +120,21 @@ func (instance *fallbackCoreLogger) formatLevel(l level.Level) byte {
 	}
 }
 
-func (instance *fallbackCoreLogger) formatPid() *string {
-	result := strconv.Itoa(pid)
-	return &result
+func (instance *fallbackCoreLogger) formatPid() string {
+	return strconv.Itoa(pid)
 }
 
-func (instance *fallbackCoreLogger) formatLocation(skipFrames uint16) *string {
+func (instance *fallbackCoreLogger) formatLocation(skipFrames uint16) string {
 	_, file, line, ok := runtime.Caller(int(skipFrames + 1))
 	if !ok {
 		file = "???"
-		line = 1
 	} else {
 		file = path.Base(file)
 	}
-	if line < 0 {
-		line = 0
+	if line > 0 {
+		return file + ":" + strconv.Itoa(line)
 	}
-	result := file + ":" + strconv.Itoa(line)
-	return &result
+	return file + ":?"
 }
 
 func (instance *fallbackCoreLogger) formatTime(event Event) *string {
@@ -204,13 +201,14 @@ func (instance *fallbackCoreLogger) NewEvent(l level.Level, values map[string]in
 	return instance.NewEventWithFields(l, fields.WithAll(values))
 }
 
-func (instance *fallbackCoreLogger) NewEventWithFields(l level.Level, f fields.Fields) Event {
-	if f == nil {
-		f = fields.Empty()
+func (instance *fallbackCoreLogger) NewEventWithFields(l level.Level, f fields.ForEachEnabled) Event {
+	asFields, err := fields.AsFields(f)
+	if err != nil {
+		panic(err)
 	}
 	return &fallbackEvent{
 		provider: instance,
-		fields:   f,
+		fields:   asFields,
 		level:    l,
 	}
 }

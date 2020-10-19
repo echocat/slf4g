@@ -96,13 +96,14 @@ func (instance *CoreLogger) NewEvent(l level.Level, values map[string]interface{
 
 // NewEventWithFields provides a shortcut if an event should directly created
 // from fields.
-func (instance *CoreLogger) NewEventWithFields(l level.Level, f fields.Fields) log.Event {
-	if f == nil {
-		f = fields.Empty()
+func (instance *CoreLogger) NewEventWithFields(l level.Level, f fields.ForEachEnabled) log.Event {
+	asFields, err := fields.AsFields(f)
+	if err != nil {
+		panic(err)
 	}
 	return &event{
 		provider: instance.provider,
-		fields:   f,
+		fields:   asFields,
 		level:    l,
 	}
 }

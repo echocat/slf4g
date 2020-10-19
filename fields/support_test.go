@@ -59,3 +59,37 @@ func Test_mustAsMap_withError(t *testing.T) {
 		mustAsMap(given)
 	}).WillPanicWith("expected")
 }
+
+func Test_AsFields_withNil(t *testing.T) {
+	actual, actualErr := AsFields(nil)
+
+	assert.ToBeNil(t, actualErr)
+	assert.ToBeEqual(t, Empty(), actual)
+}
+
+func Test_AsFields_withFields(t *testing.T) {
+	givenFields := With("foo", "bar")
+	actual, actualErr := AsFields(givenFields)
+
+	assert.ToBeNil(t, actualErr)
+	assert.ToBeSame(t, givenFields, actual)
+}
+
+func Test_AsFields_withForEachEnabled(t *testing.T) {
+	givenForEachEnabled := aMap{"foo": 1, "bar": 2}
+	actual, actualErr := AsFields(givenForEachEnabled)
+
+	assert.ToBeNil(t, actualErr)
+	assert.ToBeEqual(t, mapped{"foo": 1, "bar": 2}, actual)
+}
+
+type aMap map[string]interface{}
+
+func (instance aMap) ForEach(consumer func(string, interface{}) error) error {
+	for k, v := range instance {
+		if err := consumer(k, v); err != nil {
+			return err
+		}
+	}
+	return nil
+}

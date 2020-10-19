@@ -50,6 +50,15 @@ E%s %d logger_core_fallback_test.go:37]   hello a=21 c=23 error="expected" logge
 	), buf.String())
 }
 
+func Test_fallbackCoreLogger_formatLocation(t *testing.T) {
+	instance, _ := newFallbackCoreLogger("foo")
+
+	// WARNING! Do not move these lines, because the test relies on it.
+	// I know this could be better... ;-)
+	assert.ToBeEqual(t, "logger_core_fallback_test.go:58", instance.formatLocation(0))
+	assert.ToBeEqual(t, "???:?", instance.formatLocation(1000))
+}
+
 func Test_fallbackCoreLogger_Log_withoutTimestamp(t *testing.T) {
 	instance, buf := newFallbackCoreLogger("foo")
 
@@ -72,7 +81,7 @@ func Test_fallbackCoreLogger_Log_brokenCallDepth(t *testing.T) {
 
 	instance.Log(instance.NewEvent(level.Info, nil), 10000)
 
-	assert.ToBeMatching(t, `^I.+ \d+ \?\?\?:1] logger="foo"`, buf.String())
+	assert.ToBeMatching(t, `^I.+ \d+ \?\?\?:\?] logger="foo"`, buf.String())
 }
 
 func Test_fallbackCoreLogger_Log_withErrorWhileMarshalling(t *testing.T) {
@@ -186,6 +195,16 @@ func Test_fallbackCoreLogger_NewEventWithFields(t *testing.T) {
 		fields:   fields.With("foo", "bar"),
 		level:    level.Fatal,
 	}, instance.NewEventWithFields(level.Fatal, fields.With("foo", "bar")))
+}
+
+func Test_fallbackCoreLogger_NewEventWithFields_panicsOnErrors(t *testing.T) {
+	instance, _ := newFallbackCoreLogger("foo")
+
+	assert.Execution(t, func() {
+		instance.NewEventWithFields(level.Fatal, fields.ForEachFunc(func(func(string, interface{}) error) error {
+			return errors.New("expected")
+		}))
+	}).WillPanicWith("^expected$")
 }
 
 func Test_fallbackCoreLogger_Accepts(t *testing.T) {

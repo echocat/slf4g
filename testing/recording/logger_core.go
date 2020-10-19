@@ -198,13 +198,14 @@ func (instance *CoreLogger) NewEvent(l level.Level, values map[string]interface{
 	return instance.NewEventWithFields(l, fields.WithAll(values))
 }
 
-func (instance *CoreLogger) NewEventWithFields(l level.Level, f fields.Fields) log.Event {
-	if f == nil {
-		f = fields.Empty()
+func (instance *CoreLogger) NewEventWithFields(l level.Level, f fields.ForEachEnabled) log.Event {
+	asFields, err := fields.AsFields(f)
+	if err != nil {
+		panic(err)
 	}
 	return &event{
 		provider: instance.Provider,
-		fields:   f,
+		fields:   asFields,
 		level:    l,
 	}
 }
