@@ -35,6 +35,7 @@ func NewWriter(out io.Writer, customizer ...func(*Writer)) *Writer {
 	return result
 }
 
+// Consume implements Consumer.Consume()
 func (instance *Writer) Consume(event log.Event, source log.CoreLogger) {
 	if event == nil {
 		return

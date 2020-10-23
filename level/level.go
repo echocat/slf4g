@@ -80,3 +80,22 @@ func (instance Levels) Swap(i, j int) {
 func (instance Levels) Less(i, j int) bool {
 	return instance[i].CompareTo(instance[j]) < 0
 }
+
+// ToProvider transforms the current Levels into a Provider instance with the
+// given name.
+func (instance Levels) ToProvider(name string) Provider {
+	return levelsAsProvider{instance, name}
+}
+
+type levelsAsProvider struct {
+	values Levels
+	name   string
+}
+
+func (instance levelsAsProvider) GetName() string {
+	return instance.name
+}
+
+func (instance levelsAsProvider) GetLevels() Levels {
+	return instance.values
+}

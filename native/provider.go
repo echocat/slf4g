@@ -52,10 +52,10 @@ type Provider struct {
 	// default.
 	LocationDiscovery location.Discovery
 
-	// FieldsKeysSpec defines what are the keys of the major fields managed by
+	// FieldKeysSpec defines what are the keys of the major fields managed by
 	// this Provider and its managed loggers. If this is not set it will be
 	// DefaultFieldKeysSpec by default.
-	FieldsKeysSpec FieldKeysSpec
+	FieldKeysSpec FieldKeysSpec
 
 	// CoreLoggerCustomizer will be called in every moment a logger instance
 	// needs to be created (if configured).
@@ -123,7 +123,7 @@ func (instance *Provider) GetAllLevels() level.Levels {
 }
 
 func (instance *Provider) getFieldKeysSpec() FieldKeysSpec {
-	if v := instance.FieldsKeysSpec; v != nil {
+	if v := instance.FieldKeysSpec; v != nil {
 		return v
 	}
 	if v := DefaultFieldKeysSpec; v != nil {

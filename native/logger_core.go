@@ -25,7 +25,7 @@ const (
 // by the Provider instance. If you want to customize it you can use
 // Provider.CoreLoggerCustomizer to done this.
 type CoreLogger struct {
-	Level             *level.Level
+	Level             level.Level
 	Consumer          consumer.Consumer
 	LocationDiscovery location.Discovery
 
@@ -47,7 +47,7 @@ func (instance *CoreLogger) Log(event log.Event, skipFrames uint16) {
 	if v := log.GetTimestampOf(event, provider); v == nil {
 		event = event.With(fieldKeysSpec.GetTimestamp(), time.Now())
 	}
-	if v := log.GetLoggerOf(event, provider); v == nil {
+	if v := log.GetLoggerOf(event, provider); v == nil || *v != instance.name {
 		event = event.With(fieldKeysSpec.GetLogger(), instance.name)
 	}
 	if v := instance.getLocationDiscovery().DiscoverLocation(event, skipFrames+1); v != nil {
@@ -65,13 +65,13 @@ func (instance *CoreLogger) IsLevelEnabled(level level.Level) bool {
 // SetLevel changes the current level.Level of this log.CoreLogger. If set to
 // 0 it use the value of Provider.GetLevel().
 func (instance *CoreLogger) SetLevel(level level.Level) {
-	instance.Level = &level
+	instance.Level = level
 }
 
 // GetLevel returns the current level.Level where this log.CoreLogger is set to.
 func (instance *CoreLogger) GetLevel() level.Level {
-	if v := instance.Level; v != nil {
-		return *v
+	if v := instance.Level; v != 0 {
+		return v
 	}
 	return instance.getProvider().GetLevel()
 }
