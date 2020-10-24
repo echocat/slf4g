@@ -10,7 +10,7 @@ import (
 
 // Default is the default instance of Consumer which should cover the majority
 // of all cases.
-var Default = NewWriter(os.Stderr)
+var Default Consumer = NewWriter(os.Stderr)
 
 // Consumer consumes instances of log.Event of a log.CoreLogger and for example
 // print them to the console, to files, ...

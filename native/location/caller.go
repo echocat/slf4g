@@ -71,19 +71,18 @@ func NewCallerDiscovery(customizer ...func(*CallerDiscovery)) *CallerDiscovery {
 }
 
 // DiscoverLocation implements Discovery.DiscoverLocation().
-func (instance *CallerDiscovery) DiscoverLocation(event log.Event, skipFrames uint16) Location {
-	if event == nil {
-		return nil
-	}
-
+func (instance *CallerDiscovery) DiscoverLocation(_ log.Event, skipFrames uint16) Location {
 	pcs := make([]uintptr, 2)
 	depth := runtime.Callers(int(skipFrames)+2, pcs)
 	frames := runtime.CallersFrames(pcs[:depth])
 
 	frame, _ := frames.Next()
 
-	if frame.Line < 0 {
-		frame.Line = 0
+	if frame.Function == "" {
+		frame.Function = "???"
+	}
+	if frame.File == "" {
+		frame.File = "???"
 	}
 
 	return &callerImpl{
@@ -145,6 +144,7 @@ func (instance callerImpl) formatType() string {
 	return result
 }
 
+// GetFrame returns the contained frame
 func (instance *callerImpl) GetFrame() runtime.Frame {
 	return *instance.frame
 }

@@ -8,7 +8,9 @@ var DefaultDiscovery = NoopDiscovery()
 
 // Discovery is used to discover the Location where an log.Event happened.
 type Discovery interface {
-	// DiscoverLocation discovers the Location for the given log.Event.
+	// DiscoverLocation discovers the Location for the given log.Event. It will
+	// return <nil> if it is either not possible to discover the Location or
+	// there is a reason to not return it.
 	DiscoverLocation(event log.Event, skipFrames uint16) Location
 }
 
