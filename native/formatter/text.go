@@ -352,7 +352,8 @@ func (instance *Text) printWithIdent(str string, firstLine, otherLines string, b
 }
 
 func (instance *Text) ensureLevelWidth(l level.Level, using log.Provider) string {
-	str := nlevel.AsNamed(&l, using.(nlevel.NamesAware)).String()
+	levelNames := using.(nlevel.NamesAware).GetLevelNames()
+	str := nlevel.AsNamed(&l, levelNames).String()
 	width := DefaultLevelWidth
 	if v := instance.LevelWidth; v != nil {
 		width = *v
