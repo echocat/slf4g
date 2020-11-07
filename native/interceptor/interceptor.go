@@ -42,11 +42,7 @@ type Interceptors []Interceptor
 // Add appends a given Interceptor to this instance and ensures that everything
 // inside is ordered according to Interceptor.GetPriority().
 func (instance *Interceptors) Add(v Interceptor) *Interceptors {
-	if *instance == nil {
-		*instance = Interceptors{v}
-	} else {
-		*instance = append(*instance, v)
-	}
+	*instance = append(*instance, v)
 	sort.Sort(*instance)
 	return instance
 }
@@ -74,7 +70,7 @@ func (instance Interceptors) OnAfterLog(event log.Event, provider log.Provider) 
 	canContinue = true
 
 	if event == nil {
-		return
+		return false
 	}
 
 	for _, i := range instance {

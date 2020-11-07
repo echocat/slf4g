@@ -34,7 +34,7 @@ func (instance *Fatal) OnBeforeLog(event log.Event, _ log.Provider) (intercepted
 // OnAfterLog implements Interceptor.OnAfterLog()
 func (instance *Fatal) OnAfterLog(event log.Event, _ log.Provider) (canContinue bool) {
 	if level.Fatal.CompareTo(event.GetLevel()) <= 0 {
-		os.Exit(instance.ExitCode)
+		fatalExit(instance.ExitCode)
 		return false
 	}
 	return true
@@ -43,4 +43,8 @@ func (instance *Fatal) OnAfterLog(event log.Event, _ log.Provider) (canContinue 
 // GetPriority implements Interceptor.GetPriority()
 func (instance *Fatal) GetPriority() int16 {
 	return math.MaxInt16
+}
+
+var fatalExit = func(exitCode int) {
+	os.Exit(exitCode)
 }
