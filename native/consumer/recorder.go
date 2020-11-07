@@ -10,13 +10,23 @@ import (
 // Recorder is an implementation of a Consumer which only records all logged
 // events and makes it able to Get() them afterwards from this Recorder.
 type Recorder struct {
+	// Synchronized defines if this instance can be used in concurrent
+	// environments; which is meaningful in the most context. It might have
+	// additional performance costs.
+	Synchronized bool
+
 	recorded []log.Event
 
 	mutex sync.RWMutex
 }
 
+// NewRecorder creates a new instance of Recorder which can be customized using
+// customizer and is ready to use. The created instance is synchronized by
+// default (See Recorder.Synchronized).
 func NewRecorder(customizer ...func(*Recorder)) *Recorder {
-	result := &Recorder{}
+	result := &Recorder{
+		Synchronized: true,
+	}
 	for _, c := range customizer {
 		c(result)
 	}
@@ -25,8 +35,10 @@ func NewRecorder(customizer ...func(*Recorder)) *Recorder {
 
 // Consume implements Consumer.Consume()
 func (instance *Recorder) Consume(event log.Event, _ log.CoreLogger) {
-	instance.mutex.Lock()
-	defer instance.mutex.Unlock()
+	if instance.Synchronized {
+		instance.mutex.Lock()
+		defer instance.mutex.Unlock()
+	}
 
 	instance.recorded = append(instance.recorded, event)
 }

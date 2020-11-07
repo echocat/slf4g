@@ -19,15 +19,23 @@ type Writer struct {
 	Interceptor   interceptor.Interceptor
 	HintsProvider func(event log.Event, source log.CoreLogger) hints.Hints
 
+	// Synchronized defines if this instance can be used in concurrent
+	// environments; which is meaningful in the most context. It might have
+	// additional performance costs.
+	Synchronized                    bool
 	PrintErrorOnColorInitialization bool
 
 	colorSupported *color.Supported
 	mutex          sync.Mutex
 }
 
+// NewWriter creates a new instance of Writer which can be customized using
+// customizer and is ready to use. The created instance is synchronized by
+// default (See Writer.Synchronized).
 func NewWriter(out io.Writer, customizer ...func(*Writer)) *Writer {
 	result := &Writer{
-		out: out,
+		out:          out,
+		Synchronized: true,
 	}
 	for _, c := range customizer {
 		c(result)
@@ -37,12 +45,14 @@ func NewWriter(out io.Writer, customizer ...func(*Writer)) *Writer {
 
 // Consume implements Consumer.Consume()
 func (instance *Writer) Consume(event log.Event, source log.CoreLogger) {
-	if event == nil {
+	if event == nil || instance.out == nil {
 		return
 	}
 
-	instance.mutex.Lock()
-	defer instance.mutex.Unlock()
+	if instance.Synchronized {
+		instance.mutex.Lock()
+		defer instance.mutex.Unlock()
+	}
 	instance.initIfRequired()
 
 	if event = instance.onBeforeLog(event, source); event == nil {
