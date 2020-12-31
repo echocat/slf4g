@@ -12,19 +12,40 @@ import (
 	"github.com/echocat/slf4g/native/interceptor"
 )
 
+// Writer is an implementation of Writer which formats the consumed log.Entry
+// using a configured Formatter and logs it to the configured io.Writer.
+//
+// NewWriter() is used to create a new instance.
 type Writer struct {
-	out io.Writer
+	// Formatter to format the consumed log.Event with. If nothing was provided
+	// formatter.Default will be used.
+	Formatter formatter.Formatter
 
-	Formatter     formatter.Formatter
-	Interceptor   interceptor.Interceptor
+	// Interceptor can be used to intercept the consumption of an event shortly
+	// before the actual consumption or directly afterwards. If nothing was
+	// provided interceptor.Default will be used.
+	Interceptor interceptor.Interceptor
+
+	// HintsProvider is used to determine an instance of hints.Hints for the
+	// actual log.Event. These might be used by the actual Formatter to know how
+	// to format the actual log.Event correctly. This could include of
+	// colorization is supported and demanded or any other stuff. If nothing was
+	// provided a default instance will be provided which provides:
+	// 1. hints.ColorsSupport
 	HintsProvider func(event log.Event, source log.CoreLogger) hints.Hints
 
 	// Synchronized defines if this instance can be used in concurrent
 	// environments; which is meaningful in the most context. It might have
 	// additional performance costs.
-	Synchronized                    bool
+	Synchronized bool
+
+	// PrintErrorOnColorInitialization defines if while the determination of the
+	// color support errors happening this errors should we logged to the
+	// configured io.Writer. If false (default) these errors will be silently
+	// swallowed.
 	PrintErrorOnColorInitialization bool
 
+	out            io.Writer
 	colorSupported *color.Supported
 	mutex          sync.Mutex
 }
@@ -81,7 +102,7 @@ func (instance *Writer) initIfRequired() {
 	if instance.colorSupported == nil {
 		out, supported, err := color.DetectSupportForWriter(instance.out)
 		if err != nil && instance.PrintErrorOnColorInitialization {
-			_, _ = fmt.Fprintf(instance.out, "ERR!!! Cannot intiate colors for target: %v\n", err)
+			_, _ = fmt.Fprintf(instance.out, "WARNING!!! Cannot intiate colors for target: %v; falling back to no color support.\n", err)
 		}
 		instance.out = out
 		instance.colorSupported = &supported

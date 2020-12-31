@@ -45,6 +45,4 @@ func (instance *Fatal) GetPriority() int16 {
 	return math.MaxInt16
 }
 
-var fatalExit = func(exitCode int) {
-	os.Exit(exitCode)
-}
+var fatalExit = os.Exit
