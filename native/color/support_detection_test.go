@@ -14,66 +14,94 @@ func Test_CanSupportBeAssumed(t *testing.T) {
 	}()
 
 	var givenResult bool
-	SupportAssumptionDetections = []SupportAssumptionDetection{func() bool {
-		return givenResult
+	SupportAssumptionDetections = []SupportAssumptionDetection{func() (bool, error) {
+		return givenResult, nil
 	}}
 
 	givenResult = false
-	assert.ToBeEqual(t, givenResult, CanSupportBeAssumed())
+	actual1, err1 := CanSupportBeAssumed()
+	assert.ToBeNil(t, err1)
+	assert.ToBeEqual(t, givenResult, actual1)
 
 	givenResult = true
-	assert.ToBeEqual(t, givenResult, CanSupportBeAssumed())
+	actual2, err2 := CanSupportBeAssumed()
+	assert.ToBeNil(t, err2)
+	assert.ToBeEqual(t, givenResult, actual2)
 }
 
 func Test_SupportAssumptionDetectionIntellij(t *testing.T) {
 	defer prepareEnv("IDEA_INITIAL_DIRECTORY", "TERMINAL_EMULATOR")()
 
-	assert.ToBeEqual(t, false, SupportAssumptionDetectionIntellij())
+	actual1, err1 := SupportAssumptionDetectionIntellij()
+	assert.ToBeNil(t, err1)
+	assert.ToBeEqual(t, false, actual1)
 
 	setEnv("IDEA_INITIAL_DIRECTORY", "foo")
-	assert.ToBeEqual(t, true, SupportAssumptionDetectionIntellij())
+	actual2, err2 := SupportAssumptionDetectionIntellij()
+	assert.ToBeNil(t, err2)
+	assert.ToBeEqual(t, true, actual2)
 
 	setEnv("IDEA_INITIAL_DIRECTORY", "")
 	setEnv("TERMINAL_EMULATOR", "foo")
-	assert.ToBeEqual(t, false, SupportAssumptionDetectionIntellij())
+	actual3, err3 := SupportAssumptionDetectionIntellij()
+	assert.ToBeNil(t, err3)
+	assert.ToBeEqual(t, false, actual3)
 
 	setEnv("TERMINAL_EMULATOR", "hello, JetBrains, world")
-	assert.ToBeEqual(t, true, SupportAssumptionDetectionIntellij())
+	actual4, err4 := SupportAssumptionDetectionIntellij()
+	assert.ToBeNil(t, err4)
+	assert.ToBeEqual(t, true, actual4)
 }
 
 func Test_SupportAssumptionDetectionGitlabCi(t *testing.T) {
 	defer prepareEnv("CI_JOB_ID", "CI_RUNNER_ID")()
 
-	assert.ToBeEqual(t, false, SupportAssumptionDetectionGitlabCi())
+	actual1, err1 := SupportAssumptionDetectionGitlabCi()
+	assert.ToBeNil(t, err1)
+	assert.ToBeEqual(t, false, actual1)
 
 	setEnv("CI_JOB_ID", "foo")
 	setEnv("CI_RUNNER_ID", "")
-	assert.ToBeEqual(t, false, SupportAssumptionDetectionGitlabCi())
+	actual2, err2 := SupportAssumptionDetectionGitlabCi()
+	assert.ToBeNil(t, err2)
+	assert.ToBeEqual(t, false, actual2)
 
 	setEnv("CI_JOB_ID", "")
 	setEnv("CI_RUNNER_ID", "foo")
-	assert.ToBeEqual(t, false, SupportAssumptionDetectionGitlabCi())
+	actual3, err3 := SupportAssumptionDetectionGitlabCi()
+	assert.ToBeNil(t, err3)
+	assert.ToBeEqual(t, false, actual3)
 
 	setEnv("CI_JOB_ID", "foo")
 	setEnv("CI_RUNNER_ID", "bar")
-	assert.ToBeEqual(t, true, SupportAssumptionDetectionGitlabCi())
+	actual4, err4 := SupportAssumptionDetectionGitlabCi()
+	assert.ToBeNil(t, err4)
+	assert.ToBeEqual(t, true, actual4)
 }
 func Test_SupportAssumptionDetectionGithubActions(t *testing.T) {
 	defer prepareEnv("GITHUB_RUN_ID", "GITHUB_WORKFLOW")()
 
-	assert.ToBeEqual(t, false, SupportAssumptionDetectionGithubActions())
+	actual1, err1 := SupportAssumptionDetectionGithubActions()
+	assert.ToBeNil(t, err1)
+	assert.ToBeEqual(t, false, actual1)
 
 	setEnv("GITHUB_RUN_ID", "foo")
 	setEnv("GITHUB_WORKFLOW", "")
-	assert.ToBeEqual(t, false, SupportAssumptionDetectionGithubActions())
+	actual2, err2 := SupportAssumptionDetectionGithubActions()
+	assert.ToBeNil(t, err2)
+	assert.ToBeEqual(t, false, actual2)
 
 	setEnv("GITHUB_RUN_ID", "")
 	setEnv("GITHUB_WORKFLOW", "foo")
-	assert.ToBeEqual(t, false, SupportAssumptionDetectionGithubActions())
+	actual3, err3 := SupportAssumptionDetectionGithubActions()
+	assert.ToBeNil(t, err3)
+	assert.ToBeEqual(t, false, actual3)
 
 	setEnv("GITHUB_RUN_ID", "foo")
 	setEnv("GITHUB_WORKFLOW", "bar")
-	assert.ToBeEqual(t, true, SupportAssumptionDetectionGithubActions())
+	actual4, err4 := SupportAssumptionDetectionGithubActions()
+	assert.ToBeNil(t, err4)
+	assert.ToBeEqual(t, true, actual4)
 }
 
 func setEnv(key, value string) {

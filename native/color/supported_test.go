@@ -15,8 +15,8 @@ func Test_DetectSupportForWriter_assuming(t *testing.T) {
 	}()
 
 	var expectedToBeSupported bool
-	SupportAssumptionDetections = []SupportAssumptionDetection{func() bool {
-		return expectedToBeSupported
+	SupportAssumptionDetections = []SupportAssumptionDetection{func() (bool, error) {
+		return expectedToBeSupported, nil
 	}}
 
 	expectedToBeSupported = true

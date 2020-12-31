@@ -49,7 +49,9 @@ func DetectSupportForWriter(w io.Writer) (prepared io.Writer, supported Supporte
 	}
 
 	for _, d := range SupportAssumptionDetections {
-		if d() {
+		if v, err := d(); err != nil {
+			return w, SupportedNone, err
+		} else if v {
 			return w, SupportedAssumed, nil
 		}
 	}

@@ -102,7 +102,7 @@ func (instance *Writer) initIfRequired() {
 	if instance.colorSupported == nil {
 		out, supported, err := color.DetectSupportForWriter(instance.out)
 		if err != nil && instance.PrintErrorOnColorInitialization {
-			_, _ = fmt.Fprintf(instance.out, "WARNING!!! Cannot intiate colors for target: %v; falling back to no color support.\n", err)
+			_, _ = fmt.Fprintf(instance.out, "WARNING!!! Cannot initiate colors for target: %v; falling back to no color support.\n", err)
 		}
 		instance.out = out
 		instance.colorSupported = &supported
