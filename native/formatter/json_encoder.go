@@ -23,27 +23,6 @@ func (instance *jsonEncoder) WriteByteChecked(c byte) checkedExecution {
 	}
 }
 
-func (instance *jsonEncoder) WriteBytes(p []byte) error {
-	n, err := instance.Write(p)
-	if err != nil {
-		return err
-	}
-	if n < len(p) {
-		return io.ErrShortWrite
-	}
-	return nil
-}
-
-func (instance *jsonEncoder) WriteBytesChecked(p []byte) checkedExecution {
-	return func() error {
-		return instance.WriteBytes(p)
-	}
-}
-
-func (instance *jsonEncoder) Write(p []byte) (n int, err error) {
-	return instance.writer.Write(p)
-}
-
 func (instance *jsonEncoder) WriteKeyValue(k string, v interface{}) error {
 	return executeChecked(
 		instance.WriteValueChecked(k),
