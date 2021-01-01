@@ -3,6 +3,7 @@ package consumer
 import (
 	"bytes"
 	"errors"
+	"io"
 	"testing"
 
 	"github.com/echocat/slf4g/level"
@@ -35,6 +36,211 @@ func Test_NewWriter_withCustomization(t *testing.T) {
 
 	assert.ToBeSame(t, givenOut, instance.out)
 	assert.ToBeEqual(t, false, instance.Synchronized)
+}
+
+func Test_Writer_Consume(t *testing.T) {
+	givenOut := new(bytes.Buffer)
+	givenLogger := recording.NewLogger()
+	givenEvent := givenLogger.NewEvent(level.Info, nil)
+
+	instance := NewWriter(givenOut, func(writer *Writer) {
+		writer.Formatter = formatter.Func(func(actualEvent log.Event, actualProvider log.Provider, actualHints hints.Hints) ([]byte, error) {
+			assert.ToBeSame(t, givenLogger.GetProvider(), actualProvider)
+			assert.ToBeSame(t, givenEvent, actualEvent)
+			return []byte("expectedResult"), nil
+		})
+	})
+
+	instance.Consume(givenEvent, givenLogger)
+
+	assert.ToBeEqual(t, "expectedResult", givenOut.String())
+}
+
+func Test_Writer_Consume_panicsOnFormatErrors(t *testing.T) {
+	givenOut := new(bytes.Buffer)
+	givenLogger := recording.NewLogger()
+	givenEvent := givenLogger.NewEvent(level.Info, nil)
+	givenError := errors.New("expected")
+
+	instance := NewWriter(givenOut, func(writer *Writer) {
+		writer.Formatter = formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
+			return nil, givenError
+		})
+	})
+
+	assert.Execution(t, func() {
+		instance.Consume(givenEvent, givenLogger)
+	}).WillPanicWith("cannot format event .+?: expected")
+
+	assert.ToBeEqual(t, "", givenOut.String())
+}
+
+func Test_Writer_Consume_callsHookOnFormatErrors(t *testing.T) {
+	givenOut := new(bytes.Buffer)
+	givenLogger := recording.NewLogger()
+	givenEvent := givenLogger.NewEvent(level.Info, nil)
+	givenError := errors.New("expected")
+
+	var instance *Writer
+	instance = NewWriter(givenOut, func(writer *Writer) {
+		writer.OnFormatError = func(actualInstance *Writer, actualOut io.Writer, actualErr error) {
+			assert.ToBeSame(t, instance, actualInstance)
+			assert.ToBeSame(t, givenOut, actualOut)
+			assert.ToBeSame(t, givenError, actualErr)
+		}
+		writer.Formatter = formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
+			return nil, givenError
+		})
+	})
+
+	instance.Consume(givenEvent, givenLogger)
+
+	assert.ToBeEqual(t, "", givenOut.String())
+}
+
+func Test_Writer_Consume_doNothingOnNilEvent(t *testing.T) {
+	givenOut := new(bytes.Buffer)
+	givenLogger := recording.NewLogger()
+	instance := NewWriter(givenOut, func(writer *Writer) {
+		writer.Formatter = formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
+			panic("should not be called")
+		})
+	})
+
+	instance.Consume(nil, givenLogger)
+
+	assert.ToBeEqual(t, "", givenOut.String())
+}
+
+func Test_Writer_Consume_doNothingOnNilOut(t *testing.T) {
+	givenLogger := recording.NewLogger()
+	givenEvent := givenLogger.NewEvent(level.Info, nil)
+	instance := NewWriter(nil, func(writer *Writer) {
+		writer.Interceptor = interceptor.OnBeforeLogFunc(func(log.Event, log.Provider) (intercepted log.Event) {
+			panic("should not be called")
+		})
+		writer.Formatter = formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
+			panic("should not be called")
+		})
+	})
+
+	instance.Consume(givenEvent, givenLogger)
+}
+
+func Test_Writer_Consume_doNothingOnDisabledLevel(t *testing.T) {
+	givenOut := new(bytes.Buffer)
+	givenLogger := recording.NewLogger()
+	givenEvent := givenLogger.NewEvent(0, nil)
+
+	interceptorCalled := false
+	instance := NewWriter(givenOut, func(writer *Writer) {
+		writer.Interceptor = interceptor.OnBeforeLogFunc(func(actualEvent log.Event, actualProvider log.Provider) (intercepted log.Event) {
+			assert.ToBeSame(t, givenLogger.GetProvider(), actualProvider)
+			assert.ToBeSame(t, givenEvent, actualEvent)
+			interceptorCalled = true
+			return givenEvent
+		})
+		writer.Formatter = formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
+			panic("should not be called")
+		})
+	})
+
+	instance.Consume(givenEvent, givenLogger)
+
+	assert.ToBeEqual(t, true, interceptorCalled)
+	assert.ToBeEqual(t, "", givenOut.String())
+}
+
+func Test_Writer_Consume_initIfRequired(t *testing.T) {
+	givenOut := new(bytes.Buffer)
+	givenLogger := recording.NewLogger()
+	givenEvent := givenLogger.NewEvent(level.Info, nil)
+	instance := NewWriter(givenOut, func(writer *Writer) {
+		writer.colorSupported = nil
+	})
+
+	assert.ToBeNil(t, instance.colorSupported)
+
+	instance.Consume(givenEvent, givenLogger)
+
+	assert.ToBeNotNil(t, instance.colorSupported)
+}
+
+func Test_Writer_Consume_beforeLog_continues(t *testing.T) {
+	givenOut := new(bytes.Buffer)
+	givenLogger := recording.NewLogger()
+	givenEvent1 := givenLogger.NewEvent(level.Info, nil)
+	givenEvent2 := givenLogger.NewEvent(level.Warn, nil)
+
+	interceptorCalled := false
+	instance := NewWriter(givenOut, func(writer *Writer) {
+		writer.Interceptor = interceptor.OnBeforeLogFunc(func(actualEvent log.Event, actualProvider log.Provider) (intercepted log.Event) {
+			assert.ToBeSame(t, givenLogger.GetProvider(), actualProvider)
+			assert.ToBeSame(t, givenEvent1, actualEvent)
+			interceptorCalled = true
+			return givenEvent2
+		})
+		writer.Formatter = formatter.Func(func(actualEvent log.Event, actualProvider log.Provider, actualHints hints.Hints) ([]byte, error) {
+			assert.ToBeSame(t, givenLogger.GetProvider(), actualProvider)
+			assert.ToBeSame(t, givenEvent2, actualEvent)
+			return []byte("expectedResult"), nil
+		})
+	})
+
+	instance.Consume(givenEvent1, givenLogger)
+
+	assert.ToBeEqual(t, true, interceptorCalled)
+	assert.ToBeEqual(t, "expectedResult", givenOut.String())
+}
+
+func Test_Writer_Consume_beforeLog_stops(t *testing.T) {
+	givenOut := new(bytes.Buffer)
+	givenLogger := recording.NewLogger()
+	givenEvent := givenLogger.NewEvent(level.Info, nil)
+
+	interceptorCalled := false
+	instance := NewWriter(givenOut, func(writer *Writer) {
+		writer.Formatter = formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
+			panic("should not be called")
+		})
+		writer.Interceptor = interceptor.OnBeforeLogFunc(func(actualEvent log.Event, actualProvider log.Provider) (intercepted log.Event) {
+			assert.ToBeSame(t, givenLogger.GetProvider(), actualProvider)
+			assert.ToBeSame(t, givenEvent, actualEvent)
+			interceptorCalled = true
+			return nil
+		})
+	})
+
+	instance.Consume(givenEvent, givenLogger)
+
+	assert.ToBeEqual(t, true, interceptorCalled)
+	assert.ToBeEqual(t, "", givenOut.String())
+}
+
+func Test_Writer_Consume_afterLog(t *testing.T) {
+	givenOut := new(bytes.Buffer)
+	givenLogger := recording.NewLogger()
+	givenEvent := givenLogger.NewEvent(level.Info, nil)
+
+	interceptorCalled := false
+	instance := NewWriter(givenOut, func(writer *Writer) {
+		writer.Interceptor = interceptor.OnAfterLogFunc(func(actualEvent log.Event, actualProvider log.Provider) bool {
+			assert.ToBeSame(t, givenLogger.GetProvider(), actualProvider)
+			assert.ToBeSame(t, givenEvent, actualEvent)
+			interceptorCalled = true
+			return true
+		})
+		writer.Formatter = formatter.Func(func(actualEvent log.Event, actualProvider log.Provider, actualHints hints.Hints) ([]byte, error) {
+			assert.ToBeSame(t, givenLogger.GetProvider(), actualProvider)
+			assert.ToBeSame(t, givenEvent, actualEvent)
+			return []byte("expectedResult"), nil
+		})
+	})
+
+	instance.Consume(givenEvent, givenLogger)
+
+	assert.ToBeEqual(t, true, interceptorCalled)
+	assert.ToBeEqual(t, "expectedResult", givenOut.String())
 }
 
 func Test_Writer_initIfRequired(t *testing.T) {
@@ -82,7 +288,7 @@ func Test_Writer_initIfRequired_withErrors(t *testing.T) {
 	assert.ToBeEqual(t, "", givenOut.String())
 }
 
-func Test_Writer_initIfRequired_withErrorsAndPrintThem(t *testing.T) {
+func Test_Writer_initIfRequired_onErrorsHandles(t *testing.T) {
 	old := color.SupportAssumptionDetections
 	defer func() {
 		color.SupportAssumptionDetections = old
@@ -94,9 +300,16 @@ func Test_Writer_initIfRequired_withErrorsAndPrintThem(t *testing.T) {
 	}}
 
 	givenOut := new(bytes.Buffer)
-	instance := NewWriter(givenOut, func(writer *Writer) {
+	hookCalled := false
+	var instance *Writer
+	instance = NewWriter(givenOut, func(writer *Writer) {
 		writer.colorSupported = nil
-		writer.PrintErrorOnColorInitialization = true
+		writer.OnColorInitializationError = func(actualInstance *Writer, actualOut io.Writer, actualErr error) {
+			assert.ToBeSame(t, instance, actualInstance)
+			assert.ToBeSame(t, givenOut, actualOut)
+			assert.ToBeSame(t, givenError, actualErr)
+			hookCalled = true
+		}
 	})
 
 	assert.ToBeNil(t, instance.colorSupported)
@@ -104,7 +317,8 @@ func Test_Writer_initIfRequired_withErrorsAndPrintThem(t *testing.T) {
 
 	assert.ToBeNotNil(t, instance.colorSupported)
 	assert.ToBeEqual(t, color.SupportedNone, *instance.colorSupported)
-	assert.ToBeEqual(t, "WARNING!!! Cannot initiate colors for target: foo; falling back to no color support.\n", givenOut.String())
+	assert.ToBeEqual(t, true, hookCalled)
+	assert.ToBeEqual(t, "", givenOut.String())
 }
 
 func Test_Writer_getOut(t *testing.T) {

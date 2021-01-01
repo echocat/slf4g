@@ -39,11 +39,15 @@ type Writer struct {
 	// additional performance costs.
 	Synchronized bool
 
-	// PrintErrorOnColorInitialization defines if while the determination of the
-	// color support errors happening this errors should we logged to the
-	// configured io.Writer. If false (default) these errors will be silently
-	// swallowed.
-	PrintErrorOnColorInitialization bool
+	// OnFormatError will be called if there as any kind of error while
+	// formatting an log.Event using the configured Formatter. If nothing was
+	// provided these errors will result in a panic.
+	OnFormatError func(*Writer, io.Writer, error)
+
+	// OnColorInitializationError will be called if there as any kind of error
+	// while initialize the color support. If nothing was provided these errors
+	// will be silently swallowed.
+	OnColorInitializationError func(*Writer, io.Writer, error)
 
 	out            io.Writer
 	colorSupported *color.Supported
@@ -90,7 +94,11 @@ func (instance *Writer) Consume(event log.Event, source log.CoreLogger) {
 	h := instance.provideHints(event, source)
 	content, err := f.Format(event, source.GetProvider(), h)
 	if err != nil {
-		content = []byte(fmt.Sprintf("ERR: Cannot format event %v: %v", event, err))
+		if v := instance.OnFormatError; v != nil {
+			v(instance, out, err)
+		} else {
+			panic(fmt.Errorf("cannot format event %v: %w", event, err))
+		}
 	}
 
 	_, _ = out.Write(content)
@@ -101,8 +109,10 @@ func (instance *Writer) Consume(event log.Event, source log.CoreLogger) {
 func (instance *Writer) initIfRequired() {
 	if instance.colorSupported == nil {
 		out, supported, err := color.DetectSupportForWriter(instance.out)
-		if err != nil && instance.PrintErrorOnColorInitialization {
-			_, _ = fmt.Fprintf(instance.out, "WARNING!!! Cannot initiate colors for target: %v; falling back to no color support.\n", err)
+		if err != nil {
+			if v := instance.OnColorInitializationError; v != nil {
+				v(instance, instance.getOut(), err)
+			}
 		}
 		instance.out = out
 		instance.colorSupported = &supported
