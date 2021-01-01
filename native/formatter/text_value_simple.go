@@ -8,17 +8,16 @@ import (
 	"github.com/echocat/slf4g/fields"
 )
 
-// SimpleTextValueFormatter is a simple implementation of
-// TextValueFormatter.
-type SimpleTextValueFormatter struct {
+// SimpleTextValue is a simple implementation of TextValue.
+type SimpleTextValue struct {
 	// QuoteType defines how values are quoted.
 	QuoteType QuoteType
 }
 
-// NewSimpleTextValueFormatter creates a new instance of
-// SimpleTextValueFormatter which is ready to use.
-func NewSimpleTextValueFormatter(customizer ...func(*SimpleTextValueFormatter)) *SimpleTextValueFormatter {
-	result := &SimpleTextValueFormatter{
+// NewSimpleTextValue creates a new instance of SimpleTextValue which is ready
+// to use.
+func NewSimpleTextValue(customizer ...func(*SimpleTextValue)) *SimpleTextValue {
+	result := &SimpleTextValue{
 		QuoteType: QuoteTypeMinimal,
 	}
 	for _, c := range customizer {
@@ -27,55 +26,32 @@ func NewSimpleTextValueFormatter(customizer ...func(*SimpleTextValueFormatter)) 
 	return result
 }
 
-// FormatValue implements TextValueFormatter.FormatValue().
-func (instance *SimpleTextValueFormatter) FormatValue(v interface{}, _ log.Provider) ([]byte, error) {
+// FormatTextValue implements TextValue.FormatTextValue().
+func (instance *SimpleTextValue) FormatTextValue(v interface{}, _ log.Provider) ([]byte, error) {
 	if vl, ok := v.(fields.Lazy); ok {
 		v = vl.Get()
 	}
 
-	if instance.QuoteType == QuoteTypeMinimal {
-		switch vs := v.(type) {
-		case string:
-			if stringNeedsQuoting(vs) {
-				return json.Marshal(vs)
-			}
+	switch vs := v.(type) {
+	case *string:
+		v = *vs
+	case fmt.Stringer:
+		v = vs.String()
+	case fmt.Formatter:
+		v = fmt.Sprint(vs)
+	case error:
+		v = vs.Error()
+	}
+
+	switch instance.QuoteType {
+	case QuoteTypeMinimal:
+		if vs, ok := v.(string); ok && !stringNeedsQuoting(vs) {
 			return []byte(vs), nil
-		case *string:
-			if stringNeedsQuoting(*vs) {
-				return json.Marshal(*vs)
-			}
-			return []byte(*vs), nil
-		case fmt.Stringer:
-			str := vs.String()
-			if stringNeedsQuoting(str) {
-				return json.Marshal(str)
-			}
-			return []byte(str), nil
-		case fmt.Formatter:
-			str := fmt.Sprint(vs)
-			if stringNeedsQuoting(str) {
-				return json.Marshal(str)
-			}
-			return []byte(str), nil
-		case error:
-			str := vs.Error()
-			if stringNeedsQuoting(str) {
-				return json.Marshal(str)
-			}
-			return []byte(str), nil
-		case *error:
-			str := (*vs).Error()
-			if stringNeedsQuoting(str) {
-				return json.Marshal(str)
-			}
-			return []byte(str), nil
 		}
 		return json.Marshal(v)
-	}
-
-	if instance.QuoteType == QuoteTypeEverything {
+	case QuoteTypeEverything:
 		return json.Marshal(fmt.Sprint(v))
+	default:
+		return json.Marshal(v)
 	}
-
-	return json.Marshal(v)
 }

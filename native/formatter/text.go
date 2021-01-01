@@ -98,8 +98,8 @@ type Text struct {
 	PrintRootLogger *bool
 
 	// ValueFormatter is used to format the field values (not the message). If
-	// not set formatter.DefaultTextValueFormatter will be used.
-	ValueFormatter TextValueFormatter
+	// not set formatter.DefaultTextValue will be used.
+	ValueFormatter TextValue
 
 	// FieldSorter is used to sort the field when they are printed. If not set
 	// fields.DefaultKeySorter will be used.
@@ -251,8 +251,8 @@ func (instance *Text) printFields(event log.Event, buf *bytes.Buffer, using log.
 	return
 }
 
-func (instance *Text) printField(event log.Event, key string, value interface{}, buf *bytes.Buffer, using log.Provider, formatter TextValueFormatter, h hints.Hints) error {
-	v, err := formatter.FormatValue(value, using)
+func (instance *Text) printField(event log.Event, key string, value interface{}, buf *bytes.Buffer, using log.Provider, formatter TextValue, h hints.Hints) error {
+	v, err := formatter.FormatTextValue(value, using)
 	if err != nil {
 		return err
 	}
@@ -277,14 +277,14 @@ func (instance *Text) getLevelColorizer() nlevel.Colorizer {
 	return nlevel.NoopColorizer()
 }
 
-func (instance *Text) getFieldValueFormatter() TextValueFormatter {
+func (instance *Text) getFieldValueFormatter() TextValue {
 	if v := instance.ValueFormatter; v != nil {
 		return v
 	}
-	if v := DefaultTextValueFormatter; v != nil {
+	if v := DefaultTextValue; v != nil {
 		return v
 	}
-	return NoopTextValueFormatter()
+	return NoopTextValue()
 }
 
 func (instance *Text) getFieldSorter() fields.KeySorter {

@@ -1,15 +1,12 @@
 package formatter
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"strings"
-	"unicode"
 
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/native/hints"
+	nlevel "github.com/echocat/slf4g/native/level"
 )
 
 const (
@@ -26,11 +23,21 @@ type Json struct {
 	// If not set DefaultKeyLevel is used.
 	KeyLevel string
 
+	// LevelFormatter is used to format the level.Level of a given log.Entry.
+	// into the field with key of KeyLevel.
+	LevelFormatter Level
+
 	// PrintRootLogger will (if set to true) also print the field logger for the
 	// root logger. If set to false the logger field will be only printed for
 	// every logger but not for the root one. If not set set
 	// DefaultPrintRootLogger will be used.
 	PrintRootLogger *bool
+
+	// KeySorter will force the printed fields to be sorted using this sorter.
+	// The fields which contains the level.Level will be always the first,
+	// regardless of the result of the KeySorter. If this field is empty the
+	// fields are not sorted and the order is not deterministic and reliable.
+	KeySorter fields.KeySorter
 }
 
 // NewJson creates a new instance of Text which is ready to use.
@@ -44,75 +51,23 @@ func NewJson(customizer ...func(*Json)) *Json {
 
 // Format implements Formatter.Format()
 func (instance *Json) Format(event log.Event, using log.Provider, _ hints.Hints) ([]byte, error) {
-	fail := func(err error) ([]byte, error) {
+	if event == nil {
+		return []byte{}, nil
+	}
+
+	to := newJsonEncoderBuffered()
+
+	if err := executeChecked(
+		to.WriteByteChecked('{'),
+		instance.encodeLevelChecked(event, using, &to.jsonEncoder),
+		instance.encodeValuesChecked(event, using, &to.jsonEncoder),
+		to.WriteByteChecked('}'),
+		to.WriteByteChecked('\n'),
+	); err != nil {
 		return nil, fmt.Errorf("cannot format event (%v): %w", event, err)
 	}
 
-	to := new(bytes.Buffer)
-	enc := json.NewEncoder(to)
-
-	if err := to.WriteByte('{'); err != nil {
-		return fail(err)
-	}
-
-	if err := instance.encode(to, enc, instance.getLevelKey(), event.GetLevel()); err != nil {
-		return fail(err)
-	}
-
-	printRootLogger := DefaultPrintRootLogger
-	if v := instance.PrintRootLogger; v != nil {
-		printRootLogger = *v
-	}
-
-	loggerKey := using.GetFieldKeysSpec().GetLogger()
-	if err := event.ForEach(func(k string, v interface{}) error {
-		if vl, ok := v.(fields.Lazy); ok {
-			v = vl.Get()
-		}
-
-		if !printRootLogger && k == loggerKey && v == "ROOT" {
-			return nil
-		}
-		if _, err := to.Write([]byte(",")); err != nil {
-			return err
-		}
-		return instance.encode(to, enc, k, v)
-	}); err != nil {
-		return fail(err)
-	}
-
-	if _, err := to.WriteString("}\n"); err != nil {
-		return fail(err)
-	}
-
 	return to.Bytes(), nil
-}
-
-func (instance *Json) encode(buf *bytes.Buffer, enc *json.Encoder, k string, v interface{}) error {
-	if err := enc.Encode(k); err != nil {
-		return err
-	}
-	buf.Truncate(buf.Len() - 1) // Because someone believe it is a great idea to but a \n always everywhere ...
-
-	if _, err := buf.Write([]byte(":")); err != nil {
-		return err
-	}
-
-	if ve, ok := v.(error); ok {
-		v = ve.Error()
-	}
-	if vs, ok := v.(string); ok {
-		v = strings.TrimRightFunc(vs, unicode.IsSpace)
-	}
-	if vs, ok := v.(*string); ok {
-		v = strings.TrimRightFunc(*vs, unicode.IsSpace)
-	}
-	if err := enc.Encode(v); err != nil {
-		return err
-	}
-	buf.Truncate(buf.Len() - 1) // Because someone believe it is a great idea to but a \n always everywhere ...
-
-	return nil
 }
 
 func (instance *Json) getLevelKey() string {
@@ -120,4 +75,58 @@ func (instance *Json) getLevelKey() string {
 		return v
 	}
 	return DefaultKeyLevel
+}
+
+func (instance *Json) encodeLevelChecked(of log.Event, using log.Provider, to *jsonEncoder) checkedExecution {
+	return func() error {
+		lvl, err := instance.formatLevel(of, using)
+		if err != nil {
+			return err
+		}
+		return to.WriteKeyValue(instance.getLevelKey(), lvl)
+	}
+}
+
+func (instance *Json) formatLevel(of log.Event, using log.Provider) (interface{}, error) {
+	return instance.getLevelFormatter(using).FormatLevel(of.GetLevel(), using)
+}
+
+func (instance *Json) getLevelFormatter(using log.Provider) Level {
+	if v := instance.LevelFormatter; v != nil {
+		return v
+	}
+	if v, ok := using.(nlevel.NamesAware); ok {
+		return NewNamesBasedLevel(v.GetLevelNames())
+	}
+	return DefaultLevel
+}
+
+func (instance *Json) encodeValuesChecked(of log.Event, using log.Provider, to *jsonEncoder) checkedExecution {
+	return func() error {
+		printRootLogger := instance.getPrintRootLogger()
+		loggerKey := using.GetFieldKeysSpec().GetLogger()
+		consumer := func(k string, v interface{}) error {
+			if vl, ok := v.(fields.Lazy); ok {
+				v = vl.Get()
+			}
+			if !printRootLogger && k == loggerKey && v == "ROOT" {
+				return nil
+			}
+			return executeChecked(
+				to.WriteByteChecked(','),
+				to.WriteKeyValueChecked(k, v),
+			)
+		}
+		if sorter := instance.KeySorter; sorter != nil {
+			return fields.SortedForEach(of, sorter, consumer)
+		}
+		return of.ForEach(consumer)
+	}
+}
+
+func (instance *Json) getPrintRootLogger() bool {
+	if v := instance.PrintRootLogger; v != nil {
+		return *v
+	}
+	return DefaultPrintRootLogger
 }

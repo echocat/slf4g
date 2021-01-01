@@ -14,8 +14,8 @@ var Default Formatter = NewText()
 // Formatter is used to format log events to a format which can logged to a
 // console, file, ...
 type Formatter interface {
-	// Format formats the given event to a format which  can logged to a
-	// console, file, ...
+	// Format formats the given event to a format which can logged to a console,
+	// file, ...
 	Format(log.Event, log.Provider, hints.Hints) ([]byte, error)
 }
 

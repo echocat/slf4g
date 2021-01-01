@@ -4,42 +4,42 @@ import (
 	log "github.com/echocat/slf4g"
 )
 
-// DefaultTextValueFormatter is the default instance of TextValueFormatter
+// DefaultTextValue is the default instance of TextValue
 // which should cover the most of the cases.
-var DefaultTextValueFormatter TextValueFormatter = NewSimpleTextValueFormatter()
+var DefaultTextValue TextValue = NewSimpleTextValue()
 
-// TextValueFormatter formats a given value to be printed in the text.
-type TextValueFormatter interface {
+// TextValue formats a given value to be printed in the text.
+type TextValue interface {
 	// FormatValue formats the given value to a readable format.
-	FormatValue(value interface{}, provider log.Provider) ([]byte, error)
+	FormatTextValue(value interface{}, provider log.Provider) ([]byte, error)
 }
 
-// TextValueFormatterFunc is wrapping the given function into a
-// TextValueFormatter.
-type TextValueFormatterFunc func(interface{}, log.Provider) ([]byte, error)
+// TextValueFunc is wrapping the given function into a
+// TextValue.
+type TextValueFunc func(interface{}, log.Provider) ([]byte, error)
 
-// FormatValue implements TextValueFormatter.FormatValue().
-func (instance TextValueFormatterFunc) FormatValue(value interface{}, provider log.Provider) ([]byte, error) {
+// FormatTextValue implements TextValue.FormatTextValue().
+func (instance TextValueFunc) FormatTextValue(value interface{}, provider log.Provider) ([]byte, error) {
 	return instance(value, provider)
 }
 
-// NewTextValueFormatterFacade creates a new facade instance of
-// TextValueFormatter using the given provider.
-func NewTextValueFormatterFacade(provider func() TextValueFormatter) TextValueFormatter {
-	return valueFacade(provider)
+// NewTextValueFacade creates a new facade instance of
+// TextValue using the given provider.
+func NewTextValueFacade(provider func() TextValue) TextValue {
+	return textValueFacade(provider)
 }
 
-type valueFacade func() TextValueFormatter
+type textValueFacade func() TextValue
 
-func (instance valueFacade) FormatValue(value interface{}, provider log.Provider) ([]byte, error) {
-	return instance().FormatValue(value, provider)
+func (instance textValueFacade) FormatTextValue(value interface{}, provider log.Provider) ([]byte, error) {
+	return instance().FormatTextValue(value, provider)
 }
 
-// NoopTextValueFormatter provides a noop implementation of TextValueFormatter.
-func NoopTextValueFormatter() TextValueFormatter {
-	return noopTextValueFormatterV
+// NoopTextValue provides a noop implementation of TextValue.
+func NoopTextValue() TextValue {
+	return noopTextValueV
 }
 
-var noopTextValueFormatterV = TextValueFormatterFunc(func(interface{}, log.Provider) ([]byte, error) {
+var noopTextValueV = TextValueFunc(func(interface{}, log.Provider) ([]byte, error) {
 	return []byte{}, nil
 })
