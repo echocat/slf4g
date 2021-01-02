@@ -121,13 +121,9 @@ func (instance *Text) Format(event log.Event, using log.Provider, h hints.Hints)
 	message := log.GetMessageOf(event, using)
 	isMultilineMessage := false
 	if message != nil {
-		message = instance.formatMessage(message)
+		*message = instance.formatMessage(*message)
 		if strings.ContainsRune(*message, '\n') {
-			if v := instance.MultiLineMessageAfterFields; v != nil {
-				isMultilineMessage = *instance.MultiLineMessageAfterFields
-			} else {
-				isMultilineMessage = DefaultMultiLineMessageAfterFields
-			}
+			isMultilineMessage = instance.getMultiLineMessagesAfterFields()
 		} else {
 			// Multiline message could be printed on a dedicated line
 			*message = instance.ensureMessageWidth(*message)
@@ -149,37 +145,28 @@ func (instance *Text) Format(event log.Event, using log.Provider, h hints.Hints)
 	return to.Bytes(), nil
 }
 
-func (instance *Text) formatMessage(message *string) *string {
-	*message = strings.TrimLeftFunc(*message, func(r rune) bool {
+func (instance *Text) formatMessage(message string) string {
+	message = strings.TrimLeftFunc(message, func(r rune) bool {
 		return r == '\r' || r == '\n'
 	})
-	*message = strings.TrimRightFunc(*message, unicode.IsSpace)
-	*message = strings.TrimFunc(*message, func(r rune) bool {
+	message = strings.TrimRightFunc(message, unicode.IsSpace)
+	message = strings.TrimFunc(message, func(r rune) bool {
 		return r == '\r' || !unicode.IsGraphic(r)
 	})
-	if (instance.AllowMultiLineMessage != nil && *instance.AllowMultiLineMessage) ||
-		(instance.AllowMultiLineMessage == nil && DefaultAllowMultiLineMessage) {
-		*message = strings.ReplaceAll(*message, "\n", "\u23CE")
+	if instance.getAllowMultiLineMessage() {
+		message = strings.ReplaceAll(message, "\n", "\u23CE")
 	}
 	return message
 }
 
 func (instance *Text) printTimestamp(event log.Event, using log.Provider, h hints.Hints, to textEncoder) checkedExecution {
-	if ts := log.GetTimestampOf(event, using); ts != nil {
+	if v := log.GetTimestampOf(event, using); v != nil {
 		if instance.shouldColorize(h) {
-			return to.WriteStringChecked(`[30;1m` + instance.formatTime(*ts) + `[0m `)
+			return to.WriteStringChecked(`[30;1m` + instance.formatTime(*v) + `[0m `)
 		}
-		return to.WriteStringChecked(instance.formatTime(*ts) + ` `)
+		return to.WriteStringChecked(instance.formatTime(*v) + ` `)
 	}
 	return nil
-}
-
-func (instance *Text) shouldColorize(h hints.Hints) bool {
-	supported := color.SupportedNone
-	if aware, ok := h.(hints.ColorsSupport); ok {
-		supported = aware.IsColorSupported()
-	}
-	return instance.ColorMode.ShouldColorize(supported)
 }
 
 func (instance *Text) printLevel(event log.Event, using log.Provider, h hints.Hints, to textEncoder) checkedExecution {
@@ -225,15 +212,15 @@ func (instance *Text) printField(event log.Event, key string, value interface{},
 	return to.WriteString(` ` + instance.colorize(event, key, h) + `=` + string(v))
 }
 
-func (instance *Text) printSingleLineMessageIfRequired(message *string, isMultilineMessage bool, to textEncoder) checkedExecution {
-	if !isMultilineMessage && message != nil {
+func (instance *Text) printSingleLineMessageIfRequired(message *string, handleAsMultiline bool, to textEncoder) checkedExecution {
+	if !handleAsMultiline && message != nil {
 		return to.WriteStringChecked(` ` + *message)
 	}
 	return nil
 }
 
-func (instance *Text) printMultiLineMessageIfRequired(message *string, isMultilineMessage bool, atLeastOneFieldPrinted *bool, to textEncoder) checkedExecution {
-	if isMultilineMessage && message != nil {
+func (instance *Text) printMultiLineMessageIfRequired(message *string, handleAsMultiline bool, atLeastOneFieldPrinted *bool, to textEncoder) checkedExecution {
+	if handleAsMultiline && message != nil {
 		return func() error {
 			otherIdent := "\t"
 			firstIdent := otherIdent
@@ -283,53 +270,20 @@ func (instance *Text) colorize(event log.Event, message string, h hints.Hints) s
 	return message
 }
 
-func (instance *Text) getLevelColorizer() nlevel.Colorizer {
-	if v := instance.LevelColorizer; v != nil {
-		return v
+func (instance *Text) shouldColorize(h hints.Hints) bool {
+	supported := color.SupportedNone
+	if v, ok := h.(hints.ColorsSupport); ok {
+		supported = v.IsColorSupported()
 	}
-	if v := nlevel.DefaultColorizer; v != nil {
-		return v
-	}
-	return nlevel.NoopColorizer()
-}
-
-func (instance *Text) getFieldValueFormatter() TextValue {
-	if v := instance.ValueFormatter; v != nil {
-		return v
-	}
-	if v := DefaultTextValue; v != nil {
-		return v
-	}
-	return NoopTextValue()
-}
-
-func (instance *Text) getFieldSorter() fields.KeySorter {
-	if v := instance.KeySorter; v != nil {
-		return v
-	}
-	return fields.DefaultKeySorter
-}
-
-func (instance *Text) getPrintRootLogger() bool {
-	if v := instance.PrintRootLogger; v != nil {
-		return *v
-	}
-	return DefaultPrintRootLogger
+	return instance.ColorMode.ShouldColorize(supported)
 }
 
 func (instance *Text) formatTime(time time.Time) string {
-	lt := instance.TimeLayout
-	if lt == "" {
-		lt = DefaultTimeLayout
-	}
-	return time.Format(lt)
+	return time.Format(instance.getTimeLayout())
 }
 
 func (instance *Text) ensureMessageWidth(str string) string {
-	width := DefaultMinMessageWidth
-	if v := instance.MinMessageWidth; v != nil {
-		width = *v
-	}
+	width := instance.getMessageWith()
 	l2r := true
 	if width < 0 {
 		width *= -1
@@ -357,10 +311,7 @@ func (instance *Text) ensureLevelWidth(l level.Level, using log.Provider) string
 		names = nlevel.DefaultNames
 	}
 	str := nlevel.AsNamed(&l, names).String()
-	width := DefaultLevelWidth
-	if v := instance.LevelWidth; v != nil {
-		width = *v
-	}
+	width := instance.getLevelWith()
 
 	l2r := true
 	if width < 0 {
@@ -378,4 +329,73 @@ func (instance *Text) ensureLevelWidth(l level.Level, using log.Provider) string
 	} else {
 		return strings.Repeat(" ", int(width)-len(str)) + str
 	}
+}
+
+func (instance *Text) getLevelColorizer() nlevel.Colorizer {
+	if v := instance.LevelColorizer; v != nil {
+		return v
+	}
+	if v := nlevel.DefaultColorizer; v != nil {
+		return v
+	}
+	return nlevel.NoopColorizer()
+}
+
+func (instance *Text) getTimeLayout() string {
+	if v := instance.TimeLayout; v != "" {
+		return v
+	}
+	return DefaultTimeLayout
+}
+
+func (instance *Text) getLevelWith() int8 {
+	if v := instance.LevelWidth; v != nil {
+		return *v
+	}
+	return DefaultLevelWidth
+}
+
+func (instance *Text) getMessageWith() int16 {
+	if v := instance.MinMessageWidth; v != nil {
+		return *v
+	}
+	return DefaultMinMessageWidth
+}
+
+func (instance *Text) getMultiLineMessagesAfterFields() bool {
+	if v := instance.MultiLineMessageAfterFields; v != nil {
+		return *v
+	}
+	return DefaultMultiLineMessageAfterFields
+}
+
+func (instance *Text) getAllowMultiLineMessage() bool {
+	if v := instance.AllowMultiLineMessage; v != nil {
+		return *v
+	}
+	return DefaultAllowMultiLineMessage
+}
+
+func (instance *Text) getPrintRootLogger() bool {
+	if v := instance.PrintRootLogger; v != nil {
+		return *v
+	}
+	return DefaultPrintRootLogger
+}
+
+func (instance *Text) getFieldValueFormatter() TextValue {
+	if v := instance.ValueFormatter; v != nil {
+		return v
+	}
+	if v := DefaultTextValue; v != nil {
+		return v
+	}
+	return NoopTextValue()
+}
+
+func (instance *Text) getFieldSorter() fields.KeySorter {
+	if v := instance.KeySorter; v != nil {
+		return v
+	}
+	return fields.DefaultKeySorter
 }
