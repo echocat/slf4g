@@ -35,7 +35,7 @@ const (
 	// DefaultAllowMultiLineMessage is default setting if multiline should be
 	// allowed to be multilines. See Text.AllowMultiLineMessage for more
 	// information.
-	DefaultAllowMultiLineMessage = true
+	DefaultAllowMultiLineMessage = false
 
 	// DefaultPrintRootLogger is default setting if the root logger field should
 	// be logged. See Text.PrintRootLogger / Json.PrintRootLogger for more
@@ -118,25 +118,25 @@ func NewText(customizer ...func(*Text)) *Text {
 func (instance *Text) Format(event log.Event, using log.Provider, h hints.Hints) ([]byte, error) {
 	to := newBufferedTextEncoder()
 
-	message := log.GetMessageOf(event, using)
-	isMultilineMessage := false
-	if message != nil {
-		*message = instance.formatMessage(*message)
-		if strings.ContainsRune(*message, '\n') {
-			isMultilineMessage = instance.getMultiLineMessageAfterFields()
-		} else {
-			// Multiline message could be printed on a dedicated line
-			*message = instance.ensureMessageWidth(*message)
-		}
-	}
+	message := instance.getMessage(event, using)
+	printMessageAsMultiLine := message != nil &&
+		strings.ContainsRune(*message, '\n') &&
+		instance.getMultiLineMessageAfterFields()
 
 	atLeastOneFieldPrinted := false
 	if err := executeChecked(
 		instance.printTimestamp(event, using, h, to),
+
+		to.WriteByteChecked('['),
 		instance.printLevel(event, using, h, to),
-		instance.printSingleLineMessageIfRequired(message, isMultilineMessage, to),
+		to.WriteByteChecked(']'),
+
+		instance.printSingleLineMessageIfRequired(message, printMessageAsMultiLine, to),
+
 		instance.printFields(using, h, event, to, &atLeastOneFieldPrinted),
-		instance.printMultiLineMessageIfRequired(message, isMultilineMessage, &atLeastOneFieldPrinted, to),
+
+		instance.printMultiLineMessageIfRequired(message, printMessageAsMultiLine, &atLeastOneFieldPrinted, to),
+
 		to.WriteByteChecked('\n'),
 	); err != nil {
 		return nil, err
@@ -145,7 +145,17 @@ func (instance *Text) Format(event log.Event, using log.Provider, h hints.Hints)
 	return to.Bytes(), nil
 }
 
-func (instance *Text) formatMessage(message string) string {
+func (instance *Text) getMessage(of log.Event, using log.Provider) *string {
+	message := log.GetMessageOf(of, using)
+
+	if message != nil {
+		*message = instance.sanitizeMessage(*message)
+	}
+
+	return message
+}
+
+func (instance *Text) sanitizeMessage(message string) string {
 	message = strings.TrimLeftFunc(message, func(r rune) bool {
 		return r == '\r' || r == '\n'
 	})
@@ -153,7 +163,7 @@ func (instance *Text) formatMessage(message string) string {
 	message = strings.TrimFunc(message, func(r rune) bool {
 		return r == '\r' || !unicode.IsGraphic(r)
 	})
-	if instance.getAllowMultiLineMessage() {
+	if !instance.getAllowMultiLineMessage() {
 		message = strings.ReplaceAll(message, "\n", "\u23CE")
 	}
 	return message
@@ -161,18 +171,24 @@ func (instance *Text) formatMessage(message string) string {
 
 func (instance *Text) printTimestamp(event log.Event, using log.Provider, h hints.Hints, to textEncoder) checkedExecution {
 	if v := log.GetTimestampOf(event, using); v != nil {
+		var prefix, suffix string
 		if instance.shouldColorize(h) {
-			return to.WriteStringChecked(`[30;1m` + instance.formatTime(*v) + `[0m `)
+			prefix, suffix = `[30;1m`, `[0m`
 		}
-		return to.WriteStringChecked(instance.formatTime(*v) + ` `)
+		return to.WriteStringChecked(prefix + instance.formatTime(*v) + suffix + " ")
 	}
 	return nil
 }
 
 func (instance *Text) printLevel(event log.Event, using log.Provider, h hints.Hints, to textEncoder) checkedExecution {
-	v := instance.ensureLevelWidth(event.GetLevel(), using)
-
-	return to.WriteStringChecked(`[` + instance.colorize(event, v, h) + `]`)
+	var v string
+	vp := &v
+	return joinCheckedExecutions(
+		instance.formatLevelChecked(event.GetLevel(), using, vp),
+		instance.ensureWidthChecked(vp, int32(instance.getLevelWidth()), true),
+		instance.colorizeChecked(event, vp, h),
+		to.WriteStringPChecked(vp),
+	)
 }
 
 func (instance *Text) printFields(using log.Provider, h hints.Hints, event log.Event, to textEncoder, atLeastOneFieldPrinted *bool) checkedExecution {
@@ -214,7 +230,8 @@ func (instance *Text) printField(event log.Event, key string, value interface{},
 
 func (instance *Text) printSingleLineMessageIfRequired(message *string, handleAsMultiline bool, to textEncoder) checkedExecution {
 	if !handleAsMultiline && message != nil {
-		return to.WriteStringChecked(` ` + *message)
+		v := instance.ensureWidth(*message, int32(instance.getMinMessageWidth()), false)
+		return to.WriteStringChecked(` ` + v)
 	}
 	return nil
 }
@@ -270,6 +287,13 @@ func (instance *Text) colorize(event log.Event, message string, h hints.Hints) s
 	return message
 }
 
+func (instance *Text) colorizeChecked(event log.Event, message *string, h hints.Hints) checkedExecution {
+	return func() error {
+		*message = instance.colorize(event, *message, h)
+		return nil
+	}
+}
+
 func (instance *Text) shouldColorize(h hints.Hints) bool {
 	supported := color.SupportedNone
 	if v, ok := h.(hints.ColorsSupport); ok {
@@ -282,53 +306,49 @@ func (instance *Text) formatTime(time time.Time) string {
 	return time.Format(instance.getTimeLayout())
 }
 
-func (instance *Text) ensureMessageWidth(str string) string {
-	width := instance.getMinMessageWidth()
-	l2r := true
-	if width < 0 {
-		width *= -1
-		l2r = false
-	}
-	if width == 0 {
-		return str
-	}
-	l := utf8.RuneCountInString(str)
-	if l >= int(width) {
-		return str
-	}
-	if l2r {
-		return str + strings.Repeat(" ", int(width)-l)
-	} else {
-		return strings.Repeat(" ", int(width)-l) + str
+func (instance *Text) ensureWidthChecked(of *string, width int32, cutOffToLong bool) checkedExecution {
+	return func() error {
+		*of = instance.ensureWidth(*of, width, cutOffToLong)
+		return nil
 	}
 }
 
-func (instance *Text) ensureLevelWidth(l level.Level, using log.Provider) string {
-	var names nlevel.Names
-	if v, ok := using.(nlevel.NamesAware); ok {
-		names = v.GetLevelNames()
-	} else {
-		names = nlevel.DefaultNames
-	}
-	str := nlevel.AsNamed(&l, names).String()
-	width := instance.getLevelWidth()
-
+func (instance *Text) ensureWidth(of string, width int32, cutOffToLong bool) string {
 	l2r := true
 	if width < 0 {
 		width *= -1
 		l2r = false
 	}
 	if width == 0 {
-		return str
+		return of
 	}
-	if len(str) >= int(width) {
-		return str[:width]
+	l := utf8.RuneCountInString(of)
+	if cutOffToLong && l >= int(width) {
+		return of[:width]
 	}
 	if l2r {
-		return str + strings.Repeat(" ", int(width)-len(str))
+		return of + strings.Repeat(" ", int(width)-l)
 	} else {
-		return strings.Repeat(" ", int(width)-len(str)) + str
+		return strings.Repeat(" ", int(width)-l) + of
 	}
+}
+
+func (instance *Text) formatLevelChecked(l level.Level, using log.Provider, to *string) checkedExecution {
+	return func() error {
+		v, err := instance.getLevelNames(using).ToName(l)
+		*to = v
+		return err
+	}
+}
+
+func (instance *Text) getLevelNames(using log.Provider) nlevel.Names {
+	if v, ok := using.(nlevel.NamesAware); ok {
+		return v.GetLevelNames()
+	}
+	if v := nlevel.DefaultNames; v != nil {
+		return v
+	}
+	return nlevel.NewNames()
 }
 
 func (instance *Text) getLevelColorizer() nlevel.Colorizer {

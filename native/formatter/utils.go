@@ -12,3 +12,9 @@ func executeChecked(executions ...checkedExecution) error {
 	}
 	return nil
 }
+
+func joinCheckedExecutions(executions ...checkedExecution) checkedExecution {
+	return func() error {
+		return executeChecked(executions...)
+	}
+}
