@@ -177,7 +177,7 @@ func Test_Json_encodeLevelChecked(t *testing.T) {
 	givenProvider := recording.NewProvider()
 	givenLogger := givenProvider.GetRootLogger()
 	givenEvent := givenLogger.NewEvent(level.Warn, nil)
-	givenEncoder := newJsonEncoderBuffered()
+	givenEncoder := newBufferedJsonEncoder()
 	instance := NewJson(func(json *Json) {
 		json.LevelFormatter = LevelFunc(func(actualLevel level.Level, actualProvider log.Provider) (interface{}, error) {
 			assert.ToBeEqual(t, givenProvider, actualProvider)
@@ -187,7 +187,7 @@ func Test_Json_encodeLevelChecked(t *testing.T) {
 		json.KeyLevel = "myKey"
 	})
 
-	actualErr := instance.encodeLevelChecked(givenEvent, givenProvider, &givenEncoder.jsonEncoder)()
+	actualErr := instance.encodeLevelChecked(givenEvent, givenProvider, givenEncoder)()
 
 	assert.ToBeNil(t, actualErr)
 	assert.ToBeEqual(t, `"myKey":666`, givenEncoder.String())
@@ -197,7 +197,7 @@ func Test_Json_encodeLevelChecked_failingOnLevelFormat(t *testing.T) {
 	givenProvider := recording.NewProvider()
 	givenLogger := givenProvider.GetRootLogger()
 	givenEvent := givenLogger.NewEvent(level.Warn, nil)
-	givenEncoder := newJsonEncoderBuffered()
+	givenEncoder := newBufferedJsonEncoder()
 	givenError := errors.New("expected")
 	instance := NewJson(func(json *Json) {
 		json.LevelFormatter = LevelFunc(func(actualLevel level.Level, actualProvider log.Provider) (interface{}, error) {
@@ -208,7 +208,7 @@ func Test_Json_encodeLevelChecked_failingOnLevelFormat(t *testing.T) {
 		json.KeyLevel = "myKey"
 	})
 
-	actualErr := instance.encodeLevelChecked(givenEvent, givenProvider, &givenEncoder.jsonEncoder)()
+	actualErr := instance.encodeLevelChecked(givenEvent, givenProvider, givenEncoder)()
 
 	assert.ToBeSame(t, givenError, actualErr)
 	assert.ToBeEqual(t, ``, givenEncoder.String())
@@ -218,7 +218,7 @@ func Test_Json_encodeLevelChecked_failingOnEncodeValue(t *testing.T) {
 	givenProvider := recording.NewProvider()
 	givenLogger := givenProvider.GetRootLogger()
 	givenEvent := givenLogger.NewEvent(level.Warn, nil)
-	givenEncoder := newJsonEncoderBuffered()
+	givenEncoder := newBufferedJsonEncoder()
 	givenError := errors.New("expected")
 	instance := NewJson(func(json *Json) {
 		json.LevelFormatter = LevelFunc(func(actualLevel level.Level, actualProvider log.Provider) (interface{}, error) {
@@ -229,7 +229,7 @@ func Test_Json_encodeLevelChecked_failingOnEncodeValue(t *testing.T) {
 		json.KeyLevel = "myKey"
 	})
 
-	actualErr := instance.encodeLevelChecked(givenEvent, givenProvider, &givenEncoder.jsonEncoder)()
+	actualErr := instance.encodeLevelChecked(givenEvent, givenProvider, givenEncoder)()
 
 	assert.ToBeMatching(t, ".+: expected", actualErr)
 	assert.ToBeEqual(t, `"myKey":`, givenEncoder.String())
@@ -323,7 +323,7 @@ func Test_Json_encodeValuesChecked(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			givenEncoder := newJsonEncoderBuffered()
+			givenEncoder := newBufferedJsonEncoder()
 			instance := NewJson(func(json *Json) {
 				if !c.unsorted {
 					json.KeySorter = fields.DefaultKeySorter
@@ -331,7 +331,7 @@ func Test_Json_encodeValuesChecked(t *testing.T) {
 				json.PrintRootLogger = &c.printRootLogger
 			})
 
-			actualErr := instance.encodeValuesChecked(c.given, givenProvider, &givenEncoder.jsonEncoder)()
+			actualErr := instance.encodeValuesChecked(c.given, givenProvider, givenEncoder)()
 
 			assert.ToBeNil(t, actualErr)
 

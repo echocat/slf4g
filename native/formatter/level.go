@@ -60,6 +60,6 @@ func NoopLevel() Level {
 	return noopLevelV
 }
 
-var noopLevelV = LevelFunc(func(level.Level, log.Provider) (interface{}, error) {
-	return []byte{}, nil
+var noopLevelV = LevelFunc(func(in level.Level, _ log.Provider) (interface{}, error) {
+	return in, nil
 })

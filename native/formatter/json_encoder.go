@@ -8,22 +8,39 @@ import (
 	"unicode"
 )
 
-type jsonEncoder struct {
+type jsonEncoder interface {
+	io.ByteWriter
+	WriteByteChecked(c byte) func() error
+
+	WriteKeyValue(k string, v interface{}) error
+	WriteKeyValueChecked(k string, v interface{}) func() error
+
+	WriteValue(v interface{}) error
+	WriteValueChecked(v interface{}) func() error
+}
+
+func newBufferedJsonEncoder() *bufferedJsonEncoder {
+	result := new(bufferedJsonEncoder)
+	result.encoder = json.NewEncoder(filteringTailingNewLineWriter{&result.buffer})
+	return result
+}
+
+type bufferedJsonEncoder struct {
 	encoder *json.Encoder
-	writer  *filteringTailingNewLineWriter
+	buffer  bytes.Buffer
 }
 
-func (instance *jsonEncoder) WriteByte(c byte) error {
-	return instance.writer.WriteByte(c)
+func (instance *bufferedJsonEncoder) WriteByte(c byte) error {
+	return instance.buffer.WriteByte(c)
 }
 
-func (instance *jsonEncoder) WriteByteChecked(c byte) checkedExecution {
+func (instance *bufferedJsonEncoder) WriteByteChecked(c byte) func() error {
 	return func() error {
 		return instance.WriteByte(c)
 	}
 }
 
-func (instance *jsonEncoder) WriteKeyValue(k string, v interface{}) error {
+func (instance *bufferedJsonEncoder) WriteKeyValue(k string, v interface{}) error {
 	return executeChecked(
 		instance.WriteValueChecked(k),
 		instance.WriteByteChecked(':'),
@@ -31,13 +48,13 @@ func (instance *jsonEncoder) WriteKeyValue(k string, v interface{}) error {
 	)
 }
 
-func (instance *jsonEncoder) WriteKeyValueChecked(k string, v interface{}) checkedExecution {
+func (instance *bufferedJsonEncoder) WriteKeyValueChecked(k string, v interface{}) func() error {
 	return func() error {
 		return instance.WriteKeyValue(k, v)
 	}
 }
 
-func (instance *jsonEncoder) WriteValue(v interface{}) error {
+func (instance *bufferedJsonEncoder) WriteValue(v interface{}) error {
 	if ve, ok := v.(error); ok {
 		v = ve.Error()
 	}
@@ -50,48 +67,10 @@ func (instance *jsonEncoder) WriteValue(v interface{}) error {
 	return instance.encoder.Encode(v)
 }
 
-func (instance *jsonEncoder) WriteValueChecked(v interface{}) checkedExecution {
+func (instance *bufferedJsonEncoder) WriteValueChecked(v interface{}) func() error {
 	return func() error {
 		return instance.WriteValue(v)
 	}
-}
-
-type filteringTailingNewLineWriter struct {
-	io.Writer
-}
-
-func (instance *filteringTailingNewLineWriter) Write(p []byte) (n int, err error) {
-	if len(p) <= 0 {
-		return 0, nil
-	}
-	if p[len(p)-1] == '\n' {
-		p = p[:len(p)-1]
-	}
-	return instance.Writer.Write(p)
-}
-
-func (instance *filteringTailingNewLineWriter) WriteByte(c byte) error {
-	if v, ok := instance.Writer.(io.ByteWriter); ok {
-		return v.WriteByte(c)
-	}
-	n, err := instance.Write([]byte{c})
-	if n != 1 {
-		return io.ErrShortWrite
-	}
-	return err
-}
-
-type bufferedJsonEncoder struct {
-	jsonEncoder
-
-	buffer bytes.Buffer
-}
-
-func newJsonEncoderBuffered() *bufferedJsonEncoder {
-	result := new(bufferedJsonEncoder)
-	result.jsonEncoder.writer = &filteringTailingNewLineWriter{&result.buffer}
-	result.jsonEncoder.encoder = json.NewEncoder(result.jsonEncoder.writer)
-	return result
 }
 
 func (instance *bufferedJsonEncoder) Bytes() []byte {
@@ -100,4 +79,19 @@ func (instance *bufferedJsonEncoder) Bytes() []byte {
 
 func (instance *bufferedJsonEncoder) String() string {
 	return string(instance.Bytes())
+}
+
+type filteringTailingNewLineWriter struct {
+	io.Writer
+}
+
+func (instance filteringTailingNewLineWriter) Write(p []byte) (int, error) {
+	if len(p) <= 0 {
+		return 0, nil
+	}
+	if p[len(p)-1] == '\n' {
+		n, err := instance.Writer.Write(p[:len(p)-1])
+		return n + 1, err
+	}
+	return instance.Writer.Write(p)
 }

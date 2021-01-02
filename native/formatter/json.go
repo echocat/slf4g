@@ -55,12 +55,12 @@ func (instance *Json) Format(event log.Event, using log.Provider, _ hints.Hints)
 		return []byte{}, nil
 	}
 
-	to := newJsonEncoderBuffered()
+	to := newBufferedJsonEncoder()
 
 	if err := executeChecked(
 		to.WriteByteChecked('{'),
-		instance.encodeLevelChecked(event, using, &to.jsonEncoder),
-		instance.encodeValuesChecked(event, using, &to.jsonEncoder),
+		instance.encodeLevelChecked(event, using, to),
+		instance.encodeValuesChecked(event, using, to),
 		to.WriteByteChecked('}'),
 		to.WriteByteChecked('\n'),
 	); err != nil {
@@ -77,7 +77,7 @@ func (instance *Json) getLevelKey() string {
 	return DefaultKeyLevel
 }
 
-func (instance *Json) encodeLevelChecked(of log.Event, using log.Provider, to *jsonEncoder) checkedExecution {
+func (instance *Json) encodeLevelChecked(of log.Event, using log.Provider, to jsonEncoder) checkedExecution {
 	return func() error {
 		lvl, err := instance.formatLevel(of, using)
 		if err != nil {
@@ -101,7 +101,7 @@ func (instance *Json) getLevelFormatter(using log.Provider) Level {
 	return DefaultLevel
 }
 
-func (instance *Json) encodeValuesChecked(of log.Event, using log.Provider, to *jsonEncoder) checkedExecution {
+func (instance *Json) encodeValuesChecked(of log.Event, using log.Provider, to jsonEncoder) checkedExecution {
 	return func() error {
 		printRootLogger := instance.getPrintRootLogger()
 		loggerKey := using.GetFieldKeysSpec().GetLogger()
