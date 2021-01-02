@@ -1,7 +1,6 @@
 package formatter
 
 import (
-	"bytes"
 	"strings"
 	"time"
 	"unicode"
@@ -101,9 +100,9 @@ type Text struct {
 	// not set formatter.DefaultTextValue will be used.
 	ValueFormatter TextValue
 
-	// FieldSorter is used to sort the field when they are printed. If not set
+	// KeySorter is used to sort the field when they are printed. If not set
 	// fields.DefaultKeySorter will be used.
-	FieldSorter fields.KeySorter
+	KeySorter fields.KeySorter
 }
 
 // NewText creates a new instance of Text which is ready to use.
@@ -116,18 +115,18 @@ func NewText(customizer ...func(*Text)) *Text {
 }
 
 // Format implements Formatter.Format()
-func (instance *Text) Format(event log.Event, using log.Provider, h hints.Hints) (_ []byte, err error) {
-	buf := new(bytes.Buffer)
+func (instance *Text) Format(event log.Event, using log.Provider, h hints.Hints) ([]byte, error) {
+	to := newBufferedTextEncoder()
 
 	message := log.GetMessageOf(event, using)
-	multiLineMessage := false
+	isMultilineMessage := false
 	if message != nil {
 		message = instance.formatMessage(message)
 		if strings.ContainsRune(*message, '\n') {
 			if v := instance.MultiLineMessageAfterFields; v != nil {
-				multiLineMessage = *instance.MultiLineMessageAfterFields
+				isMultilineMessage = *instance.MultiLineMessageAfterFields
 			} else {
-				multiLineMessage = DefaultMultiLineMessageAfterFields
+				isMultilineMessage = DefaultMultiLineMessageAfterFields
 			}
 		} else {
 			// Multiline message could be printed on a dedicated line
@@ -135,42 +134,19 @@ func (instance *Text) Format(event log.Event, using log.Provider, h hints.Hints)
 		}
 	}
 
-	if _, err = instance.printTimestamp(event, buf, using, h); err != nil {
-		return nil, err
-	}
-	if _, err = instance.printLevel(event, buf, using, h); err != nil {
-		return nil, err
-	}
-
-	if !multiLineMessage && message != nil {
-		if _, err := buf.WriteString(` ` + *message); err != nil {
-			return nil, err
-		}
-	}
-
-	fieldsPrinted := false
-	if fieldsPrinted, err = instance.printFields(event, buf, using, h); err != nil {
+	atLeastOneFieldPrinted := false
+	if err := executeChecked(
+		instance.printTimestamp(event, using, h, to),
+		instance.printLevel(event, using, h, to),
+		instance.printSingleLineMessageIfRequired(message, isMultilineMessage, to),
+		instance.printFields(using, h, event, to, &atLeastOneFieldPrinted),
+		instance.printMultiLineMessageIfRequired(message, isMultilineMessage, &atLeastOneFieldPrinted, to),
+		to.WriteByteChecked('\n'),
+	); err != nil {
 		return nil, err
 	}
 
-	if multiLineMessage && message != nil {
-		otherIdent := "\t"
-		firstIdent := otherIdent
-		if fieldsPrinted {
-			if err := buf.WriteByte('\n'); err != nil {
-				return nil, err
-			}
-		} else {
-			firstIdent = " "
-		}
-		if err := instance.printWithIdent(*message, firstIdent, otherIdent, buf); err != nil {
-			return nil, err
-		}
-	}
-
-	buf.WriteByte('\n')
-
-	return buf.Bytes(), nil
+	return to.Bytes(), nil
 }
 
 func (instance *Text) formatMessage(message *string) *string {
@@ -188,17 +164,14 @@ func (instance *Text) formatMessage(message *string) *string {
 	return message
 }
 
-func (instance *Text) printTimestamp(event log.Event, buf *bytes.Buffer, using log.Provider, h hints.Hints) (cn int, err error) {
+func (instance *Text) printTimestamp(event log.Event, using log.Provider, h hints.Hints, to textEncoder) checkedExecution {
 	if ts := log.GetTimestampOf(event, using); ts != nil {
 		if instance.shouldColorize(h) {
-			_, err = buf.WriteString(`[30;1m` + instance.formatTime(*ts) + `[0m `)
-			cn = len(instance.formatTime(*ts)) + 1
-		} else {
-			_, err = buf.WriteString(instance.formatTime(*ts) + ` `)
-			cn = len(instance.formatTime(*ts)) + 1
+			return to.WriteStringChecked(`[30;1m` + instance.formatTime(*ts) + `[0m `)
 		}
+		return to.WriteStringChecked(instance.formatTime(*ts) + ` `)
 	}
-	return
+	return nil
 }
 
 func (instance *Text) shouldColorize(h hints.Hints) bool {
@@ -209,55 +182,98 @@ func (instance *Text) shouldColorize(h hints.Hints) bool {
 	return instance.ColorMode.ShouldColorize(supported)
 }
 
-func (instance *Text) printLevel(event log.Event, buf *bytes.Buffer, using log.Provider, h hints.Hints) (cn int, err error) {
+func (instance *Text) printLevel(event log.Event, using log.Provider, h hints.Hints, to textEncoder) checkedExecution {
 	v := instance.ensureLevelWidth(event.GetLevel(), using)
 
-	_, err = buf.WriteString(`[` + instance.colorize(event, v, h) + `]`)
-	cn = 1 + len(v) + 1
-
-	return
+	return to.WriteStringChecked(`[` + instance.colorize(event, v, h) + `]`)
 }
 
-func (instance *Text) printFields(event log.Event, buf *bytes.Buffer, using log.Provider, h hints.Hints) (printed bool, err error) {
-	formatter := instance.getFieldValueFormatter()
+func (instance *Text) printFields(using log.Provider, h hints.Hints, event log.Event, to textEncoder, atLeastOneFieldPrinted *bool) checkedExecution {
+	return func() error {
+		formatter := instance.getFieldValueFormatter()
+		keysSpec := using.GetFieldKeysSpec()
+		messageKey := keysSpec.GetMessage()
+		loggerKey := keysSpec.GetLogger()
+		timestampKey := keysSpec.GetTimestamp()
+		printRootLogger := instance.getPrintRootLogger()
+		fieldSorter := instance.getFieldSorter()
 
-	keysSpec := using.GetFieldKeysSpec()
-	messageKey := keysSpec.GetMessage()
-	loggerKey := keysSpec.GetLogger()
-	timestampKey := keysSpec.GetTimestamp()
-
-	printRootLogger := DefaultPrintRootLogger
-	if v := instance.PrintRootLogger; v != nil {
-		printRootLogger = *v
+		return fields.SortedForEach(event, fieldSorter, func(k string, v interface{}) error {
+			if vl, ok := v.(fields.Lazy); ok {
+				v = vl.Get()
+			}
+			if v == nil {
+				return nil
+			}
+			if !printRootLogger && k == loggerKey && v == "ROOT" {
+				return nil
+			}
+			if k == messageKey || k == timestampKey {
+				return nil
+			}
+			*atLeastOneFieldPrinted = true
+			return instance.printField(event, k, v, using, formatter, h, to)
+		})
 	}
-
-	err = fields.SortedForEach(event, instance.getFieldSorter(), func(k string, v interface{}) error {
-		if vl, ok := v.(fields.Lazy); ok {
-			v = vl.Get()
-		}
-		if v == nil {
-			return nil
-		}
-		if !printRootLogger && k == loggerKey && v == "ROOT" {
-			return nil
-		}
-		if k == messageKey || k == timestampKey {
-			return nil
-		}
-		printed = true
-		return instance.printField(event, k, v, buf, using, formatter, h)
-	})
-
-	return
 }
 
-func (instance *Text) printField(event log.Event, key string, value interface{}, buf *bytes.Buffer, using log.Provider, formatter TextValue, h hints.Hints) error {
+func (instance *Text) printField(event log.Event, key string, value interface{}, using log.Provider, formatter TextValue, h hints.Hints, to textEncoder) error {
 	v, err := formatter.FormatTextValue(value, using)
 	if err != nil {
 		return err
 	}
-	_, err = buf.WriteString(` ` + instance.colorize(event, key, h) + `=` + string(v))
-	return err
+	return to.WriteString(` ` + instance.colorize(event, key, h) + `=` + string(v))
+}
+
+func (instance *Text) printSingleLineMessageIfRequired(message *string, isMultilineMessage bool, to textEncoder) checkedExecution {
+	if !isMultilineMessage && message != nil {
+		return to.WriteStringChecked(` ` + *message)
+	}
+	return nil
+}
+
+func (instance *Text) printMultiLineMessageIfRequired(message *string, isMultilineMessage bool, atLeastOneFieldPrinted *bool, to textEncoder) checkedExecution {
+	if isMultilineMessage && message != nil {
+		return func() error {
+			otherIdent := "\t"
+			firstIdent := otherIdent
+
+			var prefixExecution checkedExecution
+			if *atLeastOneFieldPrinted {
+				prefixExecution = to.WriteByteChecked('\n')
+			} else {
+				firstIdent = " "
+			}
+
+			return executeChecked(
+				prefixExecution,
+				instance.printMultilineWithIdent(*message, firstIdent, otherIdent, to),
+			)
+		}
+	}
+	return nil
+}
+
+func (instance *Text) printMultilineWithIdent(str string, firstLine, otherLines string, to textEncoder) checkedExecution {
+	return func() error {
+		for i, line := range strings.Split(str, "\n") {
+			ident := &firstLine
+			var prefixExecution checkedExecution
+			if i > 0 {
+				ident = &otherLines
+				prefixExecution = to.WriteByteChecked('\n')
+			}
+
+			if err := executeChecked(
+				prefixExecution,
+				to.WriteStringPChecked(ident),
+				to.WriteStringChecked(line),
+			); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 }
 
 func (instance *Text) colorize(event log.Event, message string, h hints.Hints) string {
@@ -288,13 +304,17 @@ func (instance *Text) getFieldValueFormatter() TextValue {
 }
 
 func (instance *Text) getFieldSorter() fields.KeySorter {
-	if v := instance.FieldSorter; v != nil {
+	if v := instance.KeySorter; v != nil {
 		return v
 	}
-	if v := fields.DefaultKeySorter; v != nil {
-		return v
+	return fields.DefaultKeySorter
+}
+
+func (instance *Text) getPrintRootLogger() bool {
+	if v := instance.PrintRootLogger; v != nil {
+		return *v
 	}
-	return fields.NoopKeySorter()
+	return DefaultPrintRootLogger
 }
 
 func (instance *Text) formatTime(time time.Time) string {
@@ -327,28 +347,6 @@ func (instance *Text) ensureMessageWidth(str string) string {
 	} else {
 		return strings.Repeat(" ", int(width)-l) + str
 	}
-}
-
-func (instance *Text) printWithIdent(str string, firstLine, otherLines string, buf *bytes.Buffer) error {
-	for i, line := range strings.Split(str, "\n") {
-		ident := firstLine
-		if i > 0 {
-			ident = otherLines
-			if _, err := buf.WriteRune('\n'); err != nil {
-				return err
-			}
-		}
-
-		if _, err := buf.WriteString(ident); err != nil {
-			return err
-		}
-
-		if _, err := buf.WriteString(line); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func (instance *Text) ensureLevelWidth(l level.Level, using log.Provider) string {

@@ -19,24 +19,6 @@ func Test_newBufferedJsonEncoder(t *testing.T) {
 	assert.ToBeEqual(t, `"foo"`, actual.buffer.String())
 }
 
-func Test_bufferedJsonEncoder_WriteByte(t *testing.T) {
-	instance := newBufferedJsonEncoder()
-
-	actualErr := instance.WriteByte('x')
-	assert.ToBeNil(t, actualErr)
-
-	assert.ToBeEqual(t, `x`, instance.buffer.String())
-}
-
-func Test_bufferedJsonEncoder_WriteByteChecked(t *testing.T) {
-	instance := newBufferedJsonEncoder()
-
-	actualErr := instance.WriteByteChecked('x')()
-	assert.ToBeNil(t, actualErr)
-
-	assert.ToBeEqual(t, `x`, instance.buffer.String())
-}
-
 func Test_bufferedJsonEncoder_WriteValue(t *testing.T) {
 	instance := newBufferedJsonEncoder()
 
@@ -98,24 +80,6 @@ func Test_bufferedJsonEncoder_WriteKeyValueChecked(t *testing.T) {
 	assert.ToBeNil(t, actualErr)
 
 	assert.ToBeEqual(t, `"hello":{"Foo":"bar"}`, instance.buffer.String())
-}
-
-func Test_bufferedJsonEncoder_Bytes(t *testing.T) {
-	instance := newBufferedJsonEncoder()
-
-	instance.buffer.WriteString("hello")
-	actual := instance.Bytes()
-
-	assert.ToBeEqual(t, `hello`, string(actual))
-}
-
-func Test_bufferedJsonEncoder_String(t *testing.T) {
-	instance := newBufferedJsonEncoder()
-
-	instance.buffer.WriteString("hello")
-	actual := instance.String()
-
-	assert.ToBeEqual(t, `hello`, actual)
 }
 
 func Test_filteringTailingNewLineWriter_Write(t *testing.T) {

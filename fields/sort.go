@@ -12,8 +12,14 @@ var DefaultKeySorter KeySorter = func(what []string) {
 // in the order ensured by KeySorter. If KeySorter is nil DefaultKeySorter is
 // used.
 func SortedForEach(input ForEachEnabled, sorter KeySorter, consumer func(key string, value interface{}) error) error {
+	if input == nil {
+		return nil
+	}
 	if sorter == nil {
 		sorter = DefaultKeySorter
+	}
+	if sorter == nil || isNoopKeySorter(sorter) {
+		return input.ForEach(consumer)
 	}
 
 	m, err := asMap(input)
@@ -28,9 +34,7 @@ func SortedForEach(input ForEachEnabled, sorter KeySorter, consumer func(key str
 		i++
 	}
 
-	if sorter != nil {
-		sorter(keys)
-	}
+	sorter(keys)
 
 	for _, key := range keys {
 		if err := consumer(key, m[key]); err != nil {
@@ -49,3 +53,7 @@ func NoopKeySorter() KeySorter {
 }
 
 var noopKeySorterV = func(what []string) {}
+
+func isNoopKeySorter(v KeySorter) bool {
+	return interface{}(noopKeySorterV) == interface{}(v)
+}

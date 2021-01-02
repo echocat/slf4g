@@ -61,8 +61,7 @@ func (instance *Json) Format(event log.Event, using log.Provider, _ hints.Hints)
 		to.WriteByteChecked('{'),
 		instance.encodeLevelChecked(event, using, to),
 		instance.encodeValuesChecked(event, using, to),
-		to.WriteByteChecked('}'),
-		to.WriteByteChecked('\n'),
+		to.WriteBytesChecked([]byte{'}', '\n'}),
 	); err != nil {
 		return nil, fmt.Errorf("cannot format event (%v): %w", event, err)
 	}
@@ -103,6 +102,7 @@ func (instance *Json) getLevelFormatter(using log.Provider) Level {
 
 func (instance *Json) encodeValuesChecked(of log.Event, using log.Provider, to jsonEncoder) checkedExecution {
 	return func() error {
+		keySorter := instance.getKeySorter()
 		printRootLogger := instance.getPrintRootLogger()
 		loggerKey := using.GetFieldKeysSpec().GetLogger()
 		consumer := func(k string, v interface{}) error {
@@ -117,10 +117,7 @@ func (instance *Json) encodeValuesChecked(of log.Event, using log.Provider, to j
 				to.WriteKeyValueChecked(k, v),
 			)
 		}
-		if sorter := instance.KeySorter; sorter != nil {
-			return fields.SortedForEach(of, sorter, consumer)
-		}
-		return of.ForEach(consumer)
+		return fields.SortedForEach(of, keySorter, consumer)
 	}
 }
 
@@ -129,4 +126,11 @@ func (instance *Json) getPrintRootLogger() bool {
 		return *v
 	}
 	return DefaultPrintRootLogger
+}
+
+func (instance *Json) getKeySorter() fields.KeySorter {
+	if v := instance.KeySorter; v != nil {
+		return v
+	}
+	return fields.NoopKeySorter()
 }

@@ -1,7 +1,6 @@
 package formatter
 
 import (
-	"bytes"
 	"encoding/json"
 	"io"
 	"strings"
@@ -9,8 +8,7 @@ import (
 )
 
 type jsonEncoder interface {
-	io.ByteWriter
-	WriteByteChecked(c byte) func() error
+	textEncoder
 
 	WriteKeyValue(k string, v interface{}) error
 	WriteKeyValueChecked(k string, v interface{}) func() error
@@ -26,18 +24,9 @@ func newBufferedJsonEncoder() *bufferedJsonEncoder {
 }
 
 type bufferedJsonEncoder struct {
+	bufferedTextEncoder
+
 	encoder *json.Encoder
-	buffer  bytes.Buffer
-}
-
-func (instance *bufferedJsonEncoder) WriteByte(c byte) error {
-	return instance.buffer.WriteByte(c)
-}
-
-func (instance *bufferedJsonEncoder) WriteByteChecked(c byte) func() error {
-	return func() error {
-		return instance.WriteByte(c)
-	}
 }
 
 func (instance *bufferedJsonEncoder) WriteKeyValue(k string, v interface{}) error {
@@ -71,14 +60,6 @@ func (instance *bufferedJsonEncoder) WriteValueChecked(v interface{}) func() err
 	return func() error {
 		return instance.WriteValue(v)
 	}
-}
-
-func (instance *bufferedJsonEncoder) Bytes() []byte {
-	return instance.buffer.Bytes()
-}
-
-func (instance *bufferedJsonEncoder) String() string {
-	return string(instance.Bytes())
 }
 
 type filteringTailingNewLineWriter struct {

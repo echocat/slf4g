@@ -52,12 +52,20 @@ func Test_SortedForEach_withError(t *testing.T) {
 	assert.ToBeEqual(t, expected, actualEntries)
 }
 
+func Test_SortedForEach_withNilInput(t *testing.T) {
+	actualErr := SortedForEach(nil, DefaultKeySorter, func(key string, value interface{}) error {
+		panic("should never be called")
+	})
+
+	assert.ToBeNoError(t, actualErr)
+}
+
 func Test_SortedForEach_withNilSorter(t *testing.T) {
 	given := mapped{"f": "value_f", "h": "value_h", "z": "value_z", "a": "value_a"}
 	expected := entries{{"a", "value_a"}, {"f", "value_f"}, {"h", "value_h"}, {"z", "value_z"}}
 
 	actualEntries := entries{}
-	actualErr := SortedForEach(given, DefaultKeySorter, func(key string, value interface{}) error {
+	actualErr := SortedForEach(given, nil, func(key string, value interface{}) error {
 		actualEntries.add(key, value)
 		return nil
 	})
