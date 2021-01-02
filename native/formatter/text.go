@@ -123,7 +123,7 @@ func (instance *Text) Format(event log.Event, using log.Provider, h hints.Hints)
 	if message != nil {
 		*message = instance.formatMessage(*message)
 		if strings.ContainsRune(*message, '\n') {
-			isMultilineMessage = instance.getMultiLineMessagesAfterFields()
+			isMultilineMessage = instance.getMultiLineMessageAfterFields()
 		} else {
 			// Multiline message could be printed on a dedicated line
 			*message = instance.ensureMessageWidth(*message)
@@ -177,7 +177,7 @@ func (instance *Text) printLevel(event log.Event, using log.Provider, h hints.Hi
 
 func (instance *Text) printFields(using log.Provider, h hints.Hints, event log.Event, to textEncoder, atLeastOneFieldPrinted *bool) checkedExecution {
 	return func() error {
-		formatter := instance.getFieldValueFormatter()
+		formatter := instance.getValueFormatter()
 		keysSpec := using.GetFieldKeysSpec()
 		messageKey := keysSpec.GetMessage()
 		loggerKey := keysSpec.GetLogger()
@@ -283,7 +283,7 @@ func (instance *Text) formatTime(time time.Time) string {
 }
 
 func (instance *Text) ensureMessageWidth(str string) string {
-	width := instance.getMessageWith()
+	width := instance.getMinMessageWidth()
 	l2r := true
 	if width < 0 {
 		width *= -1
@@ -311,7 +311,7 @@ func (instance *Text) ensureLevelWidth(l level.Level, using log.Provider) string
 		names = nlevel.DefaultNames
 	}
 	str := nlevel.AsNamed(&l, names).String()
-	width := instance.getLevelWith()
+	width := instance.getLevelWidth()
 
 	l2r := true
 	if width < 0 {
@@ -348,21 +348,21 @@ func (instance *Text) getTimeLayout() string {
 	return DefaultTimeLayout
 }
 
-func (instance *Text) getLevelWith() int8 {
+func (instance *Text) getLevelWidth() int8 {
 	if v := instance.LevelWidth; v != nil {
 		return *v
 	}
 	return DefaultLevelWidth
 }
 
-func (instance *Text) getMessageWith() int16 {
+func (instance *Text) getMinMessageWidth() int16 {
 	if v := instance.MinMessageWidth; v != nil {
 		return *v
 	}
 	return DefaultMinMessageWidth
 }
 
-func (instance *Text) getMultiLineMessagesAfterFields() bool {
+func (instance *Text) getMultiLineMessageAfterFields() bool {
 	if v := instance.MultiLineMessageAfterFields; v != nil {
 		return *v
 	}
@@ -383,7 +383,7 @@ func (instance *Text) getPrintRootLogger() bool {
 	return DefaultPrintRootLogger
 }
 
-func (instance *Text) getFieldValueFormatter() TextValue {
+func (instance *Text) getValueFormatter() TextValue {
 	if v := instance.ValueFormatter; v != nil {
 		return v
 	}
