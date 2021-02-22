@@ -323,8 +323,11 @@ func (instance *Text) ensureWidth(of string, width int32, cutOffToLong bool) str
 		return of
 	}
 	l := utf8.RuneCountInString(of)
-	if cutOffToLong && l >= int(width) {
-		return of[:width]
+	if l >= int(width) {
+		if cutOffToLong {
+			return of[:width]
+		}
+		return of
 	}
 	if l2r {
 		return of + strings.Repeat(" ", int(width)-l)
