@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/echocat/slf4g/native/formatter/encoding"
+
 	"github.com/echocat/slf4g/fields"
 
 	nlevel "github.com/echocat/slf4g/native/level"
@@ -177,7 +179,7 @@ func Test_Json_encodeLevelChecked(t *testing.T) {
 	givenProvider := recording.NewProvider()
 	givenLogger := givenProvider.GetRootLogger()
 	givenEvent := givenLogger.NewEvent(level.Warn, nil)
-	givenEncoder := newBufferedJsonEncoder()
+	givenEncoder := encoding.NewBufferedJsonEncoder()
 	instance := NewJson(func(json *Json) {
 		json.LevelFormatter = LevelFunc(func(actualLevel level.Level, actualProvider log.Provider) (interface{}, error) {
 			assert.ToBeEqual(t, givenProvider, actualProvider)
@@ -197,7 +199,7 @@ func Test_Json_encodeLevelChecked_failingOnLevelFormat(t *testing.T) {
 	givenProvider := recording.NewProvider()
 	givenLogger := givenProvider.GetRootLogger()
 	givenEvent := givenLogger.NewEvent(level.Warn, nil)
-	givenEncoder := newBufferedJsonEncoder()
+	givenEncoder := encoding.NewBufferedJsonEncoder()
 	givenError := errors.New("expected")
 	instance := NewJson(func(json *Json) {
 		json.LevelFormatter = LevelFunc(func(actualLevel level.Level, actualProvider log.Provider) (interface{}, error) {
@@ -218,7 +220,7 @@ func Test_Json_encodeLevelChecked_failingOnEncodeValue(t *testing.T) {
 	givenProvider := recording.NewProvider()
 	givenLogger := givenProvider.GetRootLogger()
 	givenEvent := givenLogger.NewEvent(level.Warn, nil)
-	givenEncoder := newBufferedJsonEncoder()
+	givenEncoder := encoding.NewBufferedJsonEncoder()
 	givenError := errors.New("expected")
 	instance := NewJson(func(json *Json) {
 		json.LevelFormatter = LevelFunc(func(actualLevel level.Level, actualProvider log.Provider) (interface{}, error) {
@@ -323,7 +325,7 @@ func Test_Json_encodeValuesChecked(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			givenEncoder := newBufferedJsonEncoder()
+			givenEncoder := encoding.NewBufferedJsonEncoder()
 			instance := NewJson(func(json *Json) {
 				if !c.unsorted {
 					json.KeySorter = fields.DefaultKeySorter
@@ -351,7 +353,11 @@ func (instance *someProvider) GetLevelNames() nlevel.Names {
 }
 
 func (instance *someProvider) ToName(l level.Level) (string, error) {
-	return fmt.Sprintf("myFormattedLevel-%d", l), nil
+	return instance.toName(l), nil
+}
+
+func (instance *someProvider) toName(l level.Level) string {
+	return fmt.Sprintf("myFormattedLevel-%d", l)
 }
 
 func (instance *someProvider) ToLevel(string) (level.Level, error) {

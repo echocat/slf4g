@@ -1,11 +1,16 @@
-package formatter
+package encoding
 
 import (
 	"bytes"
 	"io"
 )
 
-type textEncoder interface {
+type Buffered interface {
+	Bytes() []byte
+	String() string
+}
+
+type TextEncoder interface {
 	io.ByteWriter
 	WriteByteChecked(byte) func() error
 
@@ -17,9 +22,13 @@ type textEncoder interface {
 	WriteStringPChecked(*string) func() error
 }
 
-func newBufferedTextEncoder() *bufferedTextEncoder {
-	result := new(bufferedTextEncoder)
-	return result
+type BufferedTextEncoder interface {
+	TextEncoder
+	Buffered
+}
+
+func NewBufferedTextEncoder() BufferedTextEncoder {
+	return &bufferedTextEncoder{}
 }
 
 type bufferedTextEncoder struct {

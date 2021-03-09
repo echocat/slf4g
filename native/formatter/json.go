@@ -3,6 +3,9 @@ package formatter
 import (
 	"fmt"
 
+	"github.com/echocat/slf4g/native/execution"
+	"github.com/echocat/slf4g/native/formatter/encoding"
+
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/native/hints"
@@ -55,9 +58,9 @@ func (instance *Json) Format(event log.Event, using log.Provider, _ hints.Hints)
 		return []byte{}, nil
 	}
 
-	to := newBufferedJsonEncoder()
+	to := encoding.NewBufferedJsonEncoder()
 
-	if err := executeChecked(
+	if err := execution.Execute(
 		to.WriteByteChecked('{'),
 		instance.encodeLevelChecked(event, using, to),
 		instance.encodeValuesChecked(event, using, to),
@@ -76,7 +79,7 @@ func (instance *Json) getLevelKey() string {
 	return DefaultKeyLevel
 }
 
-func (instance *Json) encodeLevelChecked(of log.Event, using log.Provider, to jsonEncoder) checkedExecution {
+func (instance *Json) encodeLevelChecked(of log.Event, using log.Provider, to encoding.JsonEncoder) execution.Execution {
 	return func() error {
 		lvl, err := instance.formatLevel(of, using)
 		if err != nil {
@@ -100,7 +103,7 @@ func (instance *Json) getLevelFormatter(using log.Provider) Level {
 	return DefaultLevel
 }
 
-func (instance *Json) encodeValuesChecked(of log.Event, using log.Provider, to jsonEncoder) checkedExecution {
+func (instance *Json) encodeValuesChecked(of log.Event, using log.Provider, to encoding.JsonEncoder) execution.Execution {
 	return func() error {
 		keySorter := instance.getKeySorter()
 		printRootLogger := instance.getPrintRootLogger()
@@ -112,7 +115,7 @@ func (instance *Json) encodeValuesChecked(of log.Event, using log.Provider, to j
 			if !printRootLogger && k == loggerKey && v == "ROOT" {
 				return nil
 			}
-			return executeChecked(
+			return execution.Execute(
 				to.WriteByteChecked(','),
 				to.WriteKeyValueChecked(k, v),
 			)

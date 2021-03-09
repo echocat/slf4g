@@ -1,14 +1,16 @@
-package formatter
+package encoding
 
 import (
 	"encoding/json"
 	"io"
 	"strings"
 	"unicode"
+
+	"github.com/echocat/slf4g/native/execution"
 )
 
-type jsonEncoder interface {
-	textEncoder
+type JsonEncoder interface {
+	TextEncoder
 
 	WriteKeyValue(k string, v interface{}) error
 	WriteKeyValueChecked(k string, v interface{}) func() error
@@ -17,8 +19,13 @@ type jsonEncoder interface {
 	WriteValueChecked(v interface{}) func() error
 }
 
-func newBufferedJsonEncoder() *bufferedJsonEncoder {
-	result := new(bufferedJsonEncoder)
+type BufferedJsonEncoder interface {
+	JsonEncoder
+	Buffered
+}
+
+func NewBufferedJsonEncoder() BufferedJsonEncoder {
+	result := &bufferedJsonEncoder{}
 	result.encoder = json.NewEncoder(filteringTailingNewLineWriter{&result.buffer})
 	return result
 }
@@ -30,7 +37,7 @@ type bufferedJsonEncoder struct {
 }
 
 func (instance *bufferedJsonEncoder) WriteKeyValue(k string, v interface{}) error {
-	return executeChecked(
+	return execution.Execute(
 		instance.WriteValueChecked(k),
 		instance.WriteByteChecked(':'),
 		instance.WriteValueChecked(v),

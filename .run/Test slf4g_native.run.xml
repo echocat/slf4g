@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+    <configuration default="false" name="Test slf4g/native" type="GoTestRunConfiguration" factoryName="Go Test">
+        <module name="slf4g"/>
+        <working_directory value="$PROJECT_DIR$/native"/>
+        <go_parameters value="--tags=mock"/>
+        <framework value="gotest"/>
+        <kind value="DIRECTORY"/>
+        <package value="github.com/echocat/slf4g"/>
+        <directory value="$PROJECT_DIR$/native"/>
+        <filePath value="$PROJECT_DIR$"/>
+        <method v="2">
+            <option name="FwBeforeLaunchTask" enabled="true"/>
+        </method>
+    </configuration>
+</component>

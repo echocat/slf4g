@@ -1,4 +1,4 @@
-package formatter
+package encoding
 
 import (
 	"bytes"
@@ -9,8 +9,8 @@ import (
 	"github.com/echocat/slf4g/internal/test/assert"
 )
 
-func Test_newBufferedJsonEncoder(t *testing.T) {
-	actual := newBufferedJsonEncoder()
+func Test_NewBufferedJsonEncoder(t *testing.T) {
+	actual := NewBufferedJsonEncoder().(*bufferedJsonEncoder)
 
 	assert.ToBeNotNil(t, actual)
 	assert.ToBeEqual(t, 0, actual.buffer.Len())
@@ -20,7 +20,7 @@ func Test_newBufferedJsonEncoder(t *testing.T) {
 }
 
 func Test_bufferedJsonEncoder_WriteValue(t *testing.T) {
-	instance := newBufferedJsonEncoder()
+	instance := NewBufferedJsonEncoder().(*bufferedJsonEncoder)
 
 	actualErr := instance.WriteValue(struct{ Foo string }{Foo: "bar"})
 	assert.ToBeNil(t, actualErr)
@@ -29,7 +29,7 @@ func Test_bufferedJsonEncoder_WriteValue(t *testing.T) {
 }
 
 func Test_bufferedJsonEncoder_WriteValue_string(t *testing.T) {
-	instance := newBufferedJsonEncoder()
+	instance := NewBufferedJsonEncoder().(*bufferedJsonEncoder)
 
 	actualErr := instance.WriteValue("\tabc\n\t")
 	assert.ToBeNil(t, actualErr)
@@ -38,7 +38,7 @@ func Test_bufferedJsonEncoder_WriteValue_string(t *testing.T) {
 }
 
 func Test_bufferedJsonEncoder_WriteValue_string_as_pointer(t *testing.T) {
-	instance := newBufferedJsonEncoder()
+	instance := NewBufferedJsonEncoder().(*bufferedJsonEncoder)
 
 	actualErr := instance.WriteValue(pstring("abc"))
 	assert.ToBeNil(t, actualErr)
@@ -47,7 +47,7 @@ func Test_bufferedJsonEncoder_WriteValue_string_as_pointer(t *testing.T) {
 }
 
 func Test_bufferedJsonEncoder_WriteValue_error(t *testing.T) {
-	instance := newBufferedJsonEncoder()
+	instance := NewBufferedJsonEncoder().(*bufferedJsonEncoder)
 
 	actualErr := instance.WriteValue(errors.New("abc"))
 	assert.ToBeNil(t, actualErr)
@@ -56,7 +56,7 @@ func Test_bufferedJsonEncoder_WriteValue_error(t *testing.T) {
 }
 
 func Test_bufferedJsonEncoder_WriteValueChecked(t *testing.T) {
-	instance := newBufferedJsonEncoder()
+	instance := NewBufferedJsonEncoder().(*bufferedJsonEncoder)
 
 	actualErr := instance.WriteValueChecked(struct{ Foo string }{Foo: "bar"})()
 	assert.ToBeNil(t, actualErr)
@@ -65,7 +65,7 @@ func Test_bufferedJsonEncoder_WriteValueChecked(t *testing.T) {
 }
 
 func Test_bufferedJsonEncoder_WriteKeyValue(t *testing.T) {
-	instance := newBufferedJsonEncoder()
+	instance := NewBufferedJsonEncoder().(*bufferedJsonEncoder)
 
 	actualErr := instance.WriteKeyValue("hello", struct{ Foo string }{Foo: "bar"})
 	assert.ToBeNil(t, actualErr)
@@ -74,7 +74,7 @@ func Test_bufferedJsonEncoder_WriteKeyValue(t *testing.T) {
 }
 
 func Test_bufferedJsonEncoder_WriteKeyValueChecked(t *testing.T) {
-	instance := newBufferedJsonEncoder()
+	instance := NewBufferedJsonEncoder().(*bufferedJsonEncoder)
 
 	actualErr := instance.WriteKeyValueChecked("hello", struct{ Foo string }{Foo: "bar"})()
 	assert.ToBeNil(t, actualErr)
@@ -114,4 +114,8 @@ func Test_filteringTailingNewLineWriter_Write(t *testing.T) {
 			assert.ToBeEqual(t, c.expected, givenBuffer.String())
 		})
 	}
+}
+
+func pstring(v string) *string {
+	return &v
 }

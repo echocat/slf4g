@@ -1,4 +1,4 @@
-package formatter
+package encoding
 
 import (
 	"testing"
@@ -6,15 +6,15 @@ import (
 	"github.com/echocat/slf4g/internal/test/assert"
 )
 
-func Test_newBufferedTextEncoder(t *testing.T) {
-	actual := newBufferedTextEncoder()
+func Test_NewBufferedTextEncoder(t *testing.T) {
+	actual := NewBufferedTextEncoder().(*bufferedTextEncoder)
 
 	assert.ToBeNotNil(t, actual)
 	assert.ToBeEqual(t, 0, actual.buffer.Len())
 }
 
 func Test_bufferedTextEncoder_WriteByte(t *testing.T) {
-	instance := newBufferedTextEncoder()
+	instance := NewBufferedTextEncoder().(*bufferedTextEncoder)
 
 	actualErr := instance.WriteByte('x')
 	assert.ToBeNil(t, actualErr)
@@ -23,7 +23,7 @@ func Test_bufferedTextEncoder_WriteByte(t *testing.T) {
 }
 
 func Test_bufferedTextEncoder_WriteByteChecked(t *testing.T) {
-	instance := newBufferedTextEncoder()
+	instance := NewBufferedTextEncoder().(*bufferedTextEncoder)
 
 	actualErr := instance.WriteByteChecked('x')()
 	assert.ToBeNil(t, actualErr)
@@ -32,7 +32,7 @@ func Test_bufferedTextEncoder_WriteByteChecked(t *testing.T) {
 }
 
 func Test_bufferedTextEncoder_WriteBytes(t *testing.T) {
-	instance := newBufferedTextEncoder()
+	instance := NewBufferedTextEncoder().(*bufferedTextEncoder)
 
 	actualErr := instance.WriteBytes([]byte{'x', 'y'})
 	assert.ToBeNil(t, actualErr)
@@ -41,7 +41,7 @@ func Test_bufferedTextEncoder_WriteBytes(t *testing.T) {
 }
 
 func Test_bufferedTextEncoder_WriteBytesChecked(t *testing.T) {
-	instance := newBufferedTextEncoder()
+	instance := NewBufferedTextEncoder().(*bufferedTextEncoder)
 
 	actualErr := instance.WriteBytesChecked([]byte{'x', 'y'})()
 	assert.ToBeNil(t, actualErr)
@@ -50,7 +50,7 @@ func Test_bufferedTextEncoder_WriteBytesChecked(t *testing.T) {
 }
 
 func Test_bufferedTextEncoder_WriteString(t *testing.T) {
-	instance := newBufferedTextEncoder()
+	instance := NewBufferedTextEncoder().(*bufferedTextEncoder)
 
 	actualErr := instance.WriteString("xy")
 	assert.ToBeNil(t, actualErr)
@@ -59,7 +59,7 @@ func Test_bufferedTextEncoder_WriteString(t *testing.T) {
 }
 
 func Test_bufferedTextEncoder_WriteStringChecked(t *testing.T) {
-	instance := newBufferedTextEncoder()
+	instance := NewBufferedTextEncoder().(*bufferedTextEncoder)
 
 	actualErr := instance.WriteStringChecked("xy")()
 	assert.ToBeNil(t, actualErr)
@@ -68,7 +68,7 @@ func Test_bufferedTextEncoder_WriteStringChecked(t *testing.T) {
 }
 
 func Test_bufferedTextEncoder_WriteStringPChecked(t *testing.T) {
-	instance := newBufferedTextEncoder()
+	instance := NewBufferedTextEncoder().(*bufferedTextEncoder)
 	givenString := "xy"
 
 	actualErr := instance.WriteStringPChecked(&givenString)()
@@ -78,7 +78,7 @@ func Test_bufferedTextEncoder_WriteStringPChecked(t *testing.T) {
 }
 
 func Test_bufferedTextEncoder_Bytes(t *testing.T) {
-	instance := newBufferedTextEncoder()
+	instance := NewBufferedTextEncoder().(*bufferedTextEncoder)
 
 	instance.buffer.WriteString("hello")
 	actual := instance.Bytes()
@@ -87,7 +87,7 @@ func Test_bufferedTextEncoder_Bytes(t *testing.T) {
 }
 
 func Test_bufferedTextEncoder_String(t *testing.T) {
-	instance := newBufferedTextEncoder()
+	instance := NewBufferedTextEncoder().(*bufferedTextEncoder)
 
 	instance.buffer.WriteString("hello")
 	actual := instance.String()

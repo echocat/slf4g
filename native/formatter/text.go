@@ -4,12 +4,16 @@ import (
 	"strings"
 	"time"
 	"unicode"
-	"unicode/utf8"
+
+	"github.com/echocat/slf4g/native/formatter/encoding"
+
+	"github.com/echocat/slf4g/native/execution"
 
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/level"
 	"github.com/echocat/slf4g/native/color"
+	"github.com/echocat/slf4g/native/formatter/functions"
 	"github.com/echocat/slf4g/native/hints"
 	nlevel "github.com/echocat/slf4g/native/level"
 )
@@ -103,11 +107,16 @@ type Text struct {
 	// KeySorter is used to sort the field when they are printed. If not set
 	// fields.DefaultKeySorter will be used.
 	KeySorter fields.KeySorter
+
+	textAsHints *textAsHints
 }
 
 // NewText creates a new instance of Text which is ready to use.
 func NewText(customizer ...func(*Text)) *Text {
 	result := &Text{}
+	result.textAsHints = &textAsHints{
+		Text: result,
+	}
 	for _, c := range customizer {
 		c(result)
 	}
@@ -116,7 +125,7 @@ func NewText(customizer ...func(*Text)) *Text {
 
 // Format implements Formatter.Format()
 func (instance *Text) Format(event log.Event, using log.Provider, h hints.Hints) ([]byte, error) {
-	to := newBufferedTextEncoder()
+	to := encoding.NewBufferedTextEncoder()
 
 	message := instance.getMessage(event, using)
 	printMessageAsMultiLine := message != nil &&
@@ -124,18 +133,18 @@ func (instance *Text) Format(event log.Event, using log.Provider, h hints.Hints)
 		instance.getMultiLineMessageAfterFields()
 
 	atLeastOneFieldPrinted := false
-	if err := executeChecked(
-		instance.printTimestamp(event, using, h, to),
+	if err := execution.Execute(
+		instance.printTimestampChecked(event, using, h, to),
 
 		to.WriteByteChecked('['),
-		instance.printLevel(event, using, h, to),
+		instance.printLevelChecked(event.GetLevel(), using, h, to),
 		to.WriteByteChecked(']'),
 
-		instance.printSingleLineMessageIfRequired(message, printMessageAsMultiLine, to),
+		instance.printMessageAsSingleLineIfRequiredChecked(message, !printMessageAsMultiLine, to),
 
-		instance.printFields(using, h, event, to, &atLeastOneFieldPrinted),
+		instance.printFieldsChecked(using, h, event, to, &atLeastOneFieldPrinted),
 
-		instance.printMultiLineMessageIfRequired(message, printMessageAsMultiLine, &atLeastOneFieldPrinted, to),
+		instance.printMessageAsMultiLineIfRequiredChecked(message, printMessageAsMultiLine, &atLeastOneFieldPrinted, to),
 
 		to.WriteByteChecked('\n'),
 	); err != nil {
@@ -152,191 +161,137 @@ func (instance *Text) getMessage(of log.Event, using log.Provider) *string {
 		*message = instance.sanitizeMessage(*message)
 	}
 
+	if message != nil && *message == "" {
+		return nil
+	}
+
 	return message
 }
 
 func (instance *Text) sanitizeMessage(message string) string {
 	message = strings.TrimLeftFunc(message, func(r rune) bool {
-		return r == '\r' || r == '\n'
+		return r == '\r' || r == '\n' || !unicode.IsGraphic(r)
 	})
-	message = strings.TrimRightFunc(message, unicode.IsSpace)
-	message = strings.TrimFunc(message, func(r rune) bool {
-		return r == '\r' || !unicode.IsGraphic(r)
+	message = strings.TrimRightFunc(message, func(r rune) bool {
+		return unicode.IsSpace(r) || !unicode.IsGraphic(r)
 	})
+	message = strings.ReplaceAll(message, "\r", "")
 	if !instance.getAllowMultiLineMessage() {
 		message = strings.ReplaceAll(message, "\n", "\u23CE")
 	}
 	return message
 }
 
-func (instance *Text) printTimestamp(event log.Event, using log.Provider, h hints.Hints, to textEncoder) checkedExecution {
+func (instance *Text) printTimestampChecked(event log.Event, using log.Provider, h hints.Hints, to encoding.TextEncoder) execution.Execution {
 	if v := log.GetTimestampOf(event, using); v != nil {
-		var prefix, suffix string
-		if instance.shouldColorize(h) {
-			prefix, suffix = `[30;1m`, `[0m`
-		}
-		return to.WriteStringChecked(prefix + instance.formatTime(*v) + suffix + " ")
+		formatted := instance.formatTime(*v)
+		colorized := functions.Colorize("30;1", instance.wrapHints(h), formatted)
+		return to.WriteStringChecked(colorized)
 	}
 	return nil
 }
 
-func (instance *Text) printLevel(event log.Event, using log.Provider, h hints.Hints, to textEncoder) checkedExecution {
+func (instance *Text) printLevelChecked(l level.Level, using log.Provider, h hints.Hints, to encoding.TextEncoder) execution.Execution {
 	var v string
 	vp := &v
-	return joinCheckedExecutions(
-		instance.formatLevelChecked(event.GetLevel(), using, vp),
+	return execution.Join(
+		instance.formatLevelChecked(l, using, vp),
 		instance.ensureWidthChecked(vp, int32(instance.getLevelWidth()), true),
-		instance.colorizeChecked(event, vp, h),
+		instance.colorizeChecked(l, vp, h),
 		to.WriteStringPChecked(vp),
 	)
 }
 
-func (instance *Text) printFields(using log.Provider, h hints.Hints, event log.Event, to textEncoder, atLeastOneFieldPrinted *bool) checkedExecution {
+func (instance *Text) printFieldsChecked(using log.Provider, h hints.Hints, event log.Event, to encoding.TextEncoder, atLeastOneFieldPrinted *bool) execution.Execution {
 	return func() error {
-		formatter := instance.getValueFormatter()
-		keysSpec := using.GetFieldKeysSpec()
-		messageKey := keysSpec.GetMessage()
-		loggerKey := keysSpec.GetLogger()
-		timestampKey := keysSpec.GetTimestamp()
-		printRootLogger := instance.getPrintRootLogger()
-		fieldSorter := instance.getFieldSorter()
-
-		return fields.SortedForEach(event, fieldSorter, func(k string, v interface{}) error {
-			if vl, ok := v.(fields.Lazy); ok {
-				v = vl.Get()
+		return fields.SortedForEach(event, instance.getFieldSorter(), func(k string, v interface{}) error {
+			printed, err := instance.printField(event.GetLevel(), k, v, h, using, to)
+			if printed {
+				*atLeastOneFieldPrinted = printed
 			}
-			if v == nil {
-				return nil
-			}
-			if !printRootLogger && k == loggerKey && v == "ROOT" {
-				return nil
-			}
-			if k == messageKey || k == timestampKey {
-				return nil
-			}
-			*atLeastOneFieldPrinted = true
-			return instance.printField(event, k, v, using, formatter, h, to)
+			return err
 		})
 	}
 }
 
-func (instance *Text) printField(event log.Event, key string, value interface{}, using log.Provider, formatter TextValue, h hints.Hints, to textEncoder) error {
-	v, err := formatter.FormatTextValue(value, using)
-	if err != nil {
-		return err
+func (instance *Text) printField(l level.Level, k string, v interface{}, h hints.Hints, using log.Provider, to encoding.TextEncoder) (bool, error) {
+	if vl, ok := v.(fields.Lazy); ok {
+		v = vl.Get()
 	}
-	return to.WriteString(` ` + instance.colorize(event, key, h) + `=` + string(v))
+	if v == nil {
+		return false, nil
+	}
+
+	keysSpec := using.GetFieldKeysSpec()
+
+	if v == "ROOT" && k == keysSpec.GetLogger() && !instance.getPrintRootLogger() {
+		return false, nil
+	}
+	if k == keysSpec.GetMessage() || k == keysSpec.GetTimestamp() {
+		return false, nil
+	}
+	b, err := instance.getValueFormatter().FormatTextValue(v, using)
+	if err != nil {
+		return false, err
+	}
+	return true, to.WriteString(` ` + instance.colorize(l, k, h) + `=` + string(b))
 }
 
-func (instance *Text) printSingleLineMessageIfRequired(message *string, handleAsMultiline bool, to textEncoder) checkedExecution {
-	if !handleAsMultiline && message != nil {
-		v := instance.ensureWidth(*message, int32(instance.getMinMessageWidth()), false)
+func (instance *Text) printMessageAsSingleLineIfRequiredChecked(message *string, predicate bool, to encoding.TextEncoder) execution.Execution {
+	if predicate && message != nil && *message != "" {
+		v := functions.EnsureWidth(int32(instance.getMinMessageWidth()), false, *message)
 		return to.WriteStringChecked(` ` + v)
 	}
 	return nil
 }
 
-func (instance *Text) printMultiLineMessageIfRequired(message *string, handleAsMultiline bool, atLeastOneFieldPrinted *bool, to textEncoder) checkedExecution {
-	if handleAsMultiline && message != nil {
+func (instance *Text) printMessageAsMultiLineIfRequiredChecked(message *string, predicate bool, atLeastOneFieldPrinted *bool, to encoding.TextEncoder) execution.Execution {
+	if predicate && message != nil && *message != "" {
 		return func() error {
-			otherIdent := "\t"
-			firstIdent := otherIdent
-
-			var prefixExecution checkedExecution
 			if *atLeastOneFieldPrinted {
-				prefixExecution = to.WriteByteChecked('\n')
-			} else {
-				firstIdent = " "
+				if err := to.WriteByte('\n'); err != nil {
+					return err
+				}
+				return functions.EncodeMultilineWithIndent("\t", "\t", to, *message)
 			}
 
-			return executeChecked(
-				prefixExecution,
-				instance.printMultilineWithIdent(*message, firstIdent, otherIdent, to),
-			)
+			return functions.EncodeMultilineWithIndent(" ", "\t", to, *message)
 		}
 	}
 	return nil
 }
 
-func (instance *Text) printMultilineWithIdent(str string, firstLine, otherLines string, to textEncoder) checkedExecution {
-	return func() error {
-		for i, line := range strings.Split(str, "\n") {
-			ident := &firstLine
-			var prefixExecution checkedExecution
-			if i > 0 {
-				ident = &otherLines
-				prefixExecution = to.WriteByteChecked('\n')
-			}
+func (instance *Text) colorize(l level.Level, message string, h hints.Hints) string {
+	return functions.ColorizeByLevel(
+		l,
+		instance.wrapHints(h),
+		message,
+	)
+}
 
-			if err := executeChecked(
-				prefixExecution,
-				to.WriteStringPChecked(ident),
-				to.WriteStringChecked(line),
-			); err != nil {
-				return err
-			}
-		}
+func (instance *Text) colorizeChecked(l level.Level, message *string, h hints.Hints) execution.Execution {
+	return func() error {
+		*message = instance.colorize(l, *message, h)
 		return nil
 	}
 }
 
-func (instance *Text) colorize(event log.Event, message string, h hints.Hints) string {
-	if instance.shouldColorize(h) {
-		return instance.getLevelColorizer().ColorizeByLevel(event.GetLevel(), message)
-	}
-	return message
-}
-
-func (instance *Text) colorizeChecked(event log.Event, message *string, h hints.Hints) checkedExecution {
-	return func() error {
-		*message = instance.colorize(event, *message, h)
-		return nil
-	}
-}
-
-func (instance *Text) shouldColorize(h hints.Hints) bool {
-	supported := color.SupportedNone
-	if v, ok := h.(hints.ColorsSupport); ok {
-		supported = v.IsColorSupported()
-	}
-	return instance.ColorMode.ShouldColorize(supported)
+func (instance *Text) wrapHints(h hints.Hints) hints.Hints {
+	return textHintsCombined{h, instance.textAsHints}
 }
 
 func (instance *Text) formatTime(time time.Time) string {
 	return time.Format(instance.getTimeLayout())
 }
 
-func (instance *Text) ensureWidthChecked(of *string, width int32, cutOffToLong bool) checkedExecution {
+func (instance *Text) ensureWidthChecked(of *string, width int32, cutOffToLong bool) execution.Execution {
 	return func() error {
-		*of = instance.ensureWidth(*of, width, cutOffToLong)
+		*of = functions.EnsureWidth(width, cutOffToLong, *of)
 		return nil
 	}
 }
 
-func (instance *Text) ensureWidth(of string, width int32, cutOffToLong bool) string {
-	l2r := true
-	if width < 0 {
-		width *= -1
-		l2r = false
-	}
-	if width == 0 {
-		return of
-	}
-	l := utf8.RuneCountInString(of)
-	if l >= int(width) {
-		if cutOffToLong {
-			return of[:width]
-		}
-		return of
-	}
-	if l2r {
-		return of + strings.Repeat(" ", int(width)-l)
-	} else {
-		return strings.Repeat(" ", int(width)-l) + of
-	}
-}
-
-func (instance *Text) formatLevelChecked(l level.Level, using log.Provider, to *string) checkedExecution {
+func (instance *Text) formatLevelChecked(l level.Level, using log.Provider, to *string) execution.Execution {
 	return func() error {
 		v, err := instance.getLevelNames(using).ToName(l)
 		*to = v
@@ -352,16 +307,6 @@ func (instance *Text) getLevelNames(using log.Provider) nlevel.Names {
 		return v
 	}
 	return nlevel.NewNames()
-}
-
-func (instance *Text) getLevelColorizer() nlevel.Colorizer {
-	if v := instance.LevelColorizer; v != nil {
-		return v
-	}
-	if v := nlevel.DefaultColorizer; v != nil {
-		return v
-	}
-	return nlevel.NoopColorizer()
 }
 
 func (instance *Text) getTimeLayout() string {
@@ -421,4 +366,42 @@ func (instance *Text) getFieldSorter() fields.KeySorter {
 		return v
 	}
 	return fields.DefaultKeySorter
+}
+
+type textAsHints struct {
+	*Text
+}
+
+func (instance *textAsHints) ColorMode() color.Mode {
+	return instance.Text.ColorMode
+}
+
+func (instance *textAsHints) LevelColorizer() nlevel.Colorizer {
+	return instance.Text.LevelColorizer
+}
+
+type textHintsCombined struct {
+	hints.Hints
+	*textAsHints
+}
+
+func (instance textHintsCombined) ColorMode() color.Mode {
+	if v, ok := instance.Hints.(hints.ColorMode); ok {
+		return v.ColorMode()
+	}
+	return instance.textAsHints.ColorMode()
+}
+
+func (instance textHintsCombined) LevelColorizer() nlevel.Colorizer {
+	if v, ok := instance.Hints.(hints.LevelColorizer); ok {
+		return v.LevelColorizer()
+	}
+	return instance.textAsHints.LevelColorizer()
+}
+
+func (instance textHintsCombined) IsColorSupported() color.Supported {
+	if v, ok := instance.Hints.(hints.ColorsSupport); ok {
+		return v.IsColorSupported()
+	}
+	return color.SupportedNone
 }
