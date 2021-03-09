@@ -40,7 +40,3 @@ func mustParseTime(in string) time.Time {
 	}
 	return v
 }
-
-func pString(v string) *string {
-	return &v
-}
