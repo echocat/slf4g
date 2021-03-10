@@ -39,11 +39,9 @@ func (instance MappingFormatterCodec) Parse(plain string) (formatter.Formatter, 
 			return d, nil
 		}
 	}
-	if instance != nil {
-		for n, f := range instance {
-			if strings.ToLower(n) == strings.ToLower(plain) {
-				return f()
-			}
+	for n, f := range instance {
+		if strings.EqualFold(n, plain) {
+			return f()
 		}
 	}
 	return nil, fmt.Errorf("unknown log format: %s", plain)
@@ -51,12 +49,10 @@ func (instance MappingFormatterCodec) Parse(plain string) (formatter.Formatter, 
 
 // Format implements FormatterCodec.Format
 func (instance MappingFormatterCodec) Format(what formatter.Formatter) (string, error) {
-	if instance != nil {
-		for n, f := range instance {
-			candidate, err := f()
-			if err == nil && reflect.DeepEqual(what, candidate) {
-				return n, nil
-			}
+	for n, f := range instance {
+		candidate, err := f()
+		if err == nil && reflect.DeepEqual(what, candidate) {
+			return n, nil
 		}
 	}
 	return "", fmt.Errorf("unknown log formatter: %v", reflect.TypeOf(what))

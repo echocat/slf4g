@@ -20,7 +20,7 @@ type ConsumerTarget interface {
 // with flags package of the SDK or similar flag libraries. This might
 // be usable, too in contexts where serialization might be required.
 type Consumer struct {
-	// Level is the corresponding formatter.Formatter facade.
+	// Formatter is the corresponding formatter.Formatter facade.
 	Formatter Formatter
 }
 
