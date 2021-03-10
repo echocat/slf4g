@@ -187,17 +187,26 @@ func Test_Provider_getLocationDiscovery_fallback(t *testing.T) {
 	assert.ToBeEqual(t, givenDiscovery, actual)
 }
 
-func Test_Provider_getConsumer_specified(t *testing.T) {
+func Test_Provider_SetConsumer_specified(t *testing.T) {
+	givenConsumer := consumer.NewRecorder()
+	instance, _ := newProvider()
+
+	instance.SetConsumer(givenConsumer)
+
+	assert.ToBeSame(t, givenConsumer, instance.Consumer)
+}
+
+func Test_Provider_GetConsumer_specified(t *testing.T) {
 	givenConsumer := consumer.NewRecorder()
 	instance, _ := newProvider()
 	instance.Consumer = givenConsumer
 
-	actual := instance.getConsumer()
+	actual := instance.GetConsumer()
 
 	assert.ToBeSame(t, givenConsumer, actual)
 }
 
-func Test_Provider_getConsumer_globalDefault(t *testing.T) {
+func Test_Provider_GetConsumer_globalDefault(t *testing.T) {
 	before := consumer.Default
 	defer func() { consumer.Default = before }()
 	givenConsumer := consumer.NewRecorder()
@@ -206,12 +215,12 @@ func Test_Provider_getConsumer_globalDefault(t *testing.T) {
 	instance, _ := newProvider()
 	instance.Consumer = nil
 
-	actual := instance.getConsumer()
+	actual := instance.GetConsumer()
 
 	assert.ToBeSame(t, givenConsumer, actual)
 }
 
-func Test_Provider_getConsumer_fallback(t *testing.T) {
+func Test_Provider_GetConsumer_fallback(t *testing.T) {
 	before := consumer.Default
 	defer func() { consumer.Default = before }()
 	givenConsumer := consumer.Noop()
@@ -220,7 +229,7 @@ func Test_Provider_getConsumer_fallback(t *testing.T) {
 	instance, _ := newProvider()
 	instance.Consumer = nil
 
-	actual := instance.getConsumer()
+	actual := instance.GetConsumer()
 
 	assert.ToBeEqual(t, givenConsumer, actual)
 }

@@ -90,7 +90,7 @@ func (instance *Writer) Consume(event log.Event, source log.CoreLogger) {
 
 	out := instance.getOut()
 
-	f := instance.getFormatter()
+	f := instance.GetFormatter()
 	h := instance.provideHints(event, source)
 	content, err := f.Format(event, source.GetProvider(), h)
 	if err != nil {
@@ -141,7 +141,8 @@ func (instance *Writer) getInterceptor() interceptor.Interceptor {
 	return interceptor.Noop()
 }
 
-func (instance *Writer) getFormatter() formatter.Formatter {
+// GetFormatter implements formatter.Aware
+func (instance *Writer) GetFormatter() formatter.Formatter {
 	if v := instance.Formatter; v != nil {
 		return v
 	}
@@ -149,6 +150,11 @@ func (instance *Writer) getFormatter() formatter.Formatter {
 		return v
 	}
 	return formatter.Noop()
+}
+
+// SetFormatter implements formatter.MutableAware
+func (instance *Writer) SetFormatter(v formatter.Formatter) {
+	instance.Formatter = v
 }
 
 func (instance *Writer) provideHints(event log.Event, source log.CoreLogger) hints.Hints {

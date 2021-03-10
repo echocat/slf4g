@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/echocat/slf4g/testing/recording"
+
 	"github.com/echocat/slf4g/level"
 	"github.com/echocat/slf4g/native/color"
 	nlevel "github.com/echocat/slf4g/native/level"
@@ -39,4 +41,13 @@ func mustParseTime(in string) time.Time {
 		panic(err)
 	}
 	return v
+}
+
+type mockProviderWithLevelNames struct {
+	*recording.Provider
+	Names nlevel.Names
+}
+
+func (instance mockProviderWithLevelNames) GetLevelNames() nlevel.Names {
+	return instance.Names
 }

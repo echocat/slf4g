@@ -117,7 +117,7 @@ func (instance *CoreLogger) getConsumer() consumer.Consumer {
 	if c := instance.Consumer; c != nil {
 		return c
 	}
-	return instance.getProvider().getConsumer()
+	return instance.getProvider().GetConsumer()
 }
 
 func (instance *CoreLogger) getLocationDiscovery() location.Discovery {

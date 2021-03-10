@@ -376,7 +376,19 @@ func Test_Writer_getInterceptor_noop(t *testing.T) {
 	assert.ToBeEqual(t, interceptor.Noop(), actual)
 }
 
-func Test_Writer_getFormatter_explicit(t *testing.T) {
+func Test_Writer_SetFormatter(t *testing.T) {
+	givenOut := new(bytes.Buffer)
+	givenFormatter := formatter.Func(func(event log.Event, provider log.Provider, hints hints.Hints) ([]byte, error) {
+		panic("should not be called")
+	})
+	instance := NewWriter(givenOut)
+
+	instance.SetFormatter(givenFormatter)
+
+	assert.ToBeSame(t, givenFormatter, instance.Formatter)
+}
+
+func Test_Writer_GetFormatter_explicit(t *testing.T) {
 	givenOut := new(bytes.Buffer)
 	givenFormatter := formatter.Func(func(event log.Event, provider log.Provider, hints hints.Hints) ([]byte, error) {
 		panic("should not be called")
@@ -385,12 +397,12 @@ func Test_Writer_getFormatter_explicit(t *testing.T) {
 		writer.Formatter = givenFormatter
 	})
 
-	actual := instance.getFormatter()
+	actual := instance.GetFormatter()
 
 	assert.ToBeSame(t, givenFormatter, actual)
 }
 
-func Test_Writer_getFormatter_default(t *testing.T) {
+func Test_Writer_GetFormatter_default(t *testing.T) {
 	old := formatter.Default
 	defer func() {
 		formatter.Default = old
@@ -402,12 +414,12 @@ func Test_Writer_getFormatter_default(t *testing.T) {
 	givenOut := new(bytes.Buffer)
 	instance := NewWriter(givenOut)
 
-	actual := instance.getFormatter()
+	actual := instance.GetFormatter()
 
 	assert.ToBeEqual(t, formatter.Default, actual)
 }
 
-func Test_Writer_getFormatter_noop(t *testing.T) {
+func Test_Writer_GetFormatter_noop(t *testing.T) {
 	old := formatter.Default
 	defer func() {
 		formatter.Default = old
@@ -417,7 +429,7 @@ func Test_Writer_getFormatter_noop(t *testing.T) {
 	givenOut := new(bytes.Buffer)
 	instance := NewWriter(givenOut)
 
-	actual := instance.getFormatter()
+	actual := instance.GetFormatter()
 
 	assert.ToBeEqual(t, formatter.Noop(), actual)
 }

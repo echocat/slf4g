@@ -84,8 +84,8 @@ func (instance *Provider) GetLogger(name string) log.Logger {
 
 // SetLevel changes the current level.Level of this log.Provider. If set to
 // 0 it will force this Provider to use log.Info.
-func (instance *Provider) SetLevel(level level.Level) {
-	instance.Level = level
+func (instance *Provider) SetLevel(v level.Level) {
+	instance.Level = v
 }
 
 // GetLevel returns the current level.Level where this log.Provider is set to.
@@ -94,6 +94,23 @@ func (instance *Provider) GetLevel() level.Level {
 		return v
 	}
 	return level.Info
+}
+
+// SetConsumer changes the current consumer.Consumer of this log.Provider. If set
+// to nil consumer.Default will be used.
+func (instance *Provider) SetConsumer(v consumer.Consumer) {
+	instance.Consumer = v
+}
+
+// GetConsumer returns the current consumer.Consumer where this log.Provider is set to.
+func (instance *Provider) GetConsumer() consumer.Consumer {
+	if v := instance.Consumer; v != nil {
+		return v
+	}
+	if v := consumer.Default; v != nil {
+		return v
+	}
+	return consumer.Noop()
 }
 
 // GetFieldKeysSpec implements log.Provider#GetFieldKeysSpec()
@@ -155,16 +172,6 @@ func (instance *Provider) getLocationDiscovery() location.Discovery {
 		return v
 	}
 	return location.NoopDiscovery()
-}
-
-func (instance *Provider) getConsumer() consumer.Consumer {
-	if v := instance.Consumer; v != nil {
-		return v
-	}
-	if v := consumer.Default; v != nil {
-		return v
-	}
-	return consumer.Noop()
 }
 
 func (instance *Provider) getCache() log.LoggerCache {
