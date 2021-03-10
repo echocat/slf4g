@@ -173,6 +173,6 @@ type writingConsumerHints struct {
 	*Writer
 }
 
-func (instance *Writer) IsColorSupported() color.Supported {
+func (instance *writingConsumerHints) IsColorSupported() color.Supported {
 	return *instance.colorSupported
 }
