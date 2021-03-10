@@ -12,7 +12,7 @@ import (
 
 func main() {
 	pv := value.NewProvider(native.DefaultProvider)
-	flag.Var(pv.Format, "log.format", "configures the log format.")
+	flag.Var(pv.Consumer.Formatter, "log.format", "configures the log format.")
 	flag.Var(pv.Level, "log.level", "configures the log level.")
 	flag.Parse()
 

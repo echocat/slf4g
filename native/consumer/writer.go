@@ -70,7 +70,12 @@ func NewWriter(out io.Writer, customizer ...func(*Writer)) *Writer {
 
 // Consume implements Consumer.Consume()
 func (instance *Writer) Consume(event log.Event, source log.CoreLogger) {
-	if event == nil || instance.out == nil {
+	if event == nil {
+		return
+	}
+
+	out := instance.GetOut()
+	if out == nil {
 		return
 	}
 
@@ -87,8 +92,6 @@ func (instance *Writer) Consume(event log.Event, source log.CoreLogger) {
 	if !source.IsLevelEnabled(event.GetLevel()) {
 		return
 	}
-
-	out := instance.getOut()
 
 	f := instance.GetFormatter()
 	h := instance.provideHints(event, source)
@@ -111,7 +114,7 @@ func (instance *Writer) initIfRequired() {
 		out, supported, err := color.DetectSupportForWriter(instance.out)
 		if err != nil {
 			if v := instance.OnColorInitializationError; v != nil {
-				v(instance, instance.getOut(), err)
+				v(instance, instance.GetOut(), err)
 			}
 		}
 		instance.out = out
@@ -119,7 +122,9 @@ func (instance *Writer) initIfRequired() {
 	}
 }
 
-func (instance *Writer) getOut() io.Writer {
+// GetOut returns the actual io.Writer where the output will
+// be written to.
+func (instance *Writer) GetOut() io.Writer {
 	return instance.out
 }
 

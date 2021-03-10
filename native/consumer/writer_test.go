@@ -325,7 +325,7 @@ func Test_Writer_getOut(t *testing.T) {
 	givenOut := new(bytes.Buffer)
 	instance := NewWriter(givenOut)
 
-	actual := instance.getOut()
+	actual := instance.GetOut()
 
 	assert.ToBeSame(t, givenOut, actual)
 }
