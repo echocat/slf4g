@@ -123,6 +123,25 @@ location.DefaultDiscovery = location.NewCallerDiscovery(func (t *location.Caller
 })
 ```
 
+## Flags or similar
+
+You can use the package [facade/value](facade/value) to easily configure the logger using flag libraries like the SDK implementation or other compatible ones.
+
+```go
+pv := value.NewProvider(native.DefaultProvider)
+
+flag.Var(pv.Consumer.Formatter, "log.format", "Configures the log format.")
+flag.Var(pv.Level, "log.level", "Configures the log level.")
+
+flag.Parse()
+```
+
+Now you can call you program with:
+
+```bash
+$ <myExecutable> -log.format=json -log.level=debug ...
+```
+
 ## API
 
 How the whole API works in general please refer the [documentation of slf4g](..) directly.

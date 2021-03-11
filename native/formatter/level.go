@@ -52,7 +52,11 @@ func NewLevelFacade(provider func() Level) Level {
 type levelFacade func() Level
 
 func (instance levelFacade) FormatLevel(in level.Level, using log.Provider) (interface{}, error) {
-	return instance().FormatLevel(in, using)
+	return instance.Unwrap().FormatLevel(in, using)
+}
+
+func (instance levelFacade) Unwrap() Level {
+	return instance()
 }
 
 // NoopLevel provides a noop implementation of Level.

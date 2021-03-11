@@ -156,15 +156,19 @@ func NewFacade(provider func() Interceptor) Interceptor {
 type facade func() Interceptor
 
 func (instance facade) OnBeforeLog(event log.Event, provider log.Provider) (intercepted log.Event) {
-	return instance().OnBeforeLog(event, provider)
+	return instance.Unwrap().OnBeforeLog(event, provider)
 }
 
 func (instance facade) OnAfterLog(event log.Event, provider log.Provider) (canContinue bool) {
-	return instance().OnAfterLog(event, provider)
+	return instance.Unwrap().OnAfterLog(event, provider)
 }
 
 func (instance facade) GetPriority() int16 {
-	return instance().GetPriority()
+	return instance.Unwrap().GetPriority()
+}
+
+func (instance facade) Unwrap() Interceptor {
+	return instance()
 }
 
 // Noop provides a noop implementation of Interceptor.

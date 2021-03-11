@@ -9,9 +9,13 @@ func NewProviderFacade(provider func() Provider) Provider {
 type providerFacade func() Provider
 
 func (instance providerFacade) GetName() string {
-	return instance().GetName()
+	return instance.Unwrap().GetName()
 }
 
 func (instance providerFacade) GetLevels() Levels {
-	return instance().GetLevels()
+	return instance.Unwrap().GetLevels()
+}
+
+func (instance providerFacade) Unwrap() Provider {
+	return instance()
 }

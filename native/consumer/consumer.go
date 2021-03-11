@@ -43,5 +43,9 @@ func NewFacade(provider func() Consumer) Consumer {
 type facade func() Consumer
 
 func (instance facade) Consume(event log.Event, source log.CoreLogger) {
-	instance().Consume(event, source)
+	instance.Unwrap().Consume(event, source)
+}
+
+func (instance facade) Unwrap() Consumer {
+	return instance()
 }

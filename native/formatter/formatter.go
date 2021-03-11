@@ -36,7 +36,11 @@ func NewFacade(provider func() Formatter) Formatter {
 type facade func() Formatter
 
 func (instance facade) Format(event log.Event, provider log.Provider, h hints.Hints) ([]byte, error) {
-	return instance().Format(event, provider, h)
+	return instance.Unwrap().Format(event, provider, h)
+}
+
+func (instance facade) Unwrap() Formatter {
+	return instance()
 }
 
 // Noop provides a noop implementation of Formatter.

@@ -32,7 +32,11 @@ func NewTextValueFacade(provider func() TextValue) TextValue {
 type textValueFacade func() TextValue
 
 func (instance textValueFacade) FormatTextValue(value interface{}, provider log.Provider) ([]byte, error) {
-	return instance().FormatTextValue(value, provider)
+	return instance.Unwrap().FormatTextValue(value, provider)
+}
+
+func (instance textValueFacade) Unwrap() TextValue {
+	return instance()
 }
 
 // NoopTextValue provides a noop implementation of TextValue.

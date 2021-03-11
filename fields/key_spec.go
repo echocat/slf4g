@@ -27,17 +27,21 @@ func NewKeysSpecFacade(provider func() KeysSpec) KeysSpec {
 type keysSpecFacade func() KeysSpec
 
 func (instance keysSpecFacade) GetTimestamp() string {
-	return instance().GetTimestamp()
+	return instance.Unwrap().GetTimestamp()
 }
 
 func (instance keysSpecFacade) GetMessage() string {
-	return instance().GetMessage()
+	return instance.Unwrap().GetMessage()
 }
 
 func (instance keysSpecFacade) GetError() string {
-	return instance().GetError()
+	return instance.Unwrap().GetError()
 }
 
 func (instance keysSpecFacade) GetLogger() string {
-	return instance().GetLogger()
+	return instance.Unwrap().GetLogger()
+}
+
+func (instance keysSpecFacade) Unwrap() KeysSpec {
+	return instance()
 }

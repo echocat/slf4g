@@ -121,11 +121,15 @@ func NewEventEqualityFacade(provider func() EventEquality) EventEquality {
 type eventEqualityFacade func() EventEquality
 
 func (instance eventEqualityFacade) AreEventsEqual(left, right Event) (bool, error) {
-	return instance().AreEventsEqual(left, right)
+	return instance.Unwrap().AreEventsEqual(left, right)
 }
 
 func (instance eventEqualityFacade) WithIgnoringKeys(keys ...string) EventEquality {
 	return &ignoringKeysEventEquality{instance, keys}
+}
+
+func (instance eventEqualityFacade) Unwrap() EventEquality {
+	return instance()
 }
 
 type privateEventEqualityImpl struct {

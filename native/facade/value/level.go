@@ -12,7 +12,6 @@ import (
 // by the Level value facade.
 type LevelTarget interface {
 	level.MutableAware
-	nlevel.NamesAware
 }
 
 // Level is a value facade for transparent setting of level.Level for
@@ -23,6 +22,11 @@ type Level struct {
 	// Target is the instance of LevelTarget which should be configured
 	// by this facade.
 	Target LevelTarget
+
+	// Names is used to transform provided plain data. If this is not defined
+	// the Target is assumed as nlevel.NamesAware or if this even does not work
+	// nlevel.DefaultNames is used.
+	Names nlevel.Names
 }
 
 // NewLevel creates a new instance of Level with the given target.
@@ -45,7 +49,7 @@ func (instance Level) Set(plain string) error {
 		return nil
 	}
 
-	l, err := instance.Target.GetLevelNames().ToLevel(plain)
+	l, err := instance.getNames().ToLevel(plain)
 	if err != nil {
 		return err
 	}
@@ -73,11 +77,26 @@ func (instance Level) MarshalText() (text []byte, err error) {
 	if instance.Target == nil {
 		return nil, nil
 	}
-	name, err := instance.Target.GetLevelNames().ToName(instance.Target.GetLevel())
+	name, err := instance.getNames().ToName(instance.Target.GetLevel())
 	return []byte(name), err
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler
 func (instance Level) UnmarshalText(text []byte) error {
 	return instance.Set(string(text))
+}
+
+func (instance Level) getNames() nlevel.Names {
+	if v := instance.Names; v != nil {
+		return v
+	}
+	if va, ok := instance.Target.(nlevel.NamesAware); ok {
+		if v := va.GetLevelNames(); v != nil {
+			return v
+		}
+	}
+	if v := nlevel.DefaultNames; v != nil {
+		return v
+	}
+	return nlevel.NewNames()
 }

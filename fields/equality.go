@@ -102,7 +102,11 @@ func NewEqualityFacade(provider func() Equality) Equality {
 type equalityFacade func() Equality
 
 func (instance equalityFacade) AreFieldsEqual(left, right Fields) (bool, error) {
-	return instance().AreFieldsEqual(left, right)
+	return instance.Unwrap().AreFieldsEqual(left, right)
+}
+
+func (instance equalityFacade) Unwrap() Equality {
+	return instance()
 }
 
 type privateEqualityImpl struct {

@@ -53,5 +53,9 @@ type fieldKeysSpecFacade struct {
 }
 
 func (instance *fieldKeysSpecFacade) GetLocation() string {
-	return instance.provider().GetLocation()
+	return instance.Unwrap().GetLocation()
+}
+
+func (instance *fieldKeysSpecFacade) Unwrap() FieldKeysSpec {
+	return instance.provider()
 }

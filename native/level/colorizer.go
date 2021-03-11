@@ -45,7 +45,11 @@ func NewColorizerFacade(provider func() Colorizer) Colorizer {
 type colorizerFacade func() Colorizer
 
 func (instance colorizerFacade) ColorizeByLevel(lvl level.Level, input string) string {
-	return instance().ColorizeByLevel(lvl, input)
+	return instance.Unwrap().ColorizeByLevel(lvl, input)
+}
+
+func (instance colorizerFacade) Unwrap() Colorizer {
+	return instance()
 }
 
 // NoopColorizer provides a noop implementation of Colorizer.

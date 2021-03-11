@@ -51,7 +51,11 @@ func NewValueEqualityFacade(provider func() ValueEquality) ValueEquality {
 type valueEqualityFacade func() ValueEquality
 
 func (instance valueEqualityFacade) AreValuesEqual(name string, left, right interface{}) (bool, error) {
-	return instance().AreValuesEqual(name, left, right)
+	return instance.Unwrap().AreValuesEqual(name, left, right)
+}
+
+func (instance valueEqualityFacade) Unwrap() ValueEquality {
+	return instance()
 }
 
 func isFunction(arg interface{}) bool {

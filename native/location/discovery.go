@@ -30,7 +30,11 @@ func NewDiscoveryFacade(provider func() Discovery) Discovery {
 type discoveryFacade func() Discovery
 
 func (instance discoveryFacade) DiscoverLocation(event log.Event, skipFrames uint16) Location {
-	return instance().DiscoverLocation(event, skipFrames+1)
+	return instance.Unwrap().DiscoverLocation(event, skipFrames+1)
+}
+
+func (instance discoveryFacade) Unwrap() Discovery {
+	return instance()
 }
 
 var noopV = DiscoveryFunc(func(log.Event, uint16) Location {

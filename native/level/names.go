@@ -51,11 +51,15 @@ func NewNamesFacade(provider func() Names) Names {
 type namesFacade func() Names
 
 func (instance namesFacade) ToName(lvl level.Level) (string, error) {
-	return instance().ToName(lvl)
+	return instance.Unwrap().ToName(lvl)
 }
 
 func (instance namesFacade) ToLevel(name string) (level.Level, error) {
-	return instance().ToLevel(name)
+	return instance.Unwrap().ToLevel(name)
+}
+
+func (instance namesFacade) Unwrap() Names {
+	return instance()
 }
 
 type defaultNames struct{}

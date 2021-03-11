@@ -51,7 +51,7 @@ func (instance MappingFormatterCodec) Parse(plain string) (formatter.Formatter, 
 func (instance MappingFormatterCodec) Format(what formatter.Formatter) (string, error) {
 	for n, f := range instance {
 		candidate, err := f()
-		if err == nil && reflect.DeepEqual(what, candidate) {
+		if err == nil && (what == candidate || reflect.DeepEqual(what, candidate)) {
 			return n, nil
 		}
 	}
@@ -84,9 +84,13 @@ func NewFormatterCodecFacade(provider func() FormatterCodec) FormatterCodec {
 type formatterCodecFacade func() FormatterCodec
 
 func (instance formatterCodecFacade) Parse(plain string) (formatter.Formatter, error) {
-	return instance().Parse(plain)
+	return instance.Unwrap().Parse(plain)
 }
 
 func (instance formatterCodecFacade) Format(what formatter.Formatter) (string, error) {
-	return instance().Format(what)
+	return instance.Unwrap().Format(what)
+}
+
+func (instance formatterCodecFacade) Unwrap() FormatterCodec {
+	return instance()
 }

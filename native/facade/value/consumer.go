@@ -36,7 +36,7 @@ func NewConsumer(target ConsumerTarget, customizer ...func(*Consumer)) Consumer 
 
 	fa, ok := target.GetConsumer().(formatter.MutableAware)
 	if !ok {
-		panic(fmt.Errorf("%v does not implement %v", reflect.TypeOf(target.GetConsumer()), reflect.TypeOf((formatter.MutableAware)(nil))))
+		panic(fmt.Errorf("%v does not implement formatter.MutableAware", reflect.TypeOf(target.GetConsumer())))
 	}
 
 	result := Consumer{
