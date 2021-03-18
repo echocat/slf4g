@@ -227,7 +227,7 @@ func Test_Text_printTimestampChecked(t *testing.T) {
 	}, {
 		givenTimestamp: mustParseTime("2021-01-02T13:14:15.1234"),
 		withColor:      true,
-		expected: `[30;1m13:14:15.123[0m`,
+		expected: `[37m13:14:15.123[0m`,
 	}, {
 		givenTimestamp: time.Time{},
 		expected:       ``,
@@ -832,6 +832,7 @@ func Test_Text_getMultiLineMessageAfterFields_default(t *testing.T) {
 
 	actual := instance.getMultiLineMessageAfterFields()
 
+	//goland:noinspection GoBoolExpressions
 	assert.ToBeEqual(t, DefaultMultiLineMessageAfterFields, actual)
 }
 
@@ -853,6 +854,7 @@ func Test_Text_getAllowMultiLineMessage_default(t *testing.T) {
 
 	actual := instance.getAllowMultiLineMessage()
 
+	//goland:noinspection GoBoolExpressions
 	assert.ToBeEqual(t, DefaultAllowMultiLineMessage, actual)
 }
 
@@ -874,6 +876,7 @@ func Test_Text_getPrintRootLogger_default(t *testing.T) {
 
 	actual := instance.getPrintRootLogger()
 
+	//goland:noinspection GoBoolExpressions
 	assert.ToBeEqual(t, DefaultPrintRootLogger, actual)
 }
 

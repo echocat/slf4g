@@ -37,9 +37,7 @@ func Test_MappingFormatterCodec_Parse(t *testing.T) {
 		panic("Should never be called.")
 	})
 	instance := MappingFormatterCodec{
-		"foo": func() (formatter.Formatter, error) {
-			return givenFormatter, nil
-		},
+		"foo": givenFormatter,
 	}
 
 	actual, actualErr := instance.Parse("foo")
@@ -62,9 +60,7 @@ func Test_MappingFormatterCodec_Parse_failing(t *testing.T) {
 		panic("Should never be called.")
 	})
 	instance := MappingFormatterCodec{
-		"foo": func() (formatter.Formatter, error) {
-			return givenFormatter, nil
-		},
+		"foo": givenFormatter,
 	}
 
 	actual, actualErr := instance.Parse("bar")
@@ -75,12 +71,8 @@ func Test_MappingFormatterCodec_Parse_failing(t *testing.T) {
 
 func Test_MappingFormatterCodec_Format(t *testing.T) {
 	instance := MappingFormatterCodec{
-		"foo": func() (formatter.Formatter, error) {
-			return formatter.NewText(), nil
-		},
-		"bar": func() (formatter.Formatter, error) {
-			return formatter.NewJson(), nil
-		},
+		"foo": formatter.NewText(),
+		"bar": formatter.NewJson(),
 	}
 
 	actual, actualErr := instance.Format(formatter.NewText())
@@ -91,12 +83,8 @@ func Test_MappingFormatterCodec_Format(t *testing.T) {
 
 func Test_MappingFormatterCodec_Format_failing(t *testing.T) {
 	instance := MappingFormatterCodec{
-		"foo": func() (formatter.Formatter, error) {
-			return formatter.NewText(), nil
-		},
-		"bar": func() (formatter.Formatter, error) {
-			return formatter.NewJson(), nil
-		},
+		"foo": formatter.NewText(),
+		"bar": formatter.NewJson(),
 	}
 
 	actual, actualErr := instance.Format(formatter.Noop())

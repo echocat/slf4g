@@ -18,7 +18,7 @@ import (
 	nlevel "github.com/echocat/slf4g/native/level"
 )
 
-const (
+var (
 	// DefaultTimeLayout is the default format to format times of log entries
 	// with. See Text.TimeLayout for more information.
 	DefaultTimeLayout = "15:04:05.000"
@@ -185,7 +185,7 @@ func (instance *Text) sanitizeMessage(message string) string {
 func (instance *Text) printTimestampChecked(event log.Event, using log.Provider, h hints.Hints, to encoding.TextEncoder) execution.Execution {
 	if v := log.GetTimestampOf(event, using); v != nil {
 		formatted := instance.formatTime(*v)
-		colorized := functions.Colorize("30;1", instance.wrapHints(h), formatted)
+		colorized := functions.Colorize("37", instance.wrapHints(h), formatted)
 		return to.WriteStringChecked(colorized)
 	}
 	return nil
@@ -334,6 +334,7 @@ func (instance *Text) getMultiLineMessageAfterFields() bool {
 	if v := instance.MultiLineMessageAfterFields; v != nil {
 		return *v
 	}
+	//goland:noinspection GoBoolExpressions
 	return DefaultMultiLineMessageAfterFields
 }
 
@@ -341,6 +342,7 @@ func (instance *Text) getAllowMultiLineMessage() bool {
 	if v := instance.AllowMultiLineMessage; v != nil {
 		return *v
 	}
+	//goland:noinspection GoBoolExpressions
 	return DefaultAllowMultiLineMessage
 }
 
@@ -348,6 +350,7 @@ func (instance *Text) getPrintRootLogger() bool {
 	if v := instance.PrintRootLogger; v != nil {
 		return *v
 	}
+	//goland:noinspection GoBoolExpressions
 	return DefaultPrintRootLogger
 }
 

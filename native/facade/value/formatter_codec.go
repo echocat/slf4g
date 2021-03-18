@@ -10,13 +10,9 @@ import (
 
 // DefaultFormatterCodec is the default instance of FormatterCodec which should cover the
 // most of the cases.
-var DefaultFormatterCodec = MappingFormatterCodec{
-	"text": func() (formatter.Formatter, error) {
-		return formatter.NewText(), nil
-	},
-	"json": func() (formatter.Formatter, error) {
-		return formatter.NewJson(), nil
-	},
+var DefaultFormatterCodec FormatterCodec = MappingFormatterCodec{
+	"text": formatter.NewText(),
+	"json": formatter.NewJson(),
 }
 
 // FormatterCodec transforms strings to formatter.Formatter and other way around.
@@ -24,13 +20,13 @@ type FormatterCodec interface {
 	// Parse takes a string and creates out of it an instance of formatter.Formatter.
 	Parse(plain string) (formatter.Formatter, error)
 
-	// Formatter takes an instance of formatter.Formatter and formats it as a string.
+	// Format takes an instance of formatter.Formatter and formats it as a string.
 	Format(what formatter.Formatter) (string, error)
 }
 
 // MappingFormatterCodec is a default implementation of FormatterCodec which handles
 // the most common cases by default.
-type MappingFormatterCodec map[string]func() (formatter.Formatter, error)
+type MappingFormatterCodec map[string]formatter.Formatter
 
 // Parse implements FormatterCodec.Parse
 func (instance MappingFormatterCodec) Parse(plain string) (formatter.Formatter, error) {
@@ -39,9 +35,9 @@ func (instance MappingFormatterCodec) Parse(plain string) (formatter.Formatter, 
 			return d, nil
 		}
 	}
-	for n, f := range instance {
+	for n, v := range instance {
 		if strings.EqualFold(n, plain) {
-			return f()
+			return v, nil
 		}
 	}
 	return nil, fmt.Errorf("unknown log format: %s", plain)
@@ -49,9 +45,8 @@ func (instance MappingFormatterCodec) Parse(plain string) (formatter.Formatter, 
 
 // Format implements FormatterCodec.Format
 func (instance MappingFormatterCodec) Format(what formatter.Formatter) (string, error) {
-	for n, f := range instance {
-		candidate, err := f()
-		if err == nil && (what == candidate || reflect.DeepEqual(what, candidate)) {
+	for n, v := range instance {
+		if what == v || reflect.DeepEqual(what, v) {
 			return n, nil
 		}
 	}
