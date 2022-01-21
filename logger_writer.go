@@ -18,6 +18,11 @@ type LoggingWriter struct {
 	// use level.Info.
 	LevelExtractor level.LineExtractor
 
+	// Interceptor is like LevelExtractor but runs after the LineExtractor with
+	// the extracted level.Level and can modify it again (if set). Additionally,
+	// it can also modify the content of the to be logged message itself.
+	Interceptor func([]byte, level.Level) ([]byte, level.Level, error)
+
 	// SkipFrames is used to create the event with.
 	SkipFrames uint16
 }
@@ -28,6 +33,11 @@ func (instance *LoggingWriter) Write(p []byte) (int, error) {
 		provider := logger.GetProvider()
 
 		lvl, err := instance.levelOf(p)
+		if err != nil {
+			return 0, err
+		}
+
+		p, lvl, err = instance.intercept(p, lvl)
 		if err != nil {
 			return 0, err
 		}
@@ -46,4 +56,11 @@ func (instance *LoggingWriter) levelOf(p []byte) (level.Level, error) {
 		return v.ExtractLevelFromLine(p)
 	}
 	return level.Info, nil
+}
+
+func (instance *LoggingWriter) intercept(p []byte, lvl level.Level) ([]byte, level.Level, error) {
+	if v := instance.Interceptor; v != nil {
+		return v(p, lvl)
+	}
+	return p, lvl, nil
 }
