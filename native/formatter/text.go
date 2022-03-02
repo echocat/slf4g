@@ -218,7 +218,7 @@ func (instance *Text) printField(l level.Level, k string, v interface{}, h hints
 	if vl, ok := v.(fields.Lazy); ok {
 		v = vl.Get()
 	}
-	if v == nil {
+	if v == fields.Exclude {
 		return false, nil
 	}
 

@@ -43,6 +43,9 @@ func (instance *SimpleTextValue) FormatTextValue(v interface{}, _ log.Provider) 
 		v = vs.Error()
 	}
 
+	if v == nil {
+		v = ""
+	}
 	switch instance.QuoteType {
 	case QuoteTypeMinimal:
 		if vs, ok := v.(string); ok && !stringNeedsQuoting(vs) {

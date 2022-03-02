@@ -75,6 +75,9 @@ func (instance *fallbackCoreLogger) format(event Event, skipFrames uint16) []byt
 		if vl, ok := vp.(fields.Lazy); ok {
 			vp = vl.Get()
 		}
+		if vp == fields.Exclude {
+			return nil
+		}
 
 		if k == loggerKey && vp == fallbackRootLoggerName {
 			return nil

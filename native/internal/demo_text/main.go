@@ -2,6 +2,7 @@ package main
 
 import (
 	log "github.com/echocat/slf4g"
+	"github.com/echocat/slf4g/fields"
 	_ "github.com/echocat/slf4g/native"
 	"github.com/echocat/slf4g/native/formatter"
 	"github.com/echocat/slf4g/native/location"
@@ -25,4 +26,23 @@ func main() {
 	log.With("bar", 234).Error()
 	log.With("bar", 234).Info("hello\nworld")
 	log.Info("\nhello\nworld")
+	log.WithAll(map[string]interface{}{
+		"a": "1",
+		"b": "2",
+		"c": fields.LazyFunc(func() interface{} {
+			return "3"
+		}),
+		"excluded": fields.Exclude,
+		"excludedLazy": fields.LazyFunc(func() interface{} {
+			return fields.Exclude
+		}),
+		"nil": nil,
+		"nilLazy": fields.LazyFunc(func() interface{} {
+			return nil
+		}),
+		"empty": "",
+		"emptyLazy": fields.LazyFunc(func() interface{} {
+			return ""
+		}),
+	}).Info("Some more variants in a map")
 }

@@ -344,10 +344,22 @@ func Test_Text_printFieldsChecked(t *testing.T) {
 		expected: " 3(foo1)=bar1",
 	}, {
 		given: eventOf(map[string]interface{}{
-			"foo1": "bar1",
-			"foo2": 2,
+			"foo1":  "bar1",
+			"foo2":  2,
+			"foo3a": fields.Exclude,
+			"foo3b": fields.LazyFunc(func() interface{} {
+				return fields.Exclude
+			}),
+			"foo4a": nil,
+			"foo4b": fields.LazyFunc(func() interface{} {
+				return nil
+			}),
+			"foo5a": "",
+			"foo5b": fields.LazyFunc(func() interface{} {
+				return ""
+			}),
 		}),
-		expected: " 3(foo1)=bar1 3(foo2)=2",
+		expected: " 3(foo1)=bar1 3(foo2)=2 3(foo4a)= 3(foo4b)= 3(foo5a)= 3(foo5b)=",
 	}}
 
 	for i, c := range cases {
@@ -424,7 +436,7 @@ func Test_Text_printField(t *testing.T) {
 		givenLevel: level.Info,
 		givenKey:   "foo",
 		givenValue: nil,
-		expected:   "",
+		expected:   " foo=",
 	}, {
 		givenLevel: level.Info,
 		givenKey:   provider.GetFieldKeysSpec().GetMessage(),

@@ -37,6 +37,7 @@ func Test_fallbackCoreLogger_Log(t *testing.T) {
 	instance.Log(instance.NewEvent(level.Error, nil).
 		With("a", 21).
 		With("c", 23).
+		With("d", fields.Exclude).
 		With("message", "  hello    ").
 		WithError(givenError).
 		With("timestamp", t2), 0)
@@ -55,7 +56,7 @@ func Test_fallbackCoreLogger_formatLocation(t *testing.T) {
 
 	// WARNING! Do not move these lines, because the test relies on it.
 	// I know this could be better... ;-)
-	assert.ToBeEqual(t, "logger_core_fallback_test.go:58", instance.formatLocation(0))
+	assert.ToBeEqual(t, "logger_core_fallback_test.go:59", instance.formatLocation(0))
 	assert.ToBeEqual(t, "???:?", instance.formatLocation(1000))
 }
 

@@ -112,6 +112,9 @@ func (instance *Json) encodeValuesChecked(of log.Event, using log.Provider, to e
 			if vl, ok := v.(fields.Lazy); ok {
 				v = vl.Get()
 			}
+			if v == fields.Exclude {
+				return nil
+			}
 			if !printRootLogger && k == loggerKey && v == "ROOT" {
 				return nil
 			}
