@@ -26,6 +26,9 @@ func (instance *loggerImpl) Log(event Event, skipFrames uint16) {
 }
 
 func (instance *loggerImpl) NewEvent(l level.Level, values map[string]interface{}) Event {
+	if v := instance.fields; v != nil {
+		return instance.NewEventWithFields(l, v.WithAll(values))
+	}
 	return instance.Unwrap().NewEvent(l, values)
 }
 
