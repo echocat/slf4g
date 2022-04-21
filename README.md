@@ -1,6 +1,6 @@
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/echocat/slf4g)](https://pkg.go.dev/github.com/echocat/slf4g)
 [![Continuous Integration](https://github.com/echocat/slf4g/workflows/Continuous%20Integration/badge.svg)](https://github.com/echocat/slf4g/actions?query=workflow%3A%22Continuous+Integration%22)
-[![Coverage Status](https://coveralls.io/repos/github/echocat/slf4g/badge.svg?branch=master)](https://coveralls.io/github/echocat/slf4g?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/echocat/slf4g/badge.svg?branch=main)](https://coveralls.io/github/echocat/slf4g?branch=main)
 
 # Simple Log Framework for Golang (slf4g)
 
