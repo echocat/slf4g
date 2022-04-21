@@ -4,8 +4,6 @@
 
 # Simple Log Framework for Golang (slf4g)
 
-> **⚠️ This project is still under heavy development. Everything could still change.**
-
 ## TOC
 
 * [Principles](#principles)
