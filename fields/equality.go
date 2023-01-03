@@ -13,7 +13,7 @@ func AreEqual(left, right Fields) (bool, error) {
 	return false, nil
 }
 
-// DefaultEquality is the default instance of a Equality. The initial
+// DefaultEquality is the default instance of an Equality. The initial
 // initialization of this global variable should be able to deal with the
 // majority of the cases. There is also a shortcut function:
 // AreEqual(left,right)
@@ -91,7 +91,7 @@ func (instance *EqualityImpl) AreFieldsEqual(left, right Fields) (bool, error) {
 }
 
 // NewEqualityFacade creates a re-implementation of Equality which uses the
-// given provider to retrieve the actual instance of Equality in the moment when
+// given provider to retrieve the actual instance of Equality at the moment when
 // it is used. This is useful especially in cases where you want to deal with
 // concurrency while creation of objects that need to hold a reference to an
 // Equality.

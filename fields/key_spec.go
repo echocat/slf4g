@@ -1,6 +1,6 @@
 package fields
 
-// KeysSpec defines the keys for common usages inside of a Fields instance.
+// KeysSpec defines the keys for common usages inside a Fields instance.
 type KeysSpec interface {
 	// GetTimestamp returns the key where the timestamp is stored inside, if
 	// available.

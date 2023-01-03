@@ -72,7 +72,13 @@ func (instance *fallbackCoreLogger) format(event Event, skipFrames uint16) []byt
 	loggerKey := instance.GetFieldKeysSpec().GetLogger()
 	timestampKey := instance.GetFieldKeysSpec().GetTimestamp()
 	if err := fields.SortedForEach(event, nil, func(k string, vp interface{}) error {
-		if vl, ok := vp.(fields.Lazy); ok {
+		if vl, ok := vp.(fields.Filtered); ok {
+			fv, shouldBeRespected := vl.Filter(event)
+			if !shouldBeRespected {
+				return nil
+			}
+			vp = fv
+		} else if vl, ok := vp.(fields.Lazy); ok {
 			vp = vl.Get()
 		}
 		if vp == fields.Exclude {

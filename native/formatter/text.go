@@ -48,7 +48,7 @@ var (
 )
 
 // Text is an implementation of Formatter which formats given log entries in a
-// human readable format. Additionally it can also colorize the formatted
+// human-readable format. Additionally, it can also colorize the formatted
 // output.
 type Text struct {
 	// ColorMode defines when the output should be colorized. If not configured
@@ -84,19 +84,19 @@ type Text struct {
 
 	// MultiLineMessageAfterFields will force multiline messages
 	// (if set to true) to be printed behind the fields; instead (if default)
-	// in front of them. If not set set DefaultMultiLineMessageAfterFields will
+	// in front of them. If not set DefaultMultiLineMessageAfterFields will
 	// be used.
 	MultiLineMessageAfterFields *bool
 
 	// AllowMultiLineMessage will allow (if set to true) multiline messages to
 	// be printed as multiline to the output, too. If set to false linebreaks
-	// will be replaced with ⏎. If not set set DefaultAllowMultiLineMessage will
+	// will be replaced with ⏎. If not set DefaultAllowMultiLineMessage will
 	// be used.
 	AllowMultiLineMessage *bool
 
 	// PrintRootLogger will (if set to true) also print the field logger for the
 	// root logger. If set to false the logger field will be only printed for
-	// every logger but not for the root one. If not set set
+	// every logger but not for the root one. If not set
 	// DefaultPrintRootLogger will be used.
 	PrintRootLogger *bool
 
@@ -205,7 +205,7 @@ func (instance *Text) printLevelChecked(l level.Level, using log.Provider, h hin
 func (instance *Text) printFieldsChecked(using log.Provider, h hints.Hints, event log.Event, to encoding.TextEncoder, atLeastOneFieldPrinted *bool) execution.Execution {
 	return func() error {
 		return fields.SortedForEach(event, instance.getFieldSorter(), func(k string, v interface{}) error {
-			printed, err := instance.printField(event.GetLevel(), k, v, h, using, to)
+			printed, err := instance.printField(event, k, v, h, using, to)
 			if printed {
 				*atLeastOneFieldPrinted = printed
 			}
@@ -214,8 +214,14 @@ func (instance *Text) printFieldsChecked(using log.Provider, h hints.Hints, even
 	}
 }
 
-func (instance *Text) printField(l level.Level, k string, v interface{}, h hints.Hints, using log.Provider, to encoding.TextEncoder) (bool, error) {
-	if vl, ok := v.(fields.Lazy); ok {
+func (instance *Text) printField(ctx fields.FilterContext, k string, v interface{}, h hints.Hints, using log.Provider, to encoding.TextEncoder) (bool, error) {
+	if vl, ok := v.(fields.Filtered); ok {
+		fv, shouldBeRespected := vl.Filter(ctx)
+		if !shouldBeRespected {
+			return false, nil
+		}
+		v = fv
+	} else if vl, ok := v.(fields.Lazy); ok {
 		v = vl.Get()
 	}
 	if v == fields.Exclude {
@@ -234,7 +240,7 @@ func (instance *Text) printField(l level.Level, k string, v interface{}, h hints
 	if err != nil {
 		return false, err
 	}
-	return true, to.WriteString(` ` + instance.colorize(l, k, h) + `=` + string(b))
+	return true, to.WriteString(` ` + instance.colorize(ctx.GetLevel(), k, h) + `=` + string(b))
 }
 
 func (instance *Text) printMessageAsSingleLineIfRequiredChecked(message *string, predicate bool, to encoding.TextEncoder) execution.Execution {

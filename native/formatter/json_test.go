@@ -285,6 +285,27 @@ func Test_Json_encodeValuesChecked(t *testing.T) {
 		}),
 		expected: `,"bar":"barAsLazy","foo":"foo"`,
 	}, {
+		name: "withStringAndFilteredRespected",
+		given: givenLogger.NewEvent(level.Info, map[string]interface{}{
+			"foo": "foo",
+			"bar": fields.RequireMaximalLevel(level.Info, "barAsFiltered"),
+		}),
+		expected: `,"bar":"barAsFiltered","foo":"foo"`,
+	}, {
+		name: "withStringAndFilteredIgnored",
+		given: givenLogger.NewEvent(level.Info, map[string]interface{}{
+			"foo": "foo",
+			"bar": fields.RequireMaximalLevel(level.Debug, "barAsFiltered"),
+		}),
+		expected: `,"foo":"foo"`,
+	}, {
+		name: "withoutExcluded",
+		given: givenLogger.NewEvent(level.Info, map[string]interface{}{
+			"foo": "foo",
+			"bar": fields.Exclude,
+		}),
+		expected: `,"foo":"foo"`,
+	}, {
 		name: "withStringAndSomeLogger",
 		given: givenLogger.NewEvent(0, map[string]interface{}{
 			"foo":    "foo",

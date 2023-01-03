@@ -227,7 +227,7 @@ func Test_Text_printTimestampChecked(t *testing.T) {
 	}, {
 		givenTimestamp: mustParseTime("2021-01-02T13:14:15.1234"),
 		withColor:      true,
-		expected: `[37m13:14:15.123[0m`,
+		expected:       `[37m13:14:15.123[0m`,
 	}, {
 		givenTimestamp: time.Time{},
 		expected:       ``,
@@ -358,8 +358,10 @@ func Test_Text_printFieldsChecked(t *testing.T) {
 			"foo5b": fields.LazyFunc(func() interface{} {
 				return ""
 			}),
+			"foo6a": fields.RequireMaximalLevel(level.Info, "bar6a"),
+			"foo6b": fields.RequireMaximalLevel(level.Debug, "bar6b"),
 		}),
-		expected: " 3(foo1)=bar1 3(foo2)=2 3(foo4a)= 3(foo4b)= 3(foo5a)= 3(foo5b)=",
+		expected: " 3(foo1)=bar1 3(foo2)=2 3(foo4a)= 3(foo4b)= 3(foo5a)= 3(foo5b)= 3(foo6a)=bar6a",
 	}}
 
 	for i, c := range cases {
@@ -380,6 +382,18 @@ func Test_Text_printFieldsChecked(t *testing.T) {
 		})
 	}
 
+}
+
+type simpleFilterContext struct {
+	level.Level
+}
+
+func (instance simpleFilterContext) GetLevel() level.Level {
+	return instance.Level
+}
+
+func (instance simpleFilterContext) Get(string) (interface{}, bool) {
+	return nil, false
 }
 
 func Test_Text_printField(t *testing.T) {
@@ -454,7 +468,7 @@ func Test_Text_printField(t *testing.T) {
 			instance.PrintRootLogger = &c.givenShouldPrintRootLogger
 			givenEncoder := encoding.NewBufferedTextEncoder()
 			actualPrinted, actualErr := instance.printField(
-				c.givenLevel,
+				simpleFilterContext{c.givenLevel},
 				c.givenKey,
 				c.givenValue,
 				c.givenHints,
@@ -479,7 +493,7 @@ func Test_Text_printField_failsWithValueFormatter(t *testing.T) {
 	provider := recording.NewProvider()
 
 	givenEncoder := encoding.NewBufferedTextEncoder()
-	_, actualErr := instance.printField(level.Info, "foo", "bar", nil, provider, givenEncoder)
+	_, actualErr := instance.printField(simpleFilterContext{level.Info}, "foo", "bar", nil, provider, givenEncoder)
 
 	assert.ToBeSame(t, expectedErr, actualErr)
 	assert.ToBeEqual(t, "", givenEncoder.String())

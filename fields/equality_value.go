@@ -40,7 +40,7 @@ func (instance ValueEqualityFunc) AreValuesEqual(key string, left, right interfa
 }
 
 // NewValueEqualityFacade creates a re-implementation of ValueEquality which
-// uses the given provider to retrieve the actual instance of ValueEquality in
+// uses the given provider to retrieve the actual instance of ValueEquality at
 // the moment when it is used. This is useful especially in cases where you want
 // to deal with concurrency while creation of objects that need to hold a
 // reference to an ValueEquality.

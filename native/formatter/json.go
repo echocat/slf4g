@@ -109,7 +109,13 @@ func (instance *Json) encodeValuesChecked(of log.Event, using log.Provider, to e
 		printRootLogger := instance.getPrintRootLogger()
 		loggerKey := using.GetFieldKeysSpec().GetLogger()
 		consumer := func(k string, v interface{}) error {
-			if vl, ok := v.(fields.Lazy); ok {
+			if vl, ok := v.(fields.Filtered); ok {
+				fv, shouldBeRespected := vl.Filter(of)
+				if !shouldBeRespected {
+					return nil
+				}
+				v = fv
+			} else if vl, ok := v.(fields.Lazy); ok {
 				v = vl.Get()
 			}
 			if v == fields.Exclude {

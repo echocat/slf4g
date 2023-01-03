@@ -77,6 +77,24 @@ func Test_fallbackCoreLogger_Log_withLazyValue(t *testing.T) {
 	assert.ToBeMatching(t, `^I.+logger_core_fallback_test.go:\d+] foo=666 logger="foo"`, buf.String())
 }
 
+func Test_fallbackCoreLogger_Log_withFilteredValue_respected(t *testing.T) {
+	instance, buf := newFallbackCoreLogger("foo")
+
+	instance.Log(instance.NewEvent(level.Info, nil).
+		With("foo", fields.RequireMaximalLevel(level.Info, 666)), 0)
+
+	assert.ToBeMatching(t, `^I.+logger_core_fallback_test.go:\d+] foo=666 logger="foo"`, buf.String())
+}
+
+func Test_fallbackCoreLogger_Log_withFilteredValue_ignored(t *testing.T) {
+	instance, buf := newFallbackCoreLogger("foo")
+
+	instance.Log(instance.NewEvent(level.Info, nil).
+		With("foo", fields.RequireMaximalLevel(level.Debug, 666)), 0)
+
+	assert.ToBeMatching(t, `^I.+logger_core_fallback_test.go:\d+] logger="foo"`, buf.String())
+}
+
 func Test_fallbackCoreLogger_Log_brokenCallDepth(t *testing.T) {
 	instance, buf := newFallbackCoreLogger("foo")
 
