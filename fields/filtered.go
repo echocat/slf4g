@@ -56,3 +56,34 @@ func (instance requireMaximalLevel) Filter(ctx FilterContext) (value interface{}
 
 	return instance.Get(), true
 }
+
+// IgnoreLevels represents a filtered value which will only be consumed if the
+// level.Level of the current context (for example logging events) is smaller than
+// fromLevel or equal/bigger than toLevel (fromLevel:inclusive, toLevel:exclusive).
+func IgnoreLevels(fromLevel, toLevel level.Level, value interface{}) Filtered {
+	return IgnoreLevelsLazy(fromLevel, toLevel, LazyFunc(func() interface{} {
+		return value
+	}))
+}
+
+// IgnoreLevelsLazy represents a filtered Lazy value which will only be consumed
+// if the level.Level of the current context (for example logging events) is smaller
+// than fromLevel or equal/bigger than toLevel (fromLevel:inclusive, toLevel:exclusive).
+func IgnoreLevelsLazy(fromLevel, toLevel level.Level, value Lazy) Filtered {
+	return ignoreLevels{value, fromLevel, toLevel}
+}
+
+type ignoreLevels struct {
+	Lazy
+	fromLevel level.Level
+	toLevel   level.Level
+}
+
+func (instance ignoreLevels) Filter(ctx FilterContext) (value interface{}, shouldBeRespected bool) {
+	lvl := ctx.GetLevel()
+	if lvl >= instance.fromLevel && lvl < instance.toLevel {
+		return nil, false
+	}
+
+	return instance.Get(), true
+}

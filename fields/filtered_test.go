@@ -75,6 +75,76 @@ func Test_RequireMaximalLevel_Filter_ignored(t *testing.T) {
 	assert.ToBeEqual(t, false, actualRespected)
 }
 
+func Test_IgnoreLevelsLazy_Get(t *testing.T) {
+	expected := struct{ foo string }{foo: "bar"}
+	givenLazy := LazyFunc(func() interface{} { return expected })
+
+	actualInstance := IgnoreLevelsLazy(level.Info, level.Warn, givenLazy)
+	actual := actualInstance.Get()
+
+	assert.ToBeEqual(t, expected, actual)
+}
+
+func Test_IgnoreLevelsLazy_Filter_respectedBelow(t *testing.T) {
+	expected := struct{ foo string }{foo: "bar"}
+	givenLazy := LazyFunc(func() interface{} { return expected })
+
+	actualInstance := IgnoreLevelsLazy(level.Info, level.Warn, givenLazy)
+	actual, actualRespected := actualInstance.Filter(filterContext{level: level.Info - 1})
+
+	assert.ToBeEqual(t, expected, actual)
+	assert.ToBeEqual(t, true, actualRespected)
+}
+
+func Test_IgnoreLevelsLazy_Filter_respectedAbove(t *testing.T) {
+	expected := struct{ foo string }{foo: "bar"}
+	givenLazy := LazyFunc(func() interface{} { return expected })
+
+	actualInstance := IgnoreLevelsLazy(level.Info, level.Warn, givenLazy)
+	actual, actualRespected := actualInstance.Filter(filterContext{level: level.Warn})
+
+	assert.ToBeEqual(t, expected, actual)
+	assert.ToBeEqual(t, true, actualRespected)
+}
+
+func Test_IgnoreLevelsLazy_Filter_ignored(t *testing.T) {
+	givenLazy := LazyFunc(func() interface{} { return struct{ foo string }{foo: "bar"} })
+
+	actualInstance := IgnoreLevelsLazy(level.Info, level.Warn, givenLazy)
+	actual, actualRespected := actualInstance.Filter(filterContextWithLeveInfo)
+
+	assert.ToBeNil(t, actual)
+	assert.ToBeEqual(t, false, actualRespected)
+}
+
+func Test_IgnoreLevels_Filter_respectedBelow(t *testing.T) {
+	expected := struct{ foo string }{foo: "bar"}
+
+	actualInstance := IgnoreLevels(level.Info, level.Warn, expected)
+	actual, actualRespected := actualInstance.Filter(filterContext{level: level.Info - 1})
+
+	assert.ToBeEqual(t, expected, actual)
+	assert.ToBeEqual(t, true, actualRespected)
+}
+
+func Test_IgnoreLevels_Filter_respectedAbove(t *testing.T) {
+	expected := struct{ foo string }{foo: "bar"}
+
+	actualInstance := IgnoreLevels(level.Info, level.Warn, expected)
+	actual, actualRespected := actualInstance.Filter(filterContext{level: level.Warn})
+
+	assert.ToBeEqual(t, expected, actual)
+	assert.ToBeEqual(t, true, actualRespected)
+}
+
+func Test_IgnoreLevels_Filter_ignored(t *testing.T) {
+	actualInstance := IgnoreLevels(level.Info, level.Warn, struct{ foo string }{foo: "bar"})
+	actual, actualRespected := actualInstance.Filter(filterContextWithLeveInfo)
+
+	assert.ToBeNil(t, actual)
+	assert.ToBeEqual(t, false, actualRespected)
+}
+
 type filterContext struct {
 	level  level.Level
 	fields map[string]interface{}
