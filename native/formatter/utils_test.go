@@ -45,9 +45,9 @@ func mustParseTime(in string) time.Time {
 
 type mockProviderWithLevelNames struct {
 	*recording.Provider
-	Names nlevel.Names
+	Names level.Names
 }
 
-func (instance mockProviderWithLevelNames) GetLevelNames() nlevel.Names {
+func (instance mockProviderWithLevelNames) GetLevelNames() level.Names {
 	return instance.Names
 }

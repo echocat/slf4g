@@ -26,7 +26,7 @@ type Level struct {
 	// Names is used to transform provided plain data. If this is not defined
 	// the Target is assumed as nlevel.NamesAware or if this even does not work
 	// nlevel.DefaultNames is used.
-	Names nlevel.Names
+	Names level.Names
 }
 
 // NewLevel creates a new instance of Level with the given target.
@@ -70,6 +70,11 @@ func (instance Level) String() string {
 		return fmt.Sprintf("ERR-%v", err)
 	}
 	return string(b)
+}
+
+// Type returns the type as a string.
+func (instance Level) Type() string {
+	return "logLevel"
 }
 
 // MarshalText implements encoding.TextMarshaler

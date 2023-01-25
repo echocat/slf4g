@@ -11,6 +11,7 @@ func ExampleNewProvider() {
 	pv := value.NewProvider(native.DefaultProvider)
 
 	flag.Var(pv.Consumer.Formatter, "log.format", "Configures the log format.")
+	flag.Var(pv.Consumer.Formatter.ColorMode, "log.color", "Configures the log color mode.")
 	flag.Var(pv.Level, "log.level", "Configures the log level.")
 
 	flag.Parse()

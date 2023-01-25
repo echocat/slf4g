@@ -24,7 +24,7 @@ type Consumer struct {
 	Formatter Formatter
 }
 
-// NewProvider create a new instance of Provider with the given target ProviderTarget instance.
+// NewConsumer create a new instance of Provider with the given target ProviderTarget instance.
 func NewConsumer(target ConsumerTarget, customizer ...func(*Consumer)) Consumer {
 	if c := target.GetConsumer(); c == nil {
 		if d := consumer.Default; d != nil {

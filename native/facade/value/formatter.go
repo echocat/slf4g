@@ -2,6 +2,7 @@ package value
 
 import (
 	"fmt"
+	"github.com/echocat/slf4g/native/color"
 
 	"github.com/echocat/slf4g/native/formatter"
 )
@@ -24,12 +25,24 @@ type Formatter struct {
 	// Codec is used to transform provided plain data. If this is not defined
 	// DefaultFormatterCodec is used.
 	Codec FormatterCodec
+
+	// ColorMode enables in cases where the Target is color.ModeMutableAware
+	// to modify the value of it.
+	// This will not always work. Not all targets supports it. In this case
+	// the value will be swallowed.
+	ColorMode *FormatterColorMode
 }
 
 // NewFormatter creates a new instance of Formatter with the given target.
 func NewFormatter(target FormatterTarget, customizer ...func(*Formatter)) Formatter {
 	result := Formatter{
 		Target: target,
+	}
+
+	result.ColorMode = &FormatterColorMode{
+		result.getColorMode,
+		result.setColorMode,
+		nil,
 	}
 
 	for _, c := range customizer {
@@ -47,7 +60,8 @@ func (instance Formatter) Set(plain string) error {
 	}
 
 	instance.Target.SetFormatter(v)
-	return nil
+
+	return instance.setColorMode(instance.ColorMode.get())
 }
 
 // Get implements flag.Getter.
@@ -62,6 +76,25 @@ func (instance Formatter) String() string {
 		return fmt.Sprintf("ERR-%v", err)
 	}
 	return string(b)
+}
+
+func (instance Formatter) getColorMode() (color.Mode, bool) {
+	if t, ok := instance.Get().(color.ModeAware); ok {
+		return t.GetColorMode(), true
+	}
+	return 0, false
+}
+
+func (instance Formatter) setColorMode(v color.Mode) error {
+	if t, ok := instance.Get().(color.ModeMutableAware); ok {
+		t.SetColorMode(v)
+	}
+	return nil
+}
+
+// Type returns the type as a string.
+func (instance Formatter) Type() string {
+	return "logFormatter"
 }
 
 // MarshalText implements encoding.TextMarshaler

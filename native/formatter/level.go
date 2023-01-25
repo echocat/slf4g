@@ -20,7 +20,7 @@ type Level interface {
 
 // NewNamesBasedLevel creates a new instance of Level which uses given nlevel.Names to
 // resolve the name of a given log.Level and format it with it.
-func NewNamesBasedLevel(names nlevel.Names) Level {
+func NewNamesBasedLevel(names level.Names) Level {
 	return LevelFunc(func(in level.Level, using log.Provider) (interface{}, error) {
 		result, err := names.ToName(in)
 		return result, err

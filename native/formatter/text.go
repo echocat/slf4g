@@ -282,6 +282,14 @@ func (instance *Text) colorizeChecked(l level.Level, message *string, h hints.Hi
 	}
 }
 
+func (instance *Text) GetColorMode() color.Mode {
+	return instance.ColorMode
+}
+
+func (instance *Text) SetColorMode(v color.Mode) {
+	instance.ColorMode = v
+}
+
 func (instance *Text) wrapHints(h hints.Hints) hints.Hints {
 	return textHintsCombined{h, instance.textAsHints}
 }
@@ -305,7 +313,7 @@ func (instance *Text) formatLevelChecked(l level.Level, using log.Provider, to *
 	}
 }
 
-func (instance *Text) getLevelNames(using log.Provider) nlevel.Names {
+func (instance *Text) getLevelNames(using log.Provider) level.Names {
 	if v, ok := using.(level.NamesAware); ok {
 		return v.GetLevelNames()
 	}

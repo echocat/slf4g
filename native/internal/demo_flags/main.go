@@ -13,6 +13,7 @@ import (
 func main() {
 	pv := value.NewProvider(native.DefaultProvider)
 	flag.Var(pv.Consumer.Formatter, "log.format", "configures the log format.")
+	flag.Var(pv.Consumer.Formatter.ColorMode, "log.color", "configures the log color mode.")
 	flag.Var(pv.Level, "log.level", "configures the log level.")
 	flag.Parse()
 

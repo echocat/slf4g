@@ -106,3 +106,19 @@ func (instance Modes) Strings() []string {
 func (instance Modes) String() string {
 	return strings.Join(instance.Strings(), ",")
 }
+
+// ModeAware describes an object that is aware of a Mode and exports its current
+// state.
+type ModeAware interface {
+	// GetColorMode returns the current Mode.
+	GetColorMode() Mode
+}
+
+// ModeMutableAware is similar to ModeAware but additionally is able to modify the
+// Mode by calling SetColorMode(Mode).
+type ModeMutableAware interface {
+	ModeAware
+
+	// SetColorMode modifies the current Mode to the given one.
+	SetColorMode(Mode)
+}

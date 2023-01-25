@@ -33,10 +33,10 @@ type Provider struct {
 	// not set it will be log.Info by default.
 	Level level.Level
 
-	// LevelNames is used to format the levels as human readable
+	// LevelNames is used to format the levels as human-readable
 	// representations. If this is not set it will be level.DefaultNames by
 	// default.
-	LevelNames nlevel.Names
+	LevelNames level.Names
 
 	// LevelProvider is used to determine the log.Levels support by this
 	// Provider and all of its managed loggers. If this is not set it will be
@@ -120,7 +120,7 @@ func (instance *Provider) GetFieldKeysSpec() fields.KeysSpec {
 
 // GetLevelNames returns an instance of level.Names that support by formatting
 // level.Level managed by this Provider.
-func (instance *Provider) GetLevelNames() nlevel.Names {
+func (instance *Provider) GetLevelNames() level.Names {
 	if v := instance.LevelNames; v != nil {
 		return v
 	}

@@ -60,29 +60,3 @@ func (instance *defaultNames) ToLevel(name string) (level.Level, error) {
 		}
 	}
 }
-
-// ErrIllegalLevel represents that an illegal level.Level value/name was
-// provided.
-//
-// Deprecated: use level.ErrIllegalLevel instead.
-var ErrIllegalLevel = level.ErrIllegalLevel
-
-// Names is used to make readable names out of level.Level or the other way
-// around.
-//
-// Deprecated: use level.Names instead.
-type Names level.Names
-
-// NamesAware represents an object that is aware of Names.
-//
-// Deprecated: use level.NamesAware instead.
-type NamesAware level.NamesAware
-
-// NewNamesFacade creates a facade of Names using the given provider.
-//
-// Deprecated: use level.NewNamesFacade instead.
-func NewNamesFacade(provider func() Names) Names {
-	return level.NewNamesFacade(func() level.Names {
-		return provider()
-	})
-}

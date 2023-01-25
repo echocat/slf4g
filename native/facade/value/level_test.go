@@ -157,12 +157,12 @@ func (instance *mockLevelTarget) SetLevel(v level.Level) {
 	instance.level = v
 }
 
-func (instance *mockLevelTarget) GetLevelNames() nlevel.Names {
+func (instance *mockLevelTarget) GetLevelNames() level.Names {
 	return mockLevelNames
 }
 
 type failingLevelNames struct {
-	nlevel.Names
+	level.Names
 }
 
 func (instance failingLevelNames) ToName(level.Level) (string, error) {

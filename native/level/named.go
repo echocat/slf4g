@@ -8,14 +8,14 @@ import (
 	"github.com/echocat/slf4g/level"
 )
 
-// AsNamed wraps the given level.Level into Named to it in a human readable
+// AsNamed wraps the given level.Level into Named to it in a human-readable
 // format and provides the possibility to marshal and get used with
 // flag (or compatible) packages.
-func AsNamed(in *level.Level, names Names) Named {
+func AsNamed(in *level.Level, names level.Names) Named {
 	return &namedImpl{in, names}
 }
 
-// Named represents a level.Level in a human readable format and provides the
+// Named represents a level.Level in a human-readable format and provides the
 // possibility to marshal and get used with flag (or compatible) packages.
 type Named interface {
 	Unwrap() *level.Level
@@ -27,7 +27,7 @@ type Named interface {
 
 type namedImpl struct {
 	level *level.Level
-	names Names
+	names level.Names
 }
 
 func (instance *namedImpl) Get() interface{} {
@@ -55,7 +55,7 @@ func (instance *namedImpl) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func (instance *namedImpl) getNames() Names {
+func (instance *namedImpl) getNames() level.Names {
 	if v := instance.names; v != nil {
 		return v
 	}
