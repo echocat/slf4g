@@ -59,6 +59,14 @@ func (instance *loggerImpl) GetProvider() Provider {
 }
 
 func (instance *loggerImpl) log(level level.Level, args ...interface{}) {
+	instance.DoLog(level, 2, args...)
+}
+
+func (instance *loggerImpl) logf(level level.Level, format string, args ...interface{}) {
+	instance.DoLogf(level, 2, format, args...)
+}
+
+func (instance *loggerImpl) DoLog(level level.Level, skipFrames uint16, args ...interface{}) {
 	if !instance.IsLevelEnabled(level) {
 		return
 	}
@@ -71,10 +79,10 @@ func (instance *loggerImpl) log(level level.Level, args ...interface{}) {
 		e = e.With(provider.GetFieldKeysSpec().GetMessage(), args)
 	}
 
-	instance.Unwrap().Log(e, 2)
+	instance.Unwrap().Log(e, skipFrames+1)
 }
 
-func (instance *loggerImpl) logf(level level.Level, format string, args ...interface{}) {
+func (instance *loggerImpl) DoLogf(level level.Level, skipFrames uint16, format string, args ...interface{}) {
 	if !instance.IsLevelEnabled(level) {
 		return
 	}
@@ -82,7 +90,7 @@ func (instance *loggerImpl) logf(level level.Level, format string, args ...inter
 	e := instance.NewEventWithFields(level, instance.fields).
 		Withf(provider.GetFieldKeysSpec().GetMessage(), format, args...)
 
-	instance.Unwrap().Log(e, 2)
+	instance.Unwrap().Log(e, skipFrames+1)
 }
 
 func (instance *loggerImpl) Trace(args ...interface{}) {

@@ -2,6 +2,7 @@ package formatter
 
 import (
 	"fmt"
+	"github.com/echocat/slf4g/level"
 
 	"github.com/echocat/slf4g/native/execution"
 	"github.com/echocat/slf4g/native/formatter/encoding"
@@ -9,7 +10,6 @@ import (
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/native/hints"
-	nlevel "github.com/echocat/slf4g/native/level"
 )
 
 const (
@@ -97,7 +97,7 @@ func (instance *Json) getLevelFormatter(using log.Provider) Level {
 	if v := instance.LevelFormatter; v != nil {
 		return v
 	}
-	if v, ok := using.(nlevel.NamesAware); ok {
+	if v, ok := using.(level.NamesAware); ok {
 		return NewNamesBasedLevel(v.GetLevelNames())
 	}
 	return DefaultLevel

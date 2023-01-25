@@ -8,7 +8,7 @@ import (
 
 // DefaultLevel is the default instance of Level which should cover the most of
 // the cases.
-var DefaultLevel Level = NewNamesBasedLevel(nlevel.NewNamesFacade(func() nlevel.Names {
+var DefaultLevel Level = NewNamesBasedLevel(level.NewNamesFacade(func() level.Names {
 	return nlevel.DefaultNames
 }))
 

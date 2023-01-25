@@ -306,7 +306,7 @@ func (instance *Text) formatLevelChecked(l level.Level, using log.Provider, to *
 }
 
 func (instance *Text) getLevelNames(using log.Provider) nlevel.Names {
-	if v, ok := using.(nlevel.NamesAware); ok {
+	if v, ok := using.(level.NamesAware); ok {
 		return v.GetLevelNames()
 	}
 	if v := nlevel.DefaultNames; v != nil {

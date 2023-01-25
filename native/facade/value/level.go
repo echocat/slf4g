@@ -86,11 +86,11 @@ func (instance Level) UnmarshalText(text []byte) error {
 	return instance.Set(string(text))
 }
 
-func (instance Level) getNames() nlevel.Names {
+func (instance Level) getNames() level.Names {
 	if v := instance.Names; v != nil {
 		return v
 	}
-	if va, ok := instance.Target.(nlevel.NamesAware); ok {
+	if va, ok := instance.Target.(level.NamesAware); ok {
 		if v := va.GetLevelNames(); v != nil {
 			return v
 		}

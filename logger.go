@@ -1,12 +1,15 @@
 package log
 
-import "github.com/echocat/slf4g/fields"
+import (
+	"github.com/echocat/slf4g/fields"
+	"github.com/echocat/slf4g/level"
+)
 
 // Logger defines an instance which executes log event actions.
 //
-// Implementation hints
+// # Implementation hints
 //
-// If you considering to implement slf4g you're usually not required to
+// If you're considering to implement slf4g you're usually not required to
 // implement a full instance of Logger. Usually you just need to implement
 // CoreLogger and call NewLogger(with the CoreLogger) to create a full
 // implemented instance of a Logger.
@@ -123,11 +126,23 @@ func NewLogger(cl CoreLogger) Logger {
 	return NewLoggerFacade(func() CoreLogger { return cl })
 }
 
+// LoggerFacade is a fully implemented logger with utility methods for easier
+// implementation of delegates.
+type LoggerFacade interface {
+	Logger
+
+	// DoLog is acting as a simple log for the given level.
+	DoLog(level level.Level, skipFrames uint16, args ...interface{})
+
+	// DoLogf is acting as a formatted log for the given level.
+	DoLogf(level level.Level, skipFrames uint16, format string, args ...interface{})
+}
+
 // NewLoggerFacade is like NewLogger but takes a provider function that can
 // potentially return every time another instance of a CoreLogger. This is
 // useful especially in cases where you want to deal with concurrency while
 // creation of objects that need to hold a reference to a Logger.
-func NewLoggerFacade(provider func() CoreLogger) Logger {
+func NewLoggerFacade(provider func() CoreLogger) LoggerFacade {
 	return &loggerImpl{
 		coreProvider: provider,
 		fields:       fields.Empty(),

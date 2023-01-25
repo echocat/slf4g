@@ -366,10 +366,10 @@ func Test_Json_encodeValuesChecked(t *testing.T) {
 type someProvider struct {
 	log.Provider
 
-	names nlevel.Names
+	names level.Names
 }
 
-func (instance *someProvider) GetLevelNames() nlevel.Names {
+func (instance *someProvider) GetLevelNames() level.Names {
 	return instance
 }
 

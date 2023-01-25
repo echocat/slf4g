@@ -1,7 +1,6 @@
 package level
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -9,57 +8,13 @@ import (
 	"github.com/echocat/slf4g/level"
 )
 
-// ErrIllegalLevel represents that an illegal level.Level value/name was
-// provided.
-var ErrIllegalLevel = errors.New("illegal level")
-
 // DefaultNames is the default instance of Names which should cover the most of
 // the cases.
 var DefaultNames = NewNames()
 
-// Names is used to make readable names out of level.Level or the other way
-// around.
-type Names interface {
-	// ToName converts a given level.Level to a human readable name. If this
-	// level is unknown by this instance an error is returned. Most likely
-	// ErrIllegalLevel.
-	ToName(level.Level) (string, error)
-
-	// ToLevel converts a given human readable name to a level.Level. If this
-	// name is unknown by this instance an error is returned. Most likely
-	// ErrIllegalLevel.
-	ToLevel(string) (level.Level, error)
-}
-
 // NewNames creates a new default instance of a Names implementation.
-func NewNames() Names {
+func NewNames() level.Names {
 	return &defaultNames{}
-}
-
-// NamesAware represents an object that is aware of Names.
-type NamesAware interface {
-	// GetLevelNames returns an instance of level.Names that support by
-	// formatting levels in a human readable format.
-	GetLevelNames() Names
-}
-
-// NewNamesFacade creates a facade of Names using the given provider.
-func NewNamesFacade(provider func() Names) Names {
-	return namesFacade(provider)
-}
-
-type namesFacade func() Names
-
-func (instance namesFacade) ToName(lvl level.Level) (string, error) {
-	return instance.Unwrap().ToName(lvl)
-}
-
-func (instance namesFacade) ToLevel(name string) (level.Level, error) {
-	return instance.Unwrap().ToLevel(name)
-}
-
-func (instance namesFacade) Unwrap() Names {
-	return instance()
 }
 
 type defaultNames struct{}
@@ -99,9 +54,35 @@ func (instance *defaultNames) ToLevel(name string) (level.Level, error) {
 		return level.Fatal, nil
 	default:
 		if result, err := strconv.ParseUint(name, 10, 16); err != nil {
-			return 0, fmt.Errorf("%w: %s", ErrIllegalLevel, name)
+			return 0, fmt.Errorf("%w: %s", level.ErrIllegalLevel, name)
 		} else {
 			return level.Level(result), nil
 		}
 	}
+}
+
+// ErrIllegalLevel represents that an illegal level.Level value/name was
+// provided.
+//
+// Deprecated: use level.ErrIllegalLevel instead.
+var ErrIllegalLevel = level.ErrIllegalLevel
+
+// Names is used to make readable names out of level.Level or the other way
+// around.
+//
+// Deprecated: use level.Names instead.
+type Names level.Names
+
+// NamesAware represents an object that is aware of Names.
+//
+// Deprecated: use level.NamesAware instead.
+type NamesAware level.NamesAware
+
+// NewNamesFacade creates a facade of Names using the given provider.
+//
+// Deprecated: use level.NewNamesFacade instead.
+func NewNamesFacade(provider func() Names) Names {
+	return level.NewNamesFacade(func() level.Names {
+		return provider()
+	})
 }

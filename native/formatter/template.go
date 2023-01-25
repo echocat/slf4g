@@ -159,7 +159,7 @@ func (instance TemplateRenderingContext) Hints() hints.Hints {
 // LevelNames is a convenience method to easy return the current nlevel.Names
 // of the corresponding log.Provider.
 func (instance TemplateRenderingContext) LevelNames() nlevel.Names {
-	if v, ok := instance.Provider.(nlevel.NamesAware); ok {
+	if v, ok := instance.Provider.(level.NamesAware); ok {
 		if names := v.GetLevelNames(); names != nil {
 			return names
 		}

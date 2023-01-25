@@ -1,7 +1,6 @@
 package level
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 
@@ -14,46 +13,6 @@ func Test_NewNames(t *testing.T) {
 	actual := NewNames()
 
 	assert.ToBeEqual(t, &defaultNames{}, actual)
-}
-
-func Test_NewNamesFacade(t *testing.T) {
-	givenNames := &defaultNames{}
-
-	actual := NewNamesFacade(func() Names {
-		return givenNames
-	})
-
-	assert.ToBeSame(t, givenNames, actual.(namesFacade)())
-}
-
-func Test_namesFacade_ToName(t *testing.T) {
-	givenLevel := level.Warn
-	givenError := errors.New("foo")
-	givenNames := &mockNames{onToName: func(actualLevel level.Level) (string, error) {
-		assert.ToBeEqual(t, givenLevel, actualLevel)
-		return "bar", givenError
-	}}
-	instance := namesFacade(func() Names { return givenNames })
-
-	actual, actualErr := instance.ToName(givenLevel)
-
-	assert.ToBeEqual(t, "bar", actual)
-	assert.ToBeSame(t, givenError, actualErr)
-}
-
-func Test_namesFacade_ToLevel(t *testing.T) {
-	givenLevel := level.Warn
-	givenError := errors.New("foo")
-	givenNames := &mockNames{onToLevel: func(actualName string) (level.Level, error) {
-		assert.ToBeEqual(t, "bar", actualName)
-		return givenLevel, givenError
-	}}
-	instance := namesFacade(func() Names { return givenNames })
-
-	actual, actualErr := instance.ToLevel("bar")
-
-	assert.ToBeEqual(t, givenLevel, actual)
-	assert.ToBeSame(t, givenError, actualErr)
 }
 
 func Test_defaultNames_ToName(t *testing.T) {
@@ -113,7 +72,7 @@ func Test_defaultNames_ToLevel_withNonNumber(t *testing.T) {
 
 	actual, actualErr := instance.ToLevel("abc")
 
-	assert.ToBeEqual(t, fmt.Errorf("%w: abc", ErrIllegalLevel), actualErr)
+	assert.ToBeEqual(t, fmt.Errorf("%w: abc", level.ErrIllegalLevel), actualErr)
 	assert.ToBeEqual(t, level.Level(0), actual)
 }
 
