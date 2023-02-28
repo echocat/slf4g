@@ -2,30 +2,35 @@ on: [ push, pull_request ]
 name: Continuous Integration
 jobs:
   lint:
+    name: Lint
     strategy:
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Install Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
-          go-version: 1.15.x
+          go-version: 1.20.1
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
 
+      - name: Install dependencies
+        run: |
+          go mod download
+
       - name: Install golangci-lint
         run: |
-          go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.31.0
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
           golangci-lint --version
 
       - name: Lint
@@ -36,22 +41,23 @@ jobs:
           golangci-lint run --color=always -c ../.golangci.yml ./...
 
   test:
+    name: Test
     strategy:
       matrix:
-        go-version: [ 1.13.x, 1.14.x, 1.15.x ]
+        go-version: [ 1.13.0, 1.14.0, 1.15.0 ]
         os: [ ubuntu-latest, macos-latest, windows-latest ]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Install Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go-version }}
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
@@ -101,12 +107,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
-          go-version: 1.15.x
+          go-version: 1.20.1
 
       - name: Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
@@ -114,9 +120,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Install goveralls
-        env:
-          GO111MODULE: off
-        run: go get github.com/mattn/goveralls
+        run: go install github.com/mattn/goveralls@latest
 
       - name: Send coverage finish
         env:
