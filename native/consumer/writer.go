@@ -22,7 +22,7 @@ type Writer struct {
 	Formatter formatter.Formatter
 
 	// Interceptor can be used to intercept the consumption of an event shortly
-	// before the actual consumption or directly afterwards. If nothing was
+	// before the actual consumption or directly afterward. If nothing was
 	// provided interceptor.Default will be used.
 	Interceptor interceptor.Interceptor
 
@@ -39,12 +39,12 @@ type Writer struct {
 	// additional performance costs.
 	Synchronized bool
 
-	// OnFormatError will be called if there as any kind of error while
+	// OnFormatError will be called if their as any kind of error while
 	// formatting an log.Event using the configured Formatter. If nothing was
 	// provided these errors will result in a panic.
 	OnFormatError func(*Writer, io.Writer, error)
 
-	// OnColorInitializationError will be called if there as any kind of error
+	// OnColorInitializationError will be called if their as any kind of error
 	// while initialize the color support. If nothing was provided these errors
 	// will be silently swallowed.
 	OnColorInitializationError func(*Writer, io.Writer, error)
@@ -100,7 +100,7 @@ func (instance *Writer) Consume(event log.Event, source log.CoreLogger) {
 		if v := instance.OnFormatError; v != nil {
 			v(instance, out, err)
 		} else {
-			panic(fmt.Errorf("cannot format event %v: %w", event, err))
+			content = []byte(fmt.Sprintf("LOG_EVENT_FORMAT_ERROR (event: %v, error: %v)", event, err))
 		}
 	}
 
