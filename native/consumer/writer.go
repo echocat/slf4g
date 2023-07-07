@@ -41,7 +41,7 @@ type Writer struct {
 
 	// OnFormatError will be called if their as any kind of error while
 	// formatting an log.Event using the configured Formatter. If nothing was
-	// provided these errors will result in a panic.
+	// provided these errors will result in a fallback message of the event.
 	OnFormatError func(*Writer, io.Writer, error)
 
 	// OnColorInitializationError will be called if their as any kind of error
