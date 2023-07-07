@@ -68,11 +68,9 @@ func Test_Writer_Consume_panicsOnFormatErrors(t *testing.T) {
 		})
 	})
 
-	assert.Execution(t, func() {
-		instance.Consume(givenEvent, givenLogger)
-	}).WillPanicWith("cannot format event .+?: expected")
+	instance.Consume(givenEvent, givenLogger)
 
-	assert.ToBeEqual(t, "", givenOut.String())
+	assert.ToBeMatching(t, "^LOG_EVENT_FORMAT_ERROR \\(event: .+?, error: expected\\)$", givenOut.String())
 }
 
 func Test_Writer_Consume_callsHookOnFormatErrors(t *testing.T) {
