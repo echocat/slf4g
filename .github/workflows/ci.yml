@@ -65,7 +65,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Install goveralls
-        run: go install github.com/mattn/goveralls
+        run: go install github.com/mattn/goveralls@latest
 
       - name: Test
         run: |
