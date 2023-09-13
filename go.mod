@@ -1,3 +1,3 @@
 module github.com/echocat/slf4g
 
-go 1.13
+go 1.17
