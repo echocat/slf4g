@@ -4,12 +4,15 @@
 // encoding.TextUnmarshaler, too.
 //
 // Example:
-//    pv := value.NewProvider(native.DefaultProvider)
 //
-//    flag.Var(pv.Consumer.Formatter, "log.format", "Configures the log format.")
-//    flag.Var(pv.Level, "log.level", "Configures the log level.")
+//	pv := value.NewProvider(native.DefaultProvider)
 //
-//    flag.Parse()
+//	flag.Var(pv.Consumer.Formatter, "log.format", "Configures the log format.")
+//	flag.Var(pv.Level, "log.level", "Configures the log level.")
+//
+//	flag.Parse()
+//
 // Now you can call:
-//    $ <myExecutable> -log.format=json -log.level=debug ...
+//
+//	$ <myExecutable> -log.format=json -log.level=debug ...
 package value

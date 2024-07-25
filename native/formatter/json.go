@@ -2,6 +2,7 @@ package formatter
 
 import (
 	"fmt"
+
 	"github.com/echocat/slf4g/level"
 
 	"github.com/echocat/slf4g/native/execution"

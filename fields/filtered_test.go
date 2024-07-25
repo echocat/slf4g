@@ -2,8 +2,9 @@ package fields
 
 import (
 	"fmt"
-	"github.com/echocat/slf4g/level"
 	"testing"
+
+	"github.com/echocat/slf4g/level"
 
 	"github.com/echocat/slf4g/internal/test/assert"
 )

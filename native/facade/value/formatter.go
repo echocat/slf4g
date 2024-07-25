@@ -2,6 +2,7 @@ package value
 
 import (
 	"fmt"
+
 	"github.com/echocat/slf4g/native/color"
 
 	"github.com/echocat/slf4g/native/formatter"

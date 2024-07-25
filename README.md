@@ -147,9 +147,11 @@ Done. Enjoy!
 
 ## Implementations
 
-### [slf4g-native](native)
+1. [native](native): Reference implementation of [slf4g](https://github.com/echocat/slf4g).
 
-This is the reference implementation of [slf4g](https://github.com/echocat/slf4g).
+2. [testlog](sdk/testlog): Ensure that everything which is logged within test by [slf4g](https://github.com/echocat/slf4g) appears correctly within tests.
+
+2. [recording](testing/recording): Will record everything which is logged by [slf4g](https://github.com/echocat/slf4g) and can then be asserted inside test cases.
 
 ## Contributing
 
