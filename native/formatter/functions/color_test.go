@@ -46,12 +46,12 @@ func Test_Colorize(t *testing.T) {
 		givenColorCode: "15;1",
 		givenText:      "hello, world",
 		shouldColorize: true,
-		expected: `[15;1mhello, world[0m`,
+		expected:       `[15;1mhello, world[0m`,
 	}, {
 		givenColorCode: "1",
 		givenText:      "hello, world",
 		shouldColorize: true,
-		expected: `[1mhello, world[0m`,
+		expected:       `[1mhello, world[0m`,
 	}, {
 		givenColorCode: "15;1",
 		givenText:      "hello, world",

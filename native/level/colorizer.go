@@ -9,8 +9,8 @@ import (
 var DefaultColorizer Colorizer = ColorizerMap{
 	level.Trace: `[30;1m`,
 	level.Debug: `[36;1m`,
-	level.Info: `[34;1m`,
-	level.Warn: `[33;1m`,
+	level.Info:  `[34;1m`,
+	level.Warn:  `[33;1m`,
 	level.Error: `[31;1m`,
 	level.Fatal: `[35;1m`,
 }

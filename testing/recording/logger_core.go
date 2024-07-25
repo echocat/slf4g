@@ -18,7 +18,7 @@ const RootLoggerName = "ROOT"
 // CoreLogger implements log.CoreLogger and records simply every logged event.
 // Each of these events can be received using GetAll() or Get(index).
 //
-// Mutation
+// # Mutation
 //
 // This log.CoreLogger will mutate the recorded instances of log.Event if
 // one of the following fields is absent: logger, timestamp. This behavior can

@@ -12,7 +12,7 @@ import (
 // its root Logger and logs everything printed using Print(), Printf() and
 // Println() on level.Info.
 //
-// Limitations
+// # Limitations
 //
 // 1# Stuff logged using Fatal*() and Panic*() are on logged on the same Level
 // as everything else.
@@ -28,7 +28,7 @@ func Configure(customizer ...func(*log.LoggingWriter)) {
 // it's the given Logger and logs everything printed using Print(), Printf() and
 // Println() on given level.Level.
 //
-// Limitations
+// # Limitations
 //
 // 1# Stuff logged using Fatal*() and Panic*() are on logged on the same Level
 // as everything else.
@@ -54,7 +54,7 @@ func ConfigureWith(target log.CoreLogger, logAs level.Level, customizer ...func(
 // logs everything printed using Print(), Printf() and Println() on given
 // level.Level.
 //
-// Limitations
+// # Limitations
 //
 // 1# Stuff logged using Fatal*() and Panic*() are on logged on the same Level
 // as everything else.
