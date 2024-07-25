@@ -5,11 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/echocat/slf4g/level"
-
 	"github.com/echocat/slf4g/fields"
-
 	"github.com/echocat/slf4g/internal/test/assert"
+	"github.com/echocat/slf4g/level"
+)
+
+const (
+	dateTimeFormat = "2006-01-02 15:04:05"
 )
 
 func Test_coreLogger_Log_regular(t *testing.T) {
@@ -148,7 +150,7 @@ func Test_coreLogger_formatTime_sinceTestStartedMcs(t *testing.T) {
 	provider.initIfRequired()
 	instance := provider.coreLogger
 
-	givenTs, _ := time.Parse(time.DateTime, "2024-07-25 18:56:13")
+	givenTs, _ := time.Parse(dateTimeFormat, "2024-07-25 18:56:13")
 	givenEvent := instance.NewEvent(level.Info, map[string]interface{}{
 		"timestamp": givenTs,
 	})
@@ -161,7 +163,7 @@ func Test_coreLogger_formatTime_noop(t *testing.T) {
 	provider.initIfRequired()
 	instance := provider.coreLogger
 
-	givenTs, _ := time.Parse(time.DateTime, "2024-07-25 18:56:13")
+	givenTs, _ := time.Parse(dateTimeFormat, "2024-07-25 18:56:13")
 	givenEvent := instance.NewEvent(level.Info, map[string]interface{}{
 		"timestamp": givenTs,
 	})
@@ -170,7 +172,7 @@ func Test_coreLogger_formatTime_noop(t *testing.T) {
 }
 
 func Test_coreLogger_formatTime_ts(t *testing.T) {
-	provider := NewProvider(t, TimeFormat(time.DateTime))
+	provider := NewProvider(t, TimeFormat(dateTimeFormat))
 	provider.initIfRequired()
 	instance := provider.coreLogger
 
