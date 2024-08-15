@@ -1,4 +1,4 @@
-//go:build slf4gcompat
+//go:build slf4gcompat || go1.23
 
 package testlog
 
