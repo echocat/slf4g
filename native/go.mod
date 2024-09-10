@@ -6,5 +6,5 @@ replace github.com/echocat/slf4g => ../
 
 require (
 	github.com/echocat/slf4g v0.0.0
-	golang.org/x/sys v0.24.0
+	golang.org/x/sys v0.25.0
 )
