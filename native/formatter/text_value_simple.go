@@ -3,6 +3,7 @@ package formatter
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
@@ -28,8 +29,18 @@ func NewSimpleTextValue(customizer ...func(*SimpleTextValue)) *SimpleTextValue {
 
 // FormatTextValue implements TextValue.FormatTextValue().
 func (instance *SimpleTextValue) FormatTextValue(v interface{}, _ log.Provider) ([]byte, error) {
+	vv := reflect.ValueOf(v)
+	if vv.Kind() == reflect.Pointer && vv.IsNil() {
+		v = ""
+	}
+
 	if vl, ok := v.(fields.Lazy); ok {
 		v = vl.Get()
+
+		vv = reflect.ValueOf(v)
+		if vv.Kind() == reflect.Pointer && vv.IsNil() {
+			v = ""
+		}
 	}
 
 	switch vs := v.(type) {
