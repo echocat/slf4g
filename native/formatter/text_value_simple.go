@@ -32,9 +32,7 @@ func (instance *SimpleTextValue) FormatTextValue(v interface{}, _ log.Provider) 
 	vv := reflect.ValueOf(v)
 	if vv.Kind() == reflect.Pointer && vv.IsNil() {
 		v = ""
-	}
-
-	if vl, ok := v.(fields.Lazy); ok {
+	} else if vl, ok := v.(fields.Lazy); ok {
 		v = vl.Get()
 
 		vv = reflect.ValueOf(v)
