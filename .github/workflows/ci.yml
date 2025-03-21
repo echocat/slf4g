@@ -141,7 +141,9 @@ jobs:
 
   # notifies that all test jobs are finished.
   finish:
-    needs: test
+    needs:
+      - test
+      - test-native
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
