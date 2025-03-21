@@ -8,6 +8,7 @@ on:
       - reopened
       - synchronize
       - ready_for_review
+
 name: Continuous Integration
 jobs:
   lint:
@@ -20,7 +21,8 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.23.4
+          go-version: 'stable'
+          check-latest: 'true'
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -53,7 +55,7 @@ jobs:
     name: Test
     strategy:
       matrix:
-        go-version: [ 1.18.0, 1.22.0, 1.23.0 ]
+        go-version: [ '1.18', '1.22', '1.23', 'stable' ]
         os: [ ubuntu-latest, macos-latest, windows-latest ]
     runs-on: ${{ matrix.os }}
     steps:
@@ -61,6 +63,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
+          check-latest: 'true'
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -85,7 +88,41 @@ jobs:
           cat profile.cov.tmp2 | grep -v "echocat/slf4g/internal/demo/" > profile.cov.tmp3
           cp profile.cov.tmp3 profile.cov
 
-      - name: Test slf4g/native
+      - name: Send coverage
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          goveralls "-coverprofile=profile.cov" "-service=github" "-parallel" "-flagname=go-${{ matrix.go-version }}-${{ matrix.os }}-slf4g"
+
+  test-native:
+    name: Test native
+    strategy:
+      matrix:
+        go-version: [ '1.23', 'stable' ]
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+          check-latest: 'true'
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install goveralls
+        run: go install github.com/mattn/goveralls@latest
+
+      - name: Test
         run: |
           cd native
 
@@ -95,13 +132,7 @@ jobs:
           cat profile.cov.tmp2 | grep -v "echocat/slf4g/native/color/prepare_" > profile.cov.tmp3
           cp profile.cov.tmp3 profile.cov
 
-      - name: Send coverage slf4g
-        env:
-          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          goveralls "-coverprofile=profile.cov" "-service=github" "-parallel" "-flagname=go-${{ matrix.go-version }}-${{ matrix.os }}-slf4g"
-
-      - name: Send coverage slf4g/native
+      - name: Send coverage
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -110,13 +141,16 @@ jobs:
 
   # notifies that all test jobs are finished.
   finish:
-    needs: test
+    needs:
+      - test
+      - test-native
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.23.4
+          go-version: 'stable'
+          check-latest: 'true'
 
       - name: Cache
         uses: actions/cache@v4
