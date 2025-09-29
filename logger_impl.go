@@ -22,6 +22,7 @@ func (instance *loggerImpl) GetName() string {
 }
 
 func (instance *loggerImpl) Log(event Event, skipFrames uint16) {
+	instance.Helper()()
 	instance.Unwrap().Log(event, skipFrames+1)
 }
 
@@ -192,4 +193,17 @@ func (instance *loggerImpl) Without(keys ...string) Logger {
 		coreProvider: instance.coreProvider,
 		fields:       instance.fields.Without(keys...),
 	}
+}
+
+func (instance *loggerImpl) Helper() func() {
+	return helperOf(instance.Unwrap())
+}
+
+func helperOf(instance CoreLogger) func() {
+	if wh, ok := instance.(interface {
+		Helper() func()
+	}); ok {
+		return wh.Helper()
+	}
+	return func() {}
 }

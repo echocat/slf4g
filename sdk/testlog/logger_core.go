@@ -24,15 +24,22 @@ type coreLogger struct {
 
 // Log implements log.CoreLogger#Log(event).
 func (instance *coreLogger) Log(event log.Event, skipFrames uint16) {
+	instance.tb.Helper()
 	instance.log(instance.GetName(), event, skipFrames+1)
 }
 
 func (instance *coreLogger) logDepth(msg string, skipFrames uint16) {
+	instance.tb.Helper()
 	i := instance.interceptLogDepth
 	if i == nil {
-		i = instance.logLogDepth
+		i = instance.logViaSdk
 	}
 	i(msg, skipFrames+1)
+}
+
+func (instance *coreLogger) logViaSdk(str string, _ uint16) {
+	instance.tb.Helper()
+	instance.tb.Log(str)
 }
 
 func (instance *coreLogger) fail() {
@@ -52,6 +59,7 @@ func (instance *coreLogger) failNow() {
 }
 
 func (instance *coreLogger) log(loggerName string, event log.Event, skipFrames uint16) {
+	instance.tb.Helper()
 	l := event.GetLevel()
 	if !instance.IsLevelEnabled(l) {
 		return
@@ -204,4 +212,11 @@ func (instance *coreLogger) formatValue(v interface{}) ([]byte, error) {
 		v = ve.Error()
 	}
 	return json.Marshal(v)
+}
+
+// Helper wraps the helper of the testing framework into this logger.
+// As this is called by the whole logging stack (if required) this will ensure
+// the SDK logging framework respects the top entry as the log position.
+func (instance *coreLogger) Helper() func() {
+	return instance.tb.Helper
 }
