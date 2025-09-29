@@ -27,12 +27,12 @@ type CoreLogger interface {
 	// GetName returns the name of this (Core)Logger instance.
 	GetName() string
 
-	// NewEvents creates a new instance of an Event which can be modified before
+	// NewEvent creates a new instance of an Event which can be modified before
 	// provided back to this CoreLogger using Log().
 	NewEvent(level level.Level, values map[string]interface{}) Event
 
 	// Accepts is used to determine of this instance of a (Core)Logger might
-	// accepts also Events created by foreigners. Events creates by NewEvent()
+	// accept also Events created by foreigners. Events creates by NewEvent()
 	// of this instance should always return true.
 	Accepts(Event) bool
 

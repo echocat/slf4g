@@ -72,6 +72,55 @@ func Test_GetMessageOf_withFmtValue(t *testing.T) {
 	assert.ToBeEqual(t, support.PString("666"), actual)
 }
 
+func Test_GetMessageOf_withStringSliceValue(t *testing.T) {
+	cases := []struct {
+		given    []string
+		expected string
+	}{
+		{[]string{"foo", "bar", "xyz"}, "foo bar xyz"},
+		{[]string{"foo", "bar"}, "foo bar"},
+		{[]string{"foo"}, "foo"},
+		{[]string{}, ""},
+	}
+	givenProvider := newMockProvider("test").withRootLogger()
+
+	for _, c := range cases {
+		t.Run(c.expected, func(t *testing.T) {
+			givenEvent := givenProvider.newEvent(level.Info).
+				With(givenProvider.fieldKeysSpec.GetMessage(), c.given)
+
+			actual := GetMessageOf(givenEvent, givenProvider)
+
+			assert.ToBeEqual(t, support.PString(c.expected), actual)
+		})
+	}
+}
+
+func Test_GetMessageOf_withAnySliceValue(t *testing.T) {
+	cases := []struct {
+		given    []interface{}
+		expected string
+	}{
+		{[]interface{}{"foo", "bar", "xyz"}, "foo bar xyz"},
+		{[]interface{}{"foo", "bar"}, "foo bar"},
+		{[]interface{}{"foo"}, "foo"},
+		{[]interface{}{}, ""},
+		{[]interface{}{"foo", 1, "bar"}, "foo 1 bar"},
+	}
+	givenProvider := newMockProvider("test").withRootLogger()
+
+	for _, c := range cases {
+		t.Run(c.expected, func(t *testing.T) {
+			givenEvent := givenProvider.newEvent(level.Info).
+				With(givenProvider.fieldKeysSpec.GetMessage(), c.given)
+
+			actual := GetMessageOf(givenEvent, givenProvider)
+
+			assert.ToBeEqual(t, support.PString(c.expected), actual)
+		})
+	}
+}
+
 func Test_GetMessageOf_withLazyValue(t *testing.T) {
 	givenProvider := newMockProvider("test").withRootLogger()
 	givenEvent := givenProvider.newEvent(level.Info).

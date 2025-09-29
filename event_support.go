@@ -26,10 +26,38 @@ func GetMessageOf(e Event, using Provider) *string {
 	case fmt.Stringer:
 		s := v.String()
 		return &s
+	case []string:
+		result := formatStrSlice(v)
+		return &result
+	case []interface{}:
+		result := formatAnySlice(v)
+		return &result
 	default:
 		result := fmt.Sprint(pv)
 		return &result
 	}
+}
+
+func formatStrSlice(in []string) string {
+	var result []byte
+	for i, v := range in {
+		if i > 0 {
+			result = append(result, ' ')
+		}
+		result = fmt.Append(result, v)
+	}
+	return string(result)
+}
+
+func formatAnySlice(in []interface{}) string {
+	var result []byte
+	for i, v := range in {
+		if i > 0 {
+			result = append(result, ' ')
+		}
+		result = fmt.Append(result, v)
+	}
+	return string(result)
 }
 
 // GetErrorOf returns for the given Event the contained error (if exists).
