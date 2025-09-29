@@ -42,9 +42,15 @@ type Logger interface {
 //
 // printLevel defines the level which is used to log to the given log.CoreLogger
 // on every Logger.Print(), Logger.Printf() and Logger.Println() event.
-func NewLogger(target log.CoreLogger, printLevel level.Level) Logger {
-	return &LoggerImpl{
+func NewLogger(target log.CoreLogger, printLevel level.Level, customizer ...func(*LoggerImpl)) Logger {
+	result := &LoggerImpl{
 		Delegate:   target,
 		PrintLevel: printLevel,
 	}
+
+	for _, c := range customizer {
+		c(result)
+	}
+
+	return result
 }
