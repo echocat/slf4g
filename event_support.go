@@ -38,28 +38,6 @@ func GetMessageOf(e Event, using Provider) *string {
 	}
 }
 
-func formatStrSlice(in []string) string {
-	var result []byte
-	for i, v := range in {
-		if i > 0 {
-			result = append(result, ' ')
-		}
-		result = fmt.Append(result, v)
-	}
-	return string(result)
-}
-
-func formatAnySlice(in []interface{}) string {
-	var result []byte
-	for i, v := range in {
-		if i > 0 {
-			result = append(result, ' ')
-		}
-		result = fmt.Append(result, v)
-	}
-	return string(result)
-}
-
 // GetErrorOf returns for the given Event the contained error (if exists).
 func GetErrorOf(e Event, using Provider) error {
 	if e == nil {
