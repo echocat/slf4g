@@ -59,17 +59,25 @@ func (instance *loggerImpl) GetProvider() Provider {
 	return instance.Unwrap().GetProvider()
 }
 
-func (instance *loggerImpl) log(level level.Level, args ...interface{}) {
-	instance.DoLog(level, 2, args...)
+func (instance *loggerImpl) log(level level.Level, args ...interface{}) (doLog, helper func()) {
+	return instance.doLog(level, 2, args...)
 }
 
-func (instance *loggerImpl) logf(level level.Level, format string, args ...interface{}) {
-	instance.DoLogf(level, 2, format, args...)
+func (instance *loggerImpl) logf(level level.Level, format string, args ...interface{}) (doLog, helper func()) {
+	return instance.doLogf(level, 2, format, args...)
 }
 
 func (instance *loggerImpl) DoLog(level level.Level, skipFrames uint16, args ...interface{}) {
-	if !instance.IsLevelEnabled(level) {
-		return
+	l, helper := instance.doLog(level, skipFrames+1, args...)
+	helper()
+	l()
+}
+
+func (instance *loggerImpl) doLog(level level.Level, skipFrames uint16, args ...interface{}) (doLog, helper func()) {
+	delegate := instance.Unwrap()
+	helper = helperOf(delegate)
+	if !delegate.IsLevelEnabled(level) {
+		return func() {}, helper
 	}
 	provider := instance.GetProvider()
 	e := instance.NewEventWithFields(level, instance.fields)
@@ -80,26 +88,45 @@ func (instance *loggerImpl) DoLog(level level.Level, skipFrames uint16, args ...
 		e = e.With(provider.GetFieldKeysSpec().GetMessage(), args)
 	}
 
-	instance.Unwrap().Log(e, skipFrames+1)
+	return func() {
+		helper()
+		instance.Unwrap().Log(e, skipFrames+1)
+	}, helper
+
 }
 
 func (instance *loggerImpl) DoLogf(level level.Level, skipFrames uint16, format string, args ...interface{}) {
-	if !instance.IsLevelEnabled(level) {
-		return
+	l, helper := instance.doLogf(level, skipFrames+1, format, args...)
+	helper()
+	l()
+}
+
+func (instance *loggerImpl) doLogf(level level.Level, skipFrames uint16, format string, args ...interface{}) (doLog, helper func()) {
+	delegate := instance.Unwrap()
+	helper = helperOf(delegate)
+	if !delegate.IsLevelEnabled(level) {
+		return func() {}, helper
 	}
 	provider := instance.GetProvider()
 	e := instance.NewEventWithFields(level, instance.fields).
 		Withf(provider.GetFieldKeysSpec().GetMessage(), format, args...)
 
-	instance.Unwrap().Log(e, skipFrames+1)
+	return func() {
+		helper()
+		instance.Unwrap().Log(e, skipFrames+1)
+	}, helper
 }
 
 func (instance *loggerImpl) Trace(args ...interface{}) {
-	instance.log(level.Trace, args...)
+	l, helper := instance.log(level.Trace, args...)
+	helper()
+	l()
 }
 
 func (instance *loggerImpl) Tracef(format string, args ...interface{}) {
-	instance.logf(level.Trace, format, args...)
+	l, helper := instance.logf(level.Trace, format, args...)
+	helper()
+	l()
 }
 
 func (instance *loggerImpl) IsTraceEnabled() bool {
@@ -107,11 +134,15 @@ func (instance *loggerImpl) IsTraceEnabled() bool {
 }
 
 func (instance *loggerImpl) Debug(args ...interface{}) {
-	instance.log(level.Debug, args...)
+	l, helper := instance.log(level.Debug, args...)
+	helper()
+	l()
 }
 
 func (instance *loggerImpl) Debugf(format string, args ...interface{}) {
-	instance.logf(level.Debug, format, args...)
+	l, helper := instance.logf(level.Debug, format, args...)
+	helper()
+	l()
 }
 
 func (instance *loggerImpl) IsDebugEnabled() bool {
@@ -119,11 +150,15 @@ func (instance *loggerImpl) IsDebugEnabled() bool {
 }
 
 func (instance *loggerImpl) Info(args ...interface{}) {
-	instance.log(level.Info, args...)
+	l, helper := instance.log(level.Info, args...)
+	helper()
+	l()
 }
 
 func (instance *loggerImpl) Infof(format string, args ...interface{}) {
-	instance.logf(level.Info, format, args...)
+	l, helper := instance.logf(level.Info, format, args...)
+	helper()
+	l()
 }
 
 func (instance *loggerImpl) IsInfoEnabled() bool {
@@ -131,11 +166,15 @@ func (instance *loggerImpl) IsInfoEnabled() bool {
 }
 
 func (instance *loggerImpl) Warn(args ...interface{}) {
-	instance.log(level.Warn, args...)
+	l, helper := instance.log(level.Warn, args...)
+	helper()
+	l()
 }
 
 func (instance *loggerImpl) Warnf(format string, args ...interface{}) {
-	instance.logf(level.Warn, format, args...)
+	l, helper := instance.logf(level.Warn, format, args...)
+	helper()
+	l()
 }
 
 func (instance *loggerImpl) IsWarnEnabled() bool {
@@ -143,11 +182,15 @@ func (instance *loggerImpl) IsWarnEnabled() bool {
 }
 
 func (instance *loggerImpl) Error(args ...interface{}) {
-	instance.log(level.Error, args...)
+	l, helper := instance.log(level.Error, args...)
+	helper()
+	l()
 }
 
 func (instance *loggerImpl) Errorf(format string, args ...interface{}) {
-	instance.logf(level.Error, format, args...)
+	l, helper := instance.logf(level.Error, format, args...)
+	helper()
+	l()
 }
 
 func (instance *loggerImpl) IsErrorEnabled() bool {
@@ -155,11 +198,15 @@ func (instance *loggerImpl) IsErrorEnabled() bool {
 }
 
 func (instance *loggerImpl) Fatal(args ...interface{}) {
-	instance.log(level.Fatal, args...)
+	l, helper := instance.log(level.Fatal, args...)
+	helper()
+	l()
 }
 
 func (instance *loggerImpl) Fatalf(format string, args ...interface{}) {
-	instance.logf(level.Fatal, format, args...)
+	l, helper := instance.logf(level.Fatal, format, args...)
+	helper()
+	l()
 }
 
 func (instance *loggerImpl) IsFatalEnabled() bool {
