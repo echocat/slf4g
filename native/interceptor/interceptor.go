@@ -1,6 +1,6 @@
-// Interceptors are used to intercept instances of log.Event that are requested
-// to be logged. It can modify events (before they get logged) or even fully
-// prevents to get logged.
+// Package interceptor provides Interceptors which are used to intercept instances
+// of log.Event that are requested to be logged. It can modify events (before they
+// get logged) or even fully prevents to get logged.
 package interceptor
 
 import (

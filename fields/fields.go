@@ -1,4 +1,4 @@
-// Fields represents a collection of key value pairs.
+// Package fields contains Fields which represents a collection of key value pairs.
 //
 // # Key and Values
 //

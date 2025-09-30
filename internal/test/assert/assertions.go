@@ -1,3 +1,4 @@
+// Package assert provides functions for internal test assertions.
 package assert
 
 import (
@@ -151,20 +152,20 @@ type ExecutionT struct {
 }
 
 func (instance *ExecutionT) WillPanicWith(pattern string) {
-	instance.TB.Helper()
+	instance.Helper()
 	instance.WillPanicWithRegexp(regexp.MustCompile(pattern))
 }
 
 func (instance *ExecutionT) WillPanicWithRegexp(pattern *regexp.Regexp) {
-	instance.TB.Helper()
+	instance.Helper()
 	defer func() {
-		instance.TB.Helper()
+		instance.Helper()
 		if p := recover(); p != nil {
 			if !pattern.MatchString(fmt.Sprint(p)) {
-				instance.TB.Errorf("Expected to panics with: <%v>; but got: <%+v>", pattern.String(), p)
+				instance.Errorf("Expected to panics with: <%v>; but got: <%+v>", pattern.String(), p)
 			}
 		} else {
-			instance.TB.Errorf("Expected to panics with: <%v>; but does not", pattern.String())
+			instance.Errorf("Expected to panics with: <%v>; but does not", pattern.String())
 		}
 	}()
 	instance.what()

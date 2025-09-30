@@ -1,0 +1,32 @@
+version: "2"
+
+linters:
+  exclusions:
+    paths:
+      - .idea
+      - .github
+      - var
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - misspell
+    - copyloopvar
+    - exptostd
+    - importas
+  settings:
+    misspell:
+      locale: US
+      ignore-rules:
+        - echocat
+        - slf4g
+    staticcheck:
+      checks:
+        - "all"
+        - "-ST1003"
+        - "-ST1018"
+        - "-QF1001"
+run:
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+  allow-serial-runners: true

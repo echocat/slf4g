@@ -154,7 +154,7 @@ func (instance *Provider) ResetAll() {
 	}
 }
 
-// ResetAll removes all recorded entries from the instance of root CoreLogger
+// ResetRoot removes all recorded entries from the instance of root CoreLogger
 // which is associated to this instance of Provider.
 func (instance *Provider) ResetRoot() {
 	instance.getRootLogger().Reset()

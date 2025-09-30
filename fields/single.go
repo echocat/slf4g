@@ -5,7 +5,7 @@ func With(key string, value interface{}) Fields {
 	return &single{key: key, value: value}
 }
 
-// With creates an instance of Fields for the given key and a Lazy fmt.Sprintf
+// Withf creates an instance of Fields for the given key and a Lazy fmt.Sprintf
 // value from the given format and args.
 func Withf(key string, format string, args ...interface{}) Fields {
 	return With(key, LazyFormat(format, args...))

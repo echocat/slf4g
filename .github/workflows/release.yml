@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: write
+
+jobs:
+  create-native-tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo (mit Tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate tag format
+        id: validate
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "tag_ok=true" >> "$GITHUB_OUTPUT"
+            echo "${TAG} is valid."
+          else
+            echo "${TAG} does not comply with required format ^v[0-9]+\\.[0-9]+\\.[0-9]+$; Skipping."
+            echo "tag_ok=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create sub tags
+        if: steps.validate.outputs.tag_ok == 'true'
+        run: |
+          set -euo pipefail
+
+          TAG="${{ github.event.release.tag_name }}"
+          NATIVE_TAG="native/${TAG}"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git rev-parse --verify --quiet "TAG" >/dev/null; then
+            COMMIT="$(git rev-list -n 1 "TAG")"
+          else
+            COMMIT="${{ github.event.release.target_commitish }}"
+          fi
+
+          echo "Set $NATIVE_TAG to $COMMIT..."
+
+          # Remove existing remote tag(s) if already exists (overwrite)
+          git push origin ":refs/tags/$NATIVE_TAG" || true
+
+          # Remove existing local tag(s) if already exists (overwrite)
+          git tag -d "$NATIVE_TAG" 2>/dev/null || true
+
+          # Create tag(s)...
+          git tag "$NATIVE_TAG" "$COMMIT"
+          
+          # Push tags(s)...
+          git push origin "refs/tags/$NATIVE_TAG"

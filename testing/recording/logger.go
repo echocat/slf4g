@@ -47,7 +47,7 @@ func (instance *Logger) NewEvent(l level.Level, values map[string]interface{}) l
 	return instance.CoreLogger.NewEvent(l, values)
 }
 
-// NewEvent reimplements CoreLogger#NewEventWithFields()
+// NewEventWithFields reimplements CoreLogger#NewEventWithFields()
 func (instance *Logger) NewEventWithFields(l level.Level, f fields.ForEachEnabled) log.Event {
 	return instance.CoreLogger.NewEventWithFields(l, f)
 }

@@ -1,6 +1,6 @@
-// Level identifies the severity of an event to be logged. As higher ans more
-// important is the event. Trace is the less severe and Fatal the
-// most severe.
+// Package level provides Level which identifies the severity of an event to
+// be logged. As higher as more important is the event. Trace is the less
+// severe and Fatal the most severe.
 //
 // # Customization
 //
@@ -68,17 +68,17 @@ func (instance Level) CompareTo(o Level) int {
 // to order the contents of this slice by its severity.
 type Levels []Level
 
-// See sort.Interface
+// Len implements sort.Interface
 func (instance Levels) Len() int {
 	return len(instance)
 }
 
-// See sort.Interface
+// Swap implements sort.Interface
 func (instance Levels) Swap(i, j int) {
 	instance[i], instance[j] = instance[j], instance[i]
 }
 
-// See sort.Interface
+// Less implements sort.Interface
 func (instance Levels) Less(i, j int) bool {
 	return instance[i].CompareTo(instance[j]) < 0
 }
