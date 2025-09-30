@@ -1,14 +1,15 @@
 package fields
 
-func newWithout(fields Fields, keys ...string) Fields {
-	if isEmpty(fields) {
+// NewWithout creates a new instance of target where the given keys are no longer included.
+func NewWithout(target Fields, keys ...string) Fields {
+	if isEmpty(target) {
 		return Empty()
 	}
 	if len(keys) == 0 {
-		return fields
+		return target
 	}
 	result := &without{
-		fields: fields,
+		fields: target,
 	}
 	result.excludedKeys = make(keySet, len(keys))
 	for _, key := range keys {
@@ -75,11 +76,11 @@ func (instance *without) WithAll(of map[string]interface{}) Fields {
 }
 
 func (instance *without) Without(keys ...string) Fields {
-	return newWithout(instance, keys...)
+	return NewWithout(instance, keys...)
 }
 
 func (instance *without) asParentOf(fields Fields) Fields {
-	return newLineage(fields, instance)
+	return NewLineage(fields, instance)
 }
 
 func (instance *without) Len() (result int) {

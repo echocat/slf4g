@@ -1,11 +1,7 @@
 package fields
 
-type lineage struct {
-	target Fields
-	parent Fields
-}
-
-func newLineage(target Fields, parent Fields) Fields {
+// NewLineage creates a new version of Fields where target is a lineage of parent.
+func NewLineage(target Fields, parent Fields) Fields {
 	if isEmpty(parent) {
 		return target
 	}
@@ -13,6 +9,11 @@ func newLineage(target Fields, parent Fields) Fields {
 		return parent
 	}
 	return &lineage{target, parent}
+}
+
+type lineage struct {
+	target Fields
+	parent Fields
 }
 
 func (instance *lineage) ForEach(consumer func(key string, value interface{}) error) error {
@@ -73,11 +74,11 @@ func (instance *lineage) WithAll(of map[string]interface{}) Fields {
 }
 
 func (instance *lineage) asParentOf(fields Fields) Fields {
-	return newLineage(fields, instance)
+	return NewLineage(fields, instance)
 }
 
 func (instance *lineage) Without(keys ...string) Fields {
-	return newWithout(instance, keys...)
+	return NewWithout(instance, keys...)
 }
 
 func (instance *lineage) Len() int {

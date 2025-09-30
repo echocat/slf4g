@@ -50,11 +50,11 @@ func (instance mapped) WithAll(of map[string]interface{}) Fields {
 }
 
 func (instance mapped) Without(keys ...string) Fields {
-	return newWithout(instance, keys...)
+	return NewWithout(instance, keys...)
 }
 
 func (instance mapped) asParentOf(fields Fields) Fields {
-	return newLineage(fields, instance)
+	return NewLineage(fields, instance)
 }
 
 func (instance mapped) Len() (result int) {
