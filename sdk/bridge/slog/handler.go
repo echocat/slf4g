@@ -65,8 +65,8 @@ func (instance *Handler) Handle(_ context.Context, record sdk.Record) error {
 		return err
 	}
 
-	skipFrames := instance.getDetectSkipFrames()()
-	delegate.Log(e, skipFrames+1)
+	skipFrames := instance.getDetectSkipFrames()(1)
+	delegate.Log(e, skipFrames)
 	return nil
 }
 
