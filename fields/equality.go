@@ -72,15 +72,15 @@ func (instance *EqualityImpl) AreFieldsEqual(left, right Fields) (bool, error) {
 		if err := left.ForEach(func(key string, lValue interface{}) error {
 			rValue, rExists := right.Get(key)
 			if !rExists {
-				return entriesNotEqualV
+				return errEntriesNotEqualV
 			}
 			if equal, err := ve.AreValuesEqual(key, lValue, rValue); err != nil {
 				return err
 			} else if !equal {
-				return entriesNotEqualV
+				return errEntriesNotEqualV
 			}
 			return nil
-		}); err == entriesNotEqualV {
+		}); err == errEntriesNotEqualV {
 			return false, nil
 		} else if err != nil {
 			return false, err
@@ -118,5 +118,5 @@ func (instance *privateEqualityImpl) AreFieldsEqual(left, right Fields) (bool, e
 }
 
 var (
-	entriesNotEqualV = errors.New(reflect.TypeOf((*Equality)(nil)).PkgPath() + "/both entries are not equal")
+	errEntriesNotEqualV = errors.New(reflect.TypeOf((*Equality)(nil)).PkgPath() + "/both entries are not equal")
 )

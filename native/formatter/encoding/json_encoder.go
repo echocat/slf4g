@@ -9,6 +9,7 @@ import (
 	"github.com/echocat/slf4g/native/execution"
 )
 
+// JsonEncoder encodes given elements to JSON format.
 type JsonEncoder interface {
 	TextEncoder
 

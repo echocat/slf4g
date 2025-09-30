@@ -27,7 +27,7 @@ func NewNamesBasedLevel(names level.Names) Level {
 	})
 }
 
-// NewNamesBasedLevel creates a new instance of Level which formats the given
+// NewOrdinalBasedLevel creates a new instance of Level which formats the given
 // level.Level by its ordinal.
 func NewOrdinalBasedLevel() Level {
 	return LevelFunc(func(in level.Level, using log.Provider) (interface{}, error) {
@@ -43,7 +43,7 @@ func (instance LevelFunc) FormatLevel(in level.Level, using log.Provider) (inter
 	return instance(in, using)
 }
 
-// NewFacade creates a new facade instance of Formatter using the given
+// NewLevelFacade creates a new facade instance of Formatter using the given
 // provider.
 func NewLevelFacade(provider func() Level) Level {
 	return levelFacade(provider)

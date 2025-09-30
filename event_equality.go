@@ -85,16 +85,16 @@ func (instance *EventEqualityImpl) AreEventsEqual(left, right Event) (bool, erro
 		if err := left.ForEach(func(key string, lValue interface{}) error {
 			rValue, rExists := right.Get(key)
 			if !rExists {
-				return entriesNotEqualV
+				return errEntriesNotEqualV
 			}
 			if equal, err := ve.AreValuesEqual(key, lValue, rValue); err != nil {
 				return err
 			} else if !equal {
-				return entriesNotEqualV
+				return errEntriesNotEqualV
 			} else {
 				return nil
 			}
-		}); err == entriesNotEqualV {
+		}); err == errEntriesNotEqualV {
 			return false, nil
 		} else if err != nil {
 			return false, err
@@ -171,5 +171,5 @@ func (instance *ignoringKeysEventEquality) WithIgnoringKeys(keys ...string) Even
 }
 
 var (
-	entriesNotEqualV = errors.New(reflect.TypeOf((*EventEquality)(nil)).PkgPath() + "/both entries are not equal")
+	errEntriesNotEqualV = errors.New(reflect.TypeOf((*EventEquality)(nil)).PkgPath() + "/both entries are not equal")
 )

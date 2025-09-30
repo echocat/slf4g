@@ -10,6 +10,7 @@ type Buffered interface {
 	String() string
 }
 
+// TextEncoder encodes given elements to text format.
 type TextEncoder interface {
 	io.ByteWriter
 	WriteByteChecked(byte) func() error

@@ -29,7 +29,7 @@ const RootLoggerName = "ROOT"
 // adding in any way their context information.
 type CoreLogger struct {
 	// Provider which are managing this instance. If this value is nil
-	// log.GetProvider() will be used instead. This default behaviour could lead
+	// log.GetProvider() will be used instead. This default behavior could lead
 	// in some cases to unintended consequences.
 	Provider log.Provider
 

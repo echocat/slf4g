@@ -22,7 +22,7 @@ func Test_NewProvider(t *testing.T) {
 
 	assert.ToBeNotNil(t, actual)
 	assert.ToBeSame(t, givenTarget, actual.Level.Target)
-	assert.ToBeSame(t, givenTarget.ConsumerTarget.GetConsumer(), actual.Consumer.Formatter.Target)
+	assert.ToBeSame(t, givenTarget.GetConsumer(), actual.Consumer.Formatter.Target)
 }
 
 func Test_NewProvider_customize(t *testing.T) {
@@ -41,7 +41,7 @@ func Test_NewProvider_customize(t *testing.T) {
 	assert.ToBeNotNil(t, actual)
 	assert.ToBeSame(t, givenTarget, actual.Level.Target)
 	assert.ToBeSame(t, givenNames, actual.Level.Names)
-	assert.ToBeSame(t, givenTarget.ConsumerTarget.GetConsumer(), actual.Consumer.Formatter.Target)
+	assert.ToBeSame(t, givenTarget.GetConsumer(), actual.Consumer.Formatter.Target)
 }
 
 type mockProviderTarget struct {

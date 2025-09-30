@@ -147,11 +147,20 @@ Done. Enjoy!
 
 ## Implementations
 
-1. [native](native): Reference implementation of [slf4g](https://github.com/echocat/slf4g).
+1. [native](native): Reference implementation of [slf4g](https://github.com/echocat/slf4g), best use for most applications.
 
 2. [testlog](sdk/testlog): Ensure that everything which is logged within test by [slf4g](https://github.com/echocat/slf4g) appears correctly within tests.
 
-2. [recording](testing/recording): Will record everything which is logged by [slf4g](https://github.com/echocat/slf4g) and can then be asserted inside test cases.
+3. [recording](testing/recording): Will record everything which is logged by [slf4g](https://github.com/echocat/slf4g) and can then be asserted inside test cases.
+
+## Bridges
+
+There are several bridges available to use [slf4g](https://github.com/echocat/slf4g) in other frameworks:
+
+1. [sdk/bridge](sdk/bridge) to implement the [Go's SDK log interface](https://pkg.go.dev/log).
+2. [github.com/echocat/slf4g-logr](https://github.com/echocat/slf4g-logr) to implement [github.com/go-logr/logr](https://github.com/go-logr/logr).
+3. [github.com/echocat/slf4g-logrus](https://github.com/echocat/slf4g-logrus) to implement [github.com/sirupsen/logrus](https://github.com/sirupsen/logrus).
+4. [github.com/echocat/slf4g-klog](https://github.com/echocat/slf4g-klog) to implement [k8s.io/klog/v2](https://github.com/kubernetes/klog).
 
 ## Contributing
 

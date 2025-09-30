@@ -1,4 +1,4 @@
-// Formatter is used to format log events to a format which can logged to a
+// Package formatter is used to format log events to a format which can logged to a
 // console, file, ...
 package formatter
 

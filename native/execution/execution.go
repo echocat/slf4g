@@ -1,3 +1,4 @@
+// Package execution contains tooling methods for simple executions.
 package execution
 
 // Execution is a simple interface for a simple execution.

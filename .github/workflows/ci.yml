@@ -1,4 +1,9 @@
+name: Continuous Integration
+
 on:
+  release:
+    types:
+      - published
   push:
     branches:
       - main
@@ -9,75 +14,53 @@ on:
       - synchronize
       - ready_for_review
 
-name: Continuous Integration
 jobs:
   lint:
     name: Lint
     strategy:
+      fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
+        module: [ ., native ]
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
       - name: Install Go
         uses: actions/setup-go@v6
         with:
           go-version: 'stable'
           check-latest: 'true'
-
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Cache
-        uses: actions/cache@v4
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Install dependencies
-        run: |
-          go mod download
-
-      - name: Install golangci-lint
-        run: |
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-          golangci-lint --version
+          cache-dependency-path: |
+            ${{ matrix.module }}/go.sum
 
       - name: Lint
-        run: |
-          golangci-lint run --color=always -c .golangci.yml ./...
-
-          cd native
-          golangci-lint run --color=always -c ../.golangci.yml ./...
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: latest
+          args: "--color=always --config ${{ github.workspace }}/.golangci.yaml"
+          working-directory: ${{ matrix.module }}
 
   test:
-    name: Test
+    name: Test .
     strategy:
+      fail-fast: false
       matrix:
         go-version: [ '1.18', '1.22', '1.23', 'stable' ]
         os: [ ubuntu-latest, macos-latest, windows-latest ]
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Install Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: ${{ matrix.go-version }}
-          check-latest: 'true'
-
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Cache
-        uses: actions/cache@v4
+      - name: Install Go
+        uses: actions/setup-go@v6
         with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Install goveralls
-        run: go install github.com/mattn/goveralls@latest
+          go-version: '${{ matrix.go-version }}'
+          check-latest: 'true'
+          cache-dependency-path: |
+            go.sum
 
       - name: Test
         run: |
@@ -89,38 +72,32 @@ jobs:
           cp profile.cov.tmp3 profile.cov
 
       - name: Send coverage
-        env:
-          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          goveralls "-coverprofile=profile.cov" "-service=github" "-parallel" "-flagname=go-${{ matrix.go-version }}-${{ matrix.os }}-slf4g"
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel: true
+          flag-name: go-${{ matrix.go-version }}-${{ matrix.os }}-slf4g
+          format: golang
+          file: profile.cov
 
   test-native:
     name: Test native
     strategy:
+      fail-fast: false
       matrix:
         go-version: [ '1.23', 'stable' ]
         os: [ ubuntu-latest, macos-latest, windows-latest ]
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Install Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: ${{ matrix.go-version }}
-          check-latest: 'true'
-
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Cache
-        uses: actions/cache@v4
+      - name: Install Go
+        uses: actions/setup-go@v6
         with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Install goveralls
-        run: go install github.com/mattn/goveralls@latest
+          go-version: '${{ matrix.go-version }}'
+          check-latest: 'true'
+          cache-dependency-path: |
+            native/go.sum
 
       - name: Test
         run: |
@@ -133,38 +110,22 @@ jobs:
           cp profile.cov.tmp3 profile.cov
 
       - name: Send coverage
-        env:
-          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          cd native
-          goveralls "-coverprofile=profile.cov" "-service=github" "-parallel" "-flagname=go-${{ matrix.go-version }}-${{ matrix.os }}-slf4g-native"
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel: true
+          flag-name: go-${{ matrix.go-version }}-${{ matrix.os }}-slf4g-native
+          format: golang
+          file: native/profile.cov
 
-  # notifies that all test jobs are finished.
   finish:
+    name: Finish
     needs:
       - test
       - test-native
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
-      - name: Install Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: 'stable'
-          check-latest: 'true'
-
-      - name: Cache
-        uses: actions/cache@v4
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Install goveralls
-        run: go install github.com/mattn/goveralls@latest
-
       - name: Send coverage finish
-        env:
-          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          goveralls "-parallel-finish" "-service=github"
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel-finished: true
