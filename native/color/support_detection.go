@@ -55,3 +55,12 @@ func SupportAssumptionDetectionGitlabCi() (bool, error) {
 func SupportAssumptionDetectionGithubActions() (bool, error) {
 	return os.Getenv("GITHUB_RUN_ID") != "" && os.Getenv("GITHUB_WORKFLOW") != "", nil
 }
+
+// ForcedSupportedWriteFunc creates an [io.Writer] from a given method, which will force
+// the support of colorize output.
+type ForcedSupportedWriteFunc func(p []byte) (n int, err error)
+
+// Write implements [io.Writer.Write]
+func (instance ForcedSupportedWriteFunc) Write(p []byte) (int, error) {
+	return instance(p)
+}

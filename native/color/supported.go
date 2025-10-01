@@ -36,16 +36,20 @@ func AllSupports() Supports {
 }
 
 // DetectSupportForWriter detects for the given io.Writer if color is supported
-// or not. Additionally it prepares the given logger with the color mode and
+// or not. Additionally, it prepares the given logger with the color mode and
 // will return a modified instance of it. If color is not supported the original
-// io.Writer is still returned. Errors are only returned in cases where
-// something bad happens while detecting or preparing for color.
+// io.Writer is still returned. Errors are only returned in cases where something
+// bad happens while detecting or preparing for color.
 //
 // See SupportAssumptionDetections for assumed detections.
 func DetectSupportForWriter(w io.Writer) (prepared io.Writer, supported Supported, err error) {
 	actual, err := prepareForColors(w)
 	if actual && err == nil {
 		return w, SupportedNative, nil
+	}
+
+	if _, ok := w.(ForcedSupportedWriteFunc); ok {
+		return w, SupportedAssumed, nil
 	}
 
 	for _, d := range SupportAssumptionDetections {

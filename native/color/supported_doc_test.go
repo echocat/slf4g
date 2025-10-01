@@ -1,32 +1,27 @@
 package color_test
 
 import (
-	"bytes"
-	"fmt"
+	"os"
 
 	"github.com/echocat/slf4g/native/color"
 )
 
 func ExampleDetectSupportForWriter_detection() {
-	var buf bytes.Buffer // This does not support colors at all.
+	// For this test we force the output to support colors.
+	// Usually, you just use os.Stdout or os.Stderr.
+	output := color.ForcedSupportedWriteFunc(os.Stdout.Write)
 
-	prepared, supported, err := color.DetectSupportForWriter(&buf)
+	prepared, supported, err := color.DetectSupportForWriter(output)
 	if err != nil {
 		panic(err)
 	}
 
-	msg := []byte("Hello, world!")
+	msg := "Hello, world!"
 	if supported.IsSupported() {
-		msg = colorize(msg)
+		msg = "colored(" + msg + ")"
 	}
-	_, _ = prepared.Write(msg)
-
-	fmt.Println(buf.String())
+	_, _ = prepared.Write([]byte(msg))
 
 	// Output:
-	// Hello, world!
-}
-
-func colorize(_ []byte) []byte {
-	panic("should never be called.")
+	// colored(Hello, world!)
 }
