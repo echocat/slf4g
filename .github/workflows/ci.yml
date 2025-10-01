@@ -68,7 +68,7 @@ jobs:
 
           # Remove some stuff from the profile...
           head -n1 profile.cov.full > profile.cov
-          tail -n +2 profile.cov.full | grep -vE '^github\.com\/echocat\/slf4g\/(internal\/(test|demo)\/|hooks\/|sdk\/bridge\/hook\/)' >> profile.cov
+          tail -n +2 profile.cov.full | grep -vE '^github\.com\/echocat\/slf4g\/(internal\/(test|demo|support)\/|hooks\/|sdk\/bridge\/hook\/)' >> profile.cov
 
       - name: Store test artifacts
         if: always()

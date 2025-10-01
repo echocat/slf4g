@@ -7,7 +7,7 @@ import (
 )
 
 func ExampleDetectSupportForWriter_detection() {
-	prepared, supported, err := color.DetectSupportForWriter(os.Stderr)
+	prepared, supported, err := color.DetectSupportForWriter(os.Stdout)
 	if err != nil {
 		panic(err)
 	}
@@ -17,6 +17,9 @@ func ExampleDetectSupportForWriter_detection() {
 		msg = colorize(msg)
 	}
 	_, _ = prepared.Write(msg)
+
+	// Output:
+	// Hello, world!
 }
 
 //goland:noinspection GoTestName

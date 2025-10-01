@@ -9,7 +9,6 @@ import (
 	"github.com/echocat/slf4g/internal/test/assert"
 )
 
-var veryComplexValue = struct{}{}
 var filterContextWithLeveInfo = filterContext{
 	level: level.Info,
 }
@@ -18,13 +17,18 @@ var filterContextWithLeveDebug = filterContext{
 }
 
 func ExampleRequireMaximalLevel() {
-	filteredValue := RequireMaximalLevel(level.Debug, veryComplexValue)
+	filteredValue := RequireMaximalLevel(level.Debug, struct{}{})
 
-	// Will be <nil>, <false>
-	fmt.Println(filteredValue.Filter(filterContextWithLeveInfo))
+	fmt.Println(filteredValue.Filter(filterContext{
+		level: level.Info,
+	}))
+	fmt.Println(filteredValue.Filter(filterContext{
+		level: level.Debug,
+	}))
 
-	// Will be <veryComplexValue>, <true>
-	fmt.Println(filteredValue.Filter(filterContextWithLeveDebug))
+	// Output:
+	// <nil> false
+	// {} true
 }
 
 func Test_RequireMaximalLevelLazy_Get(t *testing.T) {
