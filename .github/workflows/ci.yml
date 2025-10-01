@@ -72,6 +72,16 @@ jobs:
             tail -n +2 profile.cov.full | grep -vE '^github\.com\/echocat\/slf4g\/(internal\/(test|demo)|hooks|sdk\/bridge\/hook)\/'
           } > profile.cov
 
+      - name: Store test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-go-${{ matrix.go-version }}-${{ matrix.os }}-${{ github.run_number }}
+          path: |
+            profile.cov
+          retention-days: 1
+          if-no-files-found: warn
+
       - name: Send coverage
         uses: coverallsapp/github-action@v2
         with:
@@ -111,6 +121,16 @@ jobs:
             head -n1 profile.cov.full
             tail -n +2 profile.cov.full | grep -vE '^github\.com\/echocat\/slf4g\/native\/(internal\/demo_|color\/prepare_)\/'
           } > profile.cov
+
+      - name: Store test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-native-go-${{ matrix.go-version }}-${{ matrix.os }}-${{ github.run_number }}
+          path: |
+            native/profile.cov
+          retention-days: 1
+          if-no-files-found: warn
 
       - name: Send coverage
         uses: coverallsapp/github-action@v2
