@@ -4,6 +4,7 @@
 package sdk
 
 import (
+	"context"
 	"fmt"
 	sdk "log/slog"
 	"testing"
@@ -53,7 +54,7 @@ func TestHandler_Enabled(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.givenLevel.String(), func(t *testing.T) {
-			actual := instance.Enabled(nil, c.givenLevel)
+			actual := instance.Enabled(context.TODO(), c.givenLevel)
 			assert.ToBeEqual(t, c.expected, actual)
 		})
 	}
@@ -88,7 +89,7 @@ func TestHandler_Handle(t *testing.T) {
 				},
 			}
 
-			actualErr := instance.Handle(nil, sdk.Record{
+			actualErr := instance.Handle(context.TODO(), sdk.Record{
 				Time:    aTime,
 				Message: "aMessage",
 				Level:   c.givenLevel,
