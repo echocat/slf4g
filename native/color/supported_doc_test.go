@@ -1,13 +1,16 @@
 package color_test
 
 import (
-	"os"
+	"bytes"
+	"fmt"
 
 	"github.com/echocat/slf4g/native/color"
 )
 
 func ExampleDetectSupportForWriter_detection() {
-	prepared, supported, err := color.DetectSupportForWriter(os.Stdout)
+	var buf bytes.Buffer // This does not support colors at all.
+
+	prepared, supported, err := color.DetectSupportForWriter(&buf)
 	if err != nil {
 		panic(err)
 	}
@@ -18,12 +21,11 @@ func ExampleDetectSupportForWriter_detection() {
 	}
 	_, _ = prepared.Write(msg)
 
+	fmt.Println(buf.String())
+
 	// Output:
 	// Hello, world!
 }
-
-//goland:noinspection GoTestName
-func Examplecolorize() {}
 
 func colorize(_ []byte) []byte {
 	panic("should never be called.")
