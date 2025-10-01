@@ -81,12 +81,7 @@ func (instance *Handler) eventOfRecord(logger log.CoreLogger, record sdk.Record)
 
 	fds := instance.fieldsOfRecord(logger, record)
 
-	fieldsMap, err := fields.AsMap(fds)
-	if err != nil {
-		return nil, err
-	}
-
-	return logger.NewEvent(l, fieldsMap), nil
+	return log.NewEventWithFields(logger, l, fds), nil
 }
 
 func (instance *Handler) fieldsOfRecord(logger log.CoreLogger, record sdk.Record) fields.Fields {
@@ -126,7 +121,7 @@ func (instance *Handler) fields() fields.Fields {
 }
 
 func (instance *Handler) levelOfRecord(record sdk.Record) (level.Level, error) {
-	return instance.getLevelMapper().FromSdk(record.Level)
+	return instance.mapFromSdkLevel(record.Level)
 }
 
 func (instance *Handler) mapFromSdkLevel(sl sdk.Level) (level.Level, error) {

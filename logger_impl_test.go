@@ -301,6 +301,85 @@ func Test_loggerImpl_NewEventWithFields_panicsOnErrors(t *testing.T) {
 	}).WillPanicWith("^cannot make .+: expected$")
 }
 
+func Test_helperOf(t *testing.T) {
+	var called *bool
+	cases := []struct {
+		name               string
+		givenCoreLogger    CoreLogger
+		expectedToBeCalled bool
+	}{
+		{"with", someCoreLoggerWithHelper(func() { result := true; called = &result }), true},
+		{"without", someCoreLogger{}, false},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			initial := false
+			called = &initial
+
+			helperOf(c.givenCoreLogger)()
+
+			assert.ToBeEqual(t, c.expectedToBeCalled, *called)
+		})
+	}
+}
+
+type someCoreLogger struct{}
+
+func (instance someCoreLogger) Log(Event, uint16) {
+	panic("should never be called")
+}
+
+func (instance someCoreLogger) IsLevelEnabled(level.Level) bool {
+	panic("should never be called")
+}
+
+func (instance someCoreLogger) GetName() string {
+	panic("should never be called")
+}
+
+func (instance someCoreLogger) NewEvent(level.Level, map[string]interface{}) Event {
+	panic("should never be called")
+}
+
+func (instance someCoreLogger) Accepts(Event) bool {
+	panic("should never be called")
+}
+
+func (instance someCoreLogger) GetProvider() Provider {
+	panic("should never be called")
+}
+
+type someCoreLoggerWithHelper func()
+
+func (instance someCoreLoggerWithHelper) Helper() func() {
+	return instance
+}
+
+func (instance someCoreLoggerWithHelper) Log(Event, uint16) {
+	panic("should never be called")
+}
+
+func (instance someCoreLoggerWithHelper) IsLevelEnabled(level.Level) bool {
+	panic("should never be called")
+}
+
+func (instance someCoreLoggerWithHelper) GetName() string {
+	panic("should never be called")
+}
+
+func (instance someCoreLoggerWithHelper) NewEvent(level.Level, map[string]interface{}) Event {
+	panic("should never be called")
+}
+
+func (instance someCoreLoggerWithHelper) Accepts(Event) bool {
+	panic("should never be called")
+}
+
+func (instance someCoreLoggerWithHelper) GetProvider() Provider {
+	panic("should never be called")
+}
+
 func newLoggerImpl(in *mockCoreLogger) *loggerImpl {
 	return &loggerImpl{
 		coreProvider: func() CoreLogger {

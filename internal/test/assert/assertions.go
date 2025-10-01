@@ -79,7 +79,7 @@ func ToBeOfType(t testing.TB, expectedType, actual interface{}) {
 func ToBeNoError(t testing.TB, actual error) {
 	t.Helper()
 	if actual != nil {
-		Failf(t, "Expected to be no error; but got: <%+v>", reflect.TypeOf(actual))
+		Failf(t, "Expected to be no error; but got: <%+v>: %v", reflect.TypeOf(actual), actual)
 	}
 }
 

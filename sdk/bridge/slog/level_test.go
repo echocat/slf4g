@@ -108,3 +108,16 @@ func TestLevelMapperFacade_ToSdk(t *testing.T) {
 	assert.ToBeMatching(t, "unknown log level: 666", actualErrB)
 	assert.ToBeEqual(t, sdk.Level(0), actualB)
 }
+
+type testingLevelMapper struct {
+	fromSdk func(sdk.Level) (level.Level, error)
+	toSdk   func(level.Level) (sdk.Level, error)
+}
+
+func (instance *testingLevelMapper) FromSdk(s sdk.Level) (level.Level, error) {
+	return instance.fromSdk(s)
+}
+
+func (instance *testingLevelMapper) ToSdk(l level.Level) (sdk.Level, error) {
+	return instance.toSdk(l)
+}
