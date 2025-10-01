@@ -1,8 +1,6 @@
 package log
 
 import (
-	"fmt"
-
 	"github.com/echocat/slf4g/level"
 
 	"github.com/echocat/slf4g/fields"
@@ -27,24 +25,11 @@ func (instance *loggerImpl) Log(event Event, skipFrames uint16) {
 }
 
 func (instance *loggerImpl) NewEvent(l level.Level, values map[string]interface{}) Event {
-	if v := instance.fields; v != nil {
-		return instance.NewEventWithFields(l, v.WithAll(values))
-	}
-	return instance.Unwrap().NewEvent(l, values)
+	return NewEvent(instance.Unwrap(), l, values)
 }
 
 func (instance *loggerImpl) NewEventWithFields(l level.Level, f fields.ForEachEnabled) Event {
-	target := instance.Unwrap()
-	if wf, ok := target.(interface {
-		NewEventWithFields(l level.Level, f fields.ForEachEnabled) Event
-	}); ok {
-		return wf.NewEventWithFields(l, f)
-	}
-	asMap, err := fields.AsMap(f)
-	if err != nil {
-		panic(fmt.Errorf("cannot make a map out of %v: %w", f, err))
-	}
-	return target.NewEvent(l, asMap)
+	return NewEventWithFields(instance.Unwrap(), l, f)
 }
 
 func (instance *loggerImpl) Accepts(event Event) bool {

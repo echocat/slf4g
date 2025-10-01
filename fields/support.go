@@ -1,7 +1,7 @@
 package fields
 
-// ForEachEnabled defines a type that handles iterates over all its
-// key value pairs and providing it to the the given consumer.
+// ForEachEnabled defines a type that handles iterates over all its key value
+// pairs and providing it to the given consumer.
 type ForEachEnabled interface {
 	ForEach(consumer func(key string, value interface{}) error) error
 }

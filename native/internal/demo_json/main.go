@@ -4,7 +4,6 @@ import (
 	log "github.com/echocat/slf4g"
 	_ "github.com/echocat/slf4g/native"
 	"github.com/echocat/slf4g/native/formatter"
-	_ "github.com/echocat/slf4g/sdk/bridge/hook"
 )
 
 func main() {

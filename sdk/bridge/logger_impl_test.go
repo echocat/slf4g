@@ -286,6 +286,85 @@ func Test_LoggerImpl_onPanic_notConfigured(t *testing.T) {
 	assert.ToBeEqual(t, true, called)
 }
 
+func Test_helperOf(t *testing.T) {
+	var called *bool
+	cases := []struct {
+		name               string
+		givenCoreLogger    log.CoreLogger
+		expectedToBeCalled bool
+	}{
+		{"with", someCoreLoggerWithHelper(func() { result := true; called = &result }), true},
+		{"without", someCoreLogger{}, false},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			initial := false
+			called = &initial
+
+			helperOf(c.givenCoreLogger)()
+
+			assert.ToBeEqual(t, c.expectedToBeCalled, *called)
+		})
+	}
+}
+
+type someCoreLogger struct{}
+
+func (instance someCoreLogger) Log(log.Event, uint16) {
+	panic("should never be called")
+}
+
+func (instance someCoreLogger) IsLevelEnabled(level.Level) bool {
+	panic("should never be called")
+}
+
+func (instance someCoreLogger) GetName() string {
+	panic("should never be called")
+}
+
+func (instance someCoreLogger) NewEvent(level.Level, map[string]interface{}) log.Event {
+	panic("should never be called")
+}
+
+func (instance someCoreLogger) Accepts(log.Event) bool {
+	panic("should never be called")
+}
+
+func (instance someCoreLogger) GetProvider() log.Provider {
+	panic("should never be called")
+}
+
+type someCoreLoggerWithHelper func()
+
+func (instance someCoreLoggerWithHelper) Helper() func() {
+	return instance
+}
+
+func (instance someCoreLoggerWithHelper) Log(log.Event, uint16) {
+	panic("should never be called")
+}
+
+func (instance someCoreLoggerWithHelper) IsLevelEnabled(level.Level) bool {
+	panic("should never be called")
+}
+
+func (instance someCoreLoggerWithHelper) GetName() string {
+	panic("should never be called")
+}
+
+func (instance someCoreLoggerWithHelper) NewEvent(level.Level, map[string]interface{}) log.Event {
+	panic("should never be called")
+}
+
+func (instance someCoreLoggerWithHelper) Accepts(log.Event) bool {
+	panic("should never be called")
+}
+
+func (instance someCoreLoggerWithHelper) GetProvider() log.Provider {
+	panic("should never be called")
+}
+
 func prepareLoggerImpl() (*LoggerImpl, *recording.CoreLogger, *horrorEventsHook) {
 	recorder := recording.NewCoreLogger()
 	result := &LoggerImpl{

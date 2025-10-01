@@ -54,7 +54,7 @@ func NewProvider() *Provider {
 // defer statement.
 //
 // This is quite useful in tests where you want to record also test outputs
-// and want to reset everything afterwards into a clean state.
+// and want to reset everything afterward into a clean state.
 func (instance *Provider) HookGlobally() func() {
 	previous := log.SetProvider(instance)
 	return func() {

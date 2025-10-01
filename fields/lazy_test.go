@@ -14,6 +14,9 @@ func ExampleLazyFunc() {
 	})
 
 	fmt.Println(lazy.Get())
+
+	// Output:
+	// foobar
 }
 
 func Test_LazyFunc_callsItselfOnGet(t *testing.T) {
@@ -30,6 +33,9 @@ func ExampleLazyFormat() {
 	lazy := LazyFormat("Hello, %s!", "world")
 
 	fmt.Println(lazy.Get())
+
+	// Output:
+	//Hello, world!
 }
 
 func Test_LazyFormat_formats(t *testing.T) {

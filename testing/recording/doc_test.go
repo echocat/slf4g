@@ -20,7 +20,13 @@ func Example() {
 	log.Warn("bar")
 
 	// 4. Print every recorded event to stdout
-	fmt.Println(provider.GetAll())
+	for i, v := range provider.GetAll() {
+		fmt.Println(i, v)
+	}
 
 	// At the end: Everything will be reset.
+
+	// Output:
+	// 0 [3000] {message=foo}
+	// 1 [4000] {message=bar}
 }

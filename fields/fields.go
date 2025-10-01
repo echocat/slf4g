@@ -1,6 +1,6 @@
 // Package fields contains Fields which represents a collection of key value pairs.
 //
-// # Key and Values
+// # key and Values
 //
 // The keys are always of type string and should be only printable characters
 // which can be printed in any context. Recommended are everything that matches:

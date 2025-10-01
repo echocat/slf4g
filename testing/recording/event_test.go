@@ -2,6 +2,7 @@ package recording
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/echocat/slf4g/level"
@@ -57,7 +58,7 @@ func Test_eventImpl_GetLevel(t *testing.T) {
 	assert.ToBeEqual(t, level.Error, actual)
 }
 
-func Test_eventImpl_With(t *testing.T) {
+func Test_event_With(t *testing.T) {
 	expected := fields.With("a", 1).With("b", 2)
 	instance := &event{fields: fields.With("a", 1)}
 
@@ -66,7 +67,7 @@ func Test_eventImpl_With(t *testing.T) {
 	assert.ToBeEqualUsing(t, expected, actual.(*event).fields, fields.AreEqual)
 }
 
-func Test_eventImpl_Withf(t *testing.T) {
+func Test_event_Withf(t *testing.T) {
 	expected := fields.With("a", 1).Withf("b", "%d", 2)
 	instance := &event{fields: fields.With("a", 1)}
 
@@ -75,7 +76,7 @@ func Test_eventImpl_Withf(t *testing.T) {
 	assert.ToBeEqualUsing(t, expected, actual.(*event).fields, fields.AreEqual)
 }
 
-func Test_eventImpl_WithError(t *testing.T) {
+func Test_event_WithError(t *testing.T) {
 	givenError := errors.New("expected")
 	expected := fields.With("a", 1).With("anErrorKey", givenError)
 	instance := &event{
@@ -88,7 +89,7 @@ func Test_eventImpl_WithError(t *testing.T) {
 	assert.ToBeEqualUsing(t, expected, actual.(*event).fields, fields.AreEqual)
 }
 
-func Test_eventImpl_WithAll(t *testing.T) {
+func Test_event_WithAll(t *testing.T) {
 	givenMap := map[string]interface{}{
 		"b": 2,
 		"c": 3,
@@ -101,7 +102,7 @@ func Test_eventImpl_WithAll(t *testing.T) {
 	assert.ToBeEqualUsing(t, expected, actual.(*event).fields, fields.AreEqual)
 }
 
-func Test_eventImpl_Without(t *testing.T) {
+func Test_event_Without(t *testing.T) {
 	expected := fields.With("b", 2).With("d", 4)
 	instance := &event{fields: fields.
 		With("a", 1).
@@ -112,6 +113,26 @@ func Test_eventImpl_Without(t *testing.T) {
 	actual := instance.Without("a", "c")
 
 	assert.ToBeEqualUsing(t, expected, actual.(*event).fields, fields.AreEqual)
+}
+
+func Test_event_Format(t *testing.T) {
+	instance := &event{level: level.Info, fields: fields.
+		With("a", 1).
+		With("b", 2).
+		With("c", 3).
+		With("d", 4),
+	}
+
+	actualV := fmt.Sprintf("%v", instance)
+	assert.ToBeEqual(t, `[3000] {d=4, c=3, b=2, a=1}`, actualV)
+
+	actualPlusV := fmt.Sprintf("%+v", instance)
+	assert.ToBeEqual(t, `[3000] {
+	d=4
+	c=3
+	b=2
+	a=1
+}`, actualPlusV)
 }
 
 type entries []entry

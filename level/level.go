@@ -49,7 +49,7 @@ const (
 	// implies that the whole system is no longer operable and should/will be
 	// shutdown (if possible gracefully) right now. Personal is required to
 	// investigate right now to prevent such stuff happening again, bring the
-	// the system back to operations and recover broken users.
+	// system back to operations and recover broken users.
 	Fatal Level = 6000
 )
 

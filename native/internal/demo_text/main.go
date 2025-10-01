@@ -6,7 +6,6 @@ import (
 	_ "github.com/echocat/slf4g/native"
 	"github.com/echocat/slf4g/native/formatter"
 	"github.com/echocat/slf4g/native/location"
-	_ "github.com/echocat/slf4g/sdk/bridge/hook"
 )
 
 func main() {

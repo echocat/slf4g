@@ -7,21 +7,21 @@ import (
 )
 
 func ExampleDetectSupportForWriter_detection() {
-	prepared, supported, err := color.DetectSupportForWriter(os.Stderr)
+	// For this test we force the output to support colors.
+	// Usually, you just use os.Stdout or os.Stderr.
+	output := color.ForcedSupportedWriteFunc(os.Stdout.Write)
+
+	prepared, supported, err := color.DetectSupportForWriter(output)
 	if err != nil {
 		panic(err)
 	}
 
-	msg := []byte("Hello, world!")
+	msg := "Hello, world!"
 	if supported.IsSupported() {
-		msg = colorize(msg)
+		msg = "colored(" + msg + ")"
 	}
-	_, _ = prepared.Write(msg)
-}
+	_, _ = prepared.Write([]byte(msg))
 
-//goland:noinspection GoTestName
-func Examplecolorize() {}
-
-func colorize(_ []byte) []byte {
-	panic("should never be called.")
+	// Output:
+	// colored(Hello, world!)
 }

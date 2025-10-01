@@ -10,7 +10,7 @@ import (
 func Test_newWithout(t *testing.T) {
 	given := mapped{"a": 1, "b": 2, "c": 3}
 
-	actual := newWithout(given, "b")
+	actual := NewWithout(given, "b")
 
 	assert.ToBeOfType(t, &without{}, actual)
 	assert.ToBeEqual(t, given, actual.(*without).fields)
@@ -20,7 +20,7 @@ func Test_newWithout(t *testing.T) {
 func Test_newWithout_returnsEmptyOnEmpty(t *testing.T) {
 	given := mapped{}
 
-	actual := newWithout(given, "b")
+	actual := NewWithout(given, "b")
 
 	assert.ToBeEqual(t, Empty(), actual)
 }
@@ -28,13 +28,13 @@ func Test_newWithout_returnsEmptyOnEmpty(t *testing.T) {
 func Test_newWithout_returnsSameOnNoKeys(t *testing.T) {
 	given := mapped{"a": 1, "b": 2, "c": 3}
 
-	actual := newWithout(given)
+	actual := NewWithout(given)
 
 	assert.ToBeEqual(t, given, actual)
 }
 
 func Test_without_ForEach(t *testing.T) {
-	instance := newWithout(mapped{"a": 1, "b": 2, "c": 3}, "b")
+	instance := NewWithout(mapped{"a": 1, "b": 2, "c": 3}, "b")
 
 	actualConsumed := mapped{}
 	actualErr := instance.ForEach(func(k string, v interface{}) error {
@@ -48,7 +48,7 @@ func Test_without_ForEach(t *testing.T) {
 
 func Test_without_ForEach_isForwardingErrors(t *testing.T) {
 	expectedErr := errors.New("foo")
-	instance := newWithout(mapped{"a": 1, "b": 2, "c": 3}, "b")
+	instance := NewWithout(mapped{"a": 1, "b": 2, "c": 3}, "b")
 
 	actualErr := instance.ForEach(func(string, interface{}) error {
 		return expectedErr
@@ -88,7 +88,7 @@ func Test_without_ForEach_withNilFields(t *testing.T) {
 }
 
 func Test_without_Get(t *testing.T) {
-	instance := newWithout(mapped{"foo": 1, "bar": 2, "xyz1": 3}, "xyz1", "xyz2", "xyz3")
+	instance := NewWithout(mapped{"foo": 1, "bar": 2, "xyz1": 3}, "xyz1", "xyz2", "xyz3")
 
 	actual1, actual1Exists := instance.Get("foo")
 	assert.ToBeEqual(t, 1, actual1)
@@ -134,14 +134,14 @@ func Test_without_Get_withNilFields(t *testing.T) {
 }
 
 func Test_without_With(t *testing.T) {
-	instance := newWithout(mapped{"foo": 1, "xyz": 3}, "xyz")
+	instance := NewWithout(mapped{"foo": 1, "xyz": 3}, "xyz")
 
 	actual := instance.With("bar", 2)
 	assert.ToBeEqual(t, mapped{"foo": 1, "bar": 2}, mustAsMap(actual))
 }
 
 func Test_without_With_overwrites(t *testing.T) {
-	instance := newWithout(mapped{"foo": 1, "xyz": 3}, "xyz")
+	instance := NewWithout(mapped{"foo": 1, "xyz": 3}, "xyz")
 
 	actual := instance.With("foo", 2)
 	assert.ToBeEqual(t, mapped{"foo": 2}, mustAsMap(actual))
@@ -156,14 +156,14 @@ func Test_without_With_withNilInstance(t *testing.T) {
 }
 
 func Test_without_Withf(t *testing.T) {
-	instance := newWithout(mapped{"foo": 1, "xyz": 3}, "xyz")
+	instance := NewWithout(mapped{"foo": 1, "xyz": 3}, "xyz")
 
 	actual := instance.Withf("bar", "hello %d", 2)
 	assert.ToBeEqual(t, mapped{"foo": 1, "bar": LazyFormat("hello %d", 2)}, mustAsMap(actual))
 }
 
 func Test_without_Withf_overwrites(t *testing.T) {
-	instance := newWithout(mapped{"foo": 1, "xyz": 3}, "xyz")
+	instance := NewWithout(mapped{"foo": 1, "xyz": 3}, "xyz")
 
 	actual := instance.Withf("foo", "hello %d", 2)
 	assert.ToBeEqual(t, mapped{"foo": LazyFormat("hello %d", 2)}, mustAsMap(actual))
@@ -178,14 +178,14 @@ func Test_without_Withf_withNilInstance(t *testing.T) {
 }
 
 func Test_without_WithAll(t *testing.T) {
-	instance := newWithout(mapped{"foo": 1, "xyz": 3}, "xyz")
+	instance := NewWithout(mapped{"foo": 1, "xyz": 3}, "xyz")
 
 	actual := instance.WithAll(map[string]interface{}{"bar": 2, "xyz": 3})
 	assert.ToBeEqual(t, mapped{"foo": 1, "bar": 2, "xyz": 3}, mustAsMap(actual))
 }
 
 func Test_without_WithAll_overwrites(t *testing.T) {
-	instance := newWithout(mapped{"foo": 1, "xyz": 3}, "xyz")
+	instance := NewWithout(mapped{"foo": 1, "xyz": 3}, "xyz")
 
 	actual := instance.WithAll(map[string]interface{}{"foo": 66, "xyz": 3})
 	assert.ToBeEqual(t, mapped{"foo": 66, "xyz": 3}, mustAsMap(actual))
@@ -200,7 +200,7 @@ func Test_without_WithAll_withNilInstance(t *testing.T) {
 }
 
 func Test_without_Without(t *testing.T) {
-	instance := newWithout(mapped{"foo": 1, "xyz": 3}, "xyz")
+	instance := NewWithout(mapped{"foo": 1, "xyz": 3}, "xyz")
 
 	actual := instance.Without("foo", "notExisting")
 	assert.ToBeEqual(t, mapped{}, mustAsMap(actual))
@@ -215,7 +215,7 @@ func Test_without_Without_withNilInstance(t *testing.T) {
 }
 
 func Test_without_Len(t *testing.T) {
-	instance := newWithout(mapped{"foo": 1, "bar": 2, "xyz1": 3}, "xyz1", "xyz2", "xyz3")
+	instance := NewWithout(mapped{"foo": 1, "bar": 2, "xyz1": 3}, "xyz1", "xyz2", "xyz3")
 
 	actual := instance.Len()
 

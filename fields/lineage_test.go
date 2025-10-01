@@ -11,7 +11,7 @@ func Test_newLineage_withTargetAndParent(t *testing.T) {
 	givenTarget := With("a", 1)
 	givenParent := With("b", 2)
 
-	actual := newLineage(givenTarget, givenParent)
+	actual := NewLineage(givenTarget, givenParent)
 
 	assert.ToBeOfType(t, &lineage{}, actual)
 	assert.ToBeSame(t, givenTarget, actual.(*lineage).target)
@@ -21,7 +21,7 @@ func Test_newLineage_withTargetAndParent(t *testing.T) {
 func Test_newLineage_withTargetAndNilParent(t *testing.T) {
 	givenTarget := With("a", 1)
 
-	actual := newLineage(givenTarget, nil)
+	actual := NewLineage(givenTarget, nil)
 
 	assert.ToBeSame(t, givenTarget, actual)
 }
@@ -30,7 +30,7 @@ func Test_newLineage_withTargetAndEmptyParent(t *testing.T) {
 	givenTarget := With("a", 1)
 	givenParent := Empty()
 
-	actual := newLineage(givenTarget, givenParent)
+	actual := NewLineage(givenTarget, givenParent)
 
 	assert.ToBeSame(t, givenTarget, actual)
 }
@@ -39,7 +39,7 @@ func Test_newLineage_withTargetAndEmptyMapParent(t *testing.T) {
 	givenTarget := With("a", 1)
 	givenParent := mapped{}
 
-	actual := newLineage(givenTarget, givenParent)
+	actual := NewLineage(givenTarget, givenParent)
 
 	assert.ToBeSame(t, givenTarget, actual)
 }
@@ -47,7 +47,7 @@ func Test_newLineage_withTargetAndEmptyMapParent(t *testing.T) {
 func Test_newLineage_withNilTargetAndParent(t *testing.T) {
 	givenParent := With("b", 2)
 
-	actual := newLineage(nil, givenParent)
+	actual := NewLineage(nil, givenParent)
 
 	assert.ToBeSame(t, givenParent, actual)
 }
@@ -56,7 +56,7 @@ func Test_newLineage_withEmptyTargetAndParent(t *testing.T) {
 	givenTarget := Empty()
 	givenParent := With("b", 2)
 
-	actual := newLineage(givenTarget, givenParent)
+	actual := NewLineage(givenTarget, givenParent)
 
 	assert.ToBeSame(t, givenParent, actual)
 }
@@ -65,7 +65,7 @@ func Test_newLineage_withEmptyMapTargetAndParent(t *testing.T) {
 	givenTarget := mapped{}
 	givenParent := With("b", 2)
 
-	actual := newLineage(givenTarget, givenParent)
+	actual := NewLineage(givenTarget, givenParent)
 
 	assert.ToBeSame(t, givenParent, actual)
 }

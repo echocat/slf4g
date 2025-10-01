@@ -11,6 +11,7 @@
 * [Motivation](#motivation)
 * [Getting started](#getting-started)
 * [Implementations](#implementations)
+* [Bridges](#bridges) (and their [hooks](#hooks))
 * [Contributing](#contributing)
 * [License](#license)
 
@@ -158,9 +159,32 @@ Done. Enjoy!
 There are several bridges available to use [slf4g](https://github.com/echocat/slf4g) in other frameworks:
 
 1. [sdk/bridge](sdk/bridge) to implement the [Go's SDK log interface](https://pkg.go.dev/log).
-2. [github.com/echocat/slf4g-logr](https://github.com/echocat/slf4g-logr) to implement [github.com/go-logr/logr](https://github.com/go-logr/logr).
-3. [github.com/echocat/slf4g-logrus](https://github.com/echocat/slf4g-logrus) to implement [github.com/sirupsen/logrus](https://github.com/sirupsen/logrus).
-4. [github.com/echocat/slf4g-klog](https://github.com/echocat/slf4g-klog) to implement [k8s.io/klog/v2](https://github.com/kubernetes/klog).
+2. [sdk/bridge/slog](sdk/bridge/slog) to implement the [Go's SDK slog interface](https://pkg.go.dev/log/slog).
+3. [github.com/echocat/slf4g-logr](https://github.com/echocat/slf4g-logr) to implement [github.com/go-logr/logr](https://github.com/go-logr/logr).
+4. [github.com/echocat/slf4g-logrus](https://github.com/echocat/slf4g-logrus) to implement [github.com/sirupsen/logrus](https://github.com/sirupsen/logrus).
+5. [github.com/echocat/slf4g-klog](https://github.com/echocat/slf4g-klog) to implement [k8s.io/klog/v2](https://github.com/kubernetes/klog).
+
+### Hooks
+
+These are automatically registering itself by simply calling an anonymous import (instead of explicitly importing - see [Bridges](#bridges) above), like:
+
+```go
+package main
+
+import (
+	// For hook into SDK's log package
+	_ "github.com/echocat/slf4g/hooks/sdklog"
+
+	// For hook into SDK's log/slog package
+	_ "github.com/echocat/slf4g/hooks/sdkslog"
+
+	// For hook into github.com/sirupsen/logrus
+	_ "github.com/echocat/slf4g-logrus/logrus2slf4g/hook"
+
+	// For hook into Kubernetes' k8s.io/klog/v2
+	_ "github.com/echocat/slf4g-klog/bridge/hook"
+)
+```
 
 ## Contributing
 

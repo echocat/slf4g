@@ -1,6 +1,9 @@
 package log
 
 import (
+	"fmt"
+
+	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/level"
 )
 
@@ -69,4 +72,35 @@ type Event interface {
 	// call either fields.Fields.ForEach() or fields.Fields.Get() nothing with
 	// this key(s) will be returned.
 	Without(keys ...string) Event
+}
+
+// EventFactory creates a new instance of [Event] using the provided [level.Level]
+// and values.
+type EventFactory interface {
+	NewEvent(l level.Level, values map[string]interface{}) Event
+}
+
+// EventFactoryWithFields creates a new instance of [Event] using the provided
+// [level.Level] and fields.
+type EventFactoryWithFields interface {
+	NewEventWithFields(level.Level, fields.ForEachEnabled) Event
+}
+
+// NewEvent creates a new [Event] using the provided [EventFactory], [level.Level]
+// and values.
+func NewEvent(factory EventFactory, l level.Level, values map[string]interface{}) Event {
+	return factory.NewEvent(l, values)
+}
+
+// NewEventWithFields creates a new [Event] using the provided [EventFactory], [level.Level]
+// and fields.
+func NewEventWithFields(factory EventFactory, l level.Level, f fields.ForEachEnabled) Event {
+	if wf, ok := factory.(EventFactoryWithFields); ok {
+		return wf.NewEventWithFields(l, f)
+	}
+	asMap, err := fields.AsMap(f)
+	if err != nil {
+		panic(fmt.Errorf("cannot make a map out of %v: %w", f, err))
+	}
+	return factory.NewEvent(l, asMap)
 }

@@ -8,8 +8,6 @@
 // based loggers.
 //
 //	import (
-//	   _ "github.com/echocat/slf4g/sdk/bridge/hook"
+//	   _ "github.com/echocat/slf4g/hooks/sdklog"
 //	)
-//
-// For manual hooks please see the examples.
 package sdk
