@@ -67,10 +67,8 @@ jobs:
           go test --tags=mock -v -race -covermode atomic "-coverprofile=profile.cov.full" ./...
 
           # Remove some stuff from the profile...
-          {
-            head -n1 profile.cov.full
-            tail -n +2 profile.cov.full | grep -vE '^github\.com\/echocat\/slf4g\/(internal\/(test|demo)|hooks|sdk\/bridge\/hook)\/'
-          } > profile.cov
+          head -n1 profile.cov.full > profile.cov
+          tail -n +2 profile.cov.full | grep -vE '^github\.com\/echocat\/slf4g\/(internal\/(test|demo)|hooks|sdk\/bridge\/hook)\/' >> profile.cov
 
       - name: Store test artifacts
         if: always()
@@ -117,10 +115,8 @@ jobs:
           go test --tags=mock -v -race -covermode atomic "-coverprofile=profile.cov.full" ./...
 
           # Remove some stuff from the profile...
-          {
-            head -n1 profile.cov.full
-            tail -n +2 profile.cov.full | grep -vE '^github\.com\/echocat\/slf4g\/native\/(internal\/demo_|color\/prepare_)\/'
-          } > profile.cov
+          head -n1 profile.cov.full > profile.cov
+          tail -n +2 profile.cov.full | grep -vE '^github\.com\/echocat\/slf4g\/native\/(internal\/demo_|color\/prepare_)\/' >> profile.cov
 
       - name: Store test artifacts
         if: always()
