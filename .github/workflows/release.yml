@@ -41,8 +41,8 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          if git rev-parse --verify --quiet "TAG" >/dev/null; then
-            COMMIT="$(git rev-list -n 1 "TAG")"
+          if git rev-parse --verify --quiet "${TAG}" >/dev/null; then
+            COMMIT="$(git rev-list -n 1 "${TAG}")"
           else
             COMMIT="${{ github.event.release.target_commitish }}"
           fi
