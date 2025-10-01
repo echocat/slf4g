@@ -1,3 +1,6 @@
+//go:build go1.21
+// +build go1.21
+
 // Package sdk/slog provides methods to either hook into the SDK slog logger itself
 // or create compatible instances.
 //

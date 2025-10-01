@@ -64,12 +64,13 @@ jobs:
 
       - name: Test
         run: |
-          go test --tags=mock -v -race -covermode atomic "-coverprofile=profile.cov.tmp1" ./...
+          go test --tags=mock -v -race -covermode atomic "-coverprofile=profile.cov.full" ./...
 
           # Remove some stuff from the profile...
-          cat profile.cov.tmp1 | grep -v "echocat/slf4g/internal/test/" > profile.cov.tmp2
-          cat profile.cov.tmp2 | grep -v "echocat/slf4g/internal/demo/" > profile.cov.tmp3
-          cp profile.cov.tmp3 profile.cov
+          {
+            head -n1 profile.cov.full
+            tail -n +2 profile.cov.full | grep -vE '^github\.com\/echocat\/slf4g\/(internal\/(test|demo)|hooks|sdk\/bridge\/hook)\/'
+          } > profile.cov
 
       - name: Send coverage
         uses: coverallsapp/github-action@v2
@@ -103,11 +104,13 @@ jobs:
         run: |
           cd native
 
-          go test --tags=mock -v -race -covermode atomic "-coverprofile=profile.cov.tmp1" ./...
+          go test --tags=mock -v -race -covermode atomic "-coverprofile=profile.cov.full" ./...
 
-          cat profile.cov.tmp1 | grep -v "echocat/slf4g/native/internal/demo_" > profile.cov.tmp2
-          cat profile.cov.tmp2 | grep -v "echocat/slf4g/native/color/prepare_" > profile.cov.tmp3
-          cp profile.cov.tmp3 profile.cov
+          # Remove some stuff from the profile...
+          {
+            head -n1 profile.cov.full
+            tail -n +2 profile.cov.full | grep -vE '^github\.com\/echocat\/slf4g\/native\/(internal\/demo_|color\/prepare_)\/'
+          } > profile.cov
 
       - name: Send coverage
         uses: coverallsapp/github-action@v2
