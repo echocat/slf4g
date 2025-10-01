@@ -6,7 +6,6 @@ import (
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/native"
 	"github.com/echocat/slf4g/native/facade/value"
-	_ "github.com/echocat/slf4g/sdk/bridge/hook"
 )
 
 func main() {
