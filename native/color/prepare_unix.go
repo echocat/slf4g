@@ -1,5 +1,4 @@
 //go:build (!mock && linux) || aix
-// +build !mock,linux aix
 
 package color
 

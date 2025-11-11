@@ -1,5 +1,4 @@
 //go:build !mock && appengine
-// +build !mock,appengine
 
 package color
 

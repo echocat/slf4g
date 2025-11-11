@@ -1,5 +1,4 @@
 //go:build (!mock && darwin) || dragonfly || freebsd || netbsd || openbsd
-// +build !mock,darwin dragonfly freebsd netbsd openbsd
 
 package color
 
