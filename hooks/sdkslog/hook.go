@@ -1,5 +1,4 @@
 //go:build go1.21
-// +build go1.21
 
 // Package hook_sdkslog is an automatic hook for usage together with Go's SDK
 // [log/slog] logging ([log/slog.Logger]).

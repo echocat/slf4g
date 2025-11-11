@@ -1,5 +1,4 @@
 //go:build !darwin
-// +build !darwin
 
 // This test should currently really not run on macOS, because it might
 // lead to crashes.
