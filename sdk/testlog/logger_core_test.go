@@ -20,10 +20,10 @@ func Test_coreLogger_Log_regular(t *testing.T) {
 	instance := provider.coreRootLogger
 
 	var actualMsg string
-	var actualskipFrames uint16
+	var actualSkipFrames uint16
 	instance.interceptLogDepth = func(msg string, skipFrames uint16) {
 		actualMsg = msg
-		actualskipFrames = skipFrames
+		actualSkipFrames = skipFrames
 	}
 
 	provider.GetRootLogger().
@@ -38,7 +38,7 @@ func Test_coreLogger_Log_regular(t *testing.T) {
 		Info("foo")
 
 	assert.ToBeMatching(t, `^\d+ \[ INFO] foo error="testError" intField=123 lazyField="lazy" nilField=null respectedByLevelField="respected" stringField="bar"$`, actualMsg)
-	assert.ToBeEqual(t, uint16(6), actualskipFrames)
+	assert.ToBeEqual(t, uint16(6), actualSkipFrames)
 }
 
 func Test_coreLogger_NewEvent(t *testing.T) {
@@ -77,16 +77,16 @@ func Test_coreLogger_Log_tooLowLevel(t *testing.T) {
 	instance := provider.coreRootLogger
 
 	var actualMsg string
-	var actualskipFrames uint16
+	var actualSkipFrames uint16
 	instance.interceptLogDepth = func(msg string, skipFrames uint16) {
 		actualMsg = msg
-		actualskipFrames = skipFrames
+		actualSkipFrames = skipFrames
 	}
 
 	provider.GetRootLogger().Trace("foo")
 
 	assert.ToBeEqual(t, "", actualMsg)
-	assert.ToBeEqual(t, uint16(0), actualskipFrames)
+	assert.ToBeEqual(t, uint16(0), actualSkipFrames)
 }
 
 func Test_coreLogger_Log_fail(t *testing.T) {
@@ -95,10 +95,10 @@ func Test_coreLogger_Log_fail(t *testing.T) {
 	instance := provider.coreRootLogger
 
 	var actualMsg string
-	var actualskipFrames uint16
+	var actualSkipFrames uint16
 	instance.interceptLogDepth = func(msg string, skipFrames uint16) {
 		actualMsg = msg
-		actualskipFrames = skipFrames
+		actualSkipFrames = skipFrames
 	}
 	var actualFail bool
 	instance.interceptFail = func() {
@@ -112,7 +112,7 @@ func Test_coreLogger_Log_fail(t *testing.T) {
 	provider.GetRootLogger().Error("foo")
 
 	assert.ToBeMatching(t, `^\d+ \[ERROR] foo$`, actualMsg)
-	assert.ToBeEqual(t, uint16(6), actualskipFrames)
+	assert.ToBeEqual(t, uint16(6), actualSkipFrames)
 	assert.ToBeEqual(t, true, actualFail)
 	assert.ToBeEqual(t, false, actualFailNow)
 }
@@ -123,10 +123,10 @@ func Test_coreLogger_Log_failNow(t *testing.T) {
 	instance := provider.coreRootLogger
 
 	var actualMsg string
-	var actualskipFrames uint16
+	var actualSkipFrames uint16
 	instance.interceptLogDepth = func(msg string, skipFrames uint16) {
 		actualMsg = msg
-		actualskipFrames = skipFrames
+		actualSkipFrames = skipFrames
 	}
 	var actualFail bool
 	instance.interceptFailNow = func() {
@@ -140,7 +140,7 @@ func Test_coreLogger_Log_failNow(t *testing.T) {
 	provider.GetRootLogger().Fatal("foo")
 
 	assert.ToBeMatching(t, `^\d+ \[FATAL] foo$`, actualMsg)
-	assert.ToBeEqual(t, uint16(6), actualskipFrames)
+	assert.ToBeEqual(t, uint16(6), actualSkipFrames)
 	assert.ToBeEqual(t, false, actualFail)
 	assert.ToBeEqual(t, true, actualFailNow)
 }
@@ -197,38 +197,64 @@ func Test_coreLogger_formatTime_ts_defaultNow(t *testing.T) {
 
 	diff := now.Sub(actualTs)
 	if diff > time.Second*10 || diff < -time.Second*10 {
-		t.Fatalf("the difference between %v(now) and %v(ts) should not be greather than 10s; bug was: %v", now, actualTs, diff)
+		t.Fatalf("the difference between %v(now) and %v(ts) should not be greater than 10s; bug was: %v", now, actualTs, diff)
 	}
 }
 
 func Test_coreLogger_GetLevel_default(t *testing.T) {
 	provider := NewProvider(t, TimeFormat(time.RFC3339))
 	provider.initIfRequired()
-	instance := provider.coreRootLogger
 
-	assert.ToBeEqual(t, level.Level(0), instance.level)
-	assert.ToBeEqual(t, level.Debug, instance.GetLevel())
+	coreInstance := provider.getLogger(RootLoggerName)
+	assert.ToBeEqual(t, level.Level(0), coreInstance.loggerNameToLevel[RootLoggerName])
+	assert.ToBeEqual(t, level.Debug, coreInstance.GetLevel())
+
+	otherInstance := provider.getLogger("other")
+	assert.ToBeEqual(t, level.Level(0), otherInstance.loggerNameToLevel["other"])
+	assert.ToBeEqual(t, level.Debug, otherInstance.GetLevel())
 }
 
 func Test_coreLogger_GetLevel_setDirect(t *testing.T) {
 	provider := NewProvider(t, TimeFormat(time.RFC3339))
 	provider.initIfRequired()
-	instance := provider.coreRootLogger
 
-	instance.level = level.Warn
-	assert.ToBeEqual(t, level.Warn, instance.GetLevel())
+	coreInstance := provider.getLogger(RootLoggerName)
+	coreInstance.loggerNameToLevel[RootLoggerName] = level.Warn
+	assert.ToBeEqual(t, level.Warn, coreInstance.GetLevel())
+
+	otherInstance := provider.getLogger("other")
+	otherInstance.loggerNameToLevel["other"] = level.Error
+	assert.ToBeEqual(t, level.Error, otherInstance.GetLevel())
 }
 
 func Test_coreLogger_SetLevel(t *testing.T) {
 	provider := NewProvider(t, TimeFormat(time.RFC3339))
 	provider.initIfRequired()
-	instance := provider.coreRootLogger
 
-	assert.ToBeEqual(t, level.Level(0), instance.level)
-	instance.SetLevel(level.Debug)
-	assert.ToBeEqual(t, level.Debug, instance.level)
-	instance.SetLevel(level.Info)
-	assert.ToBeEqual(t, level.Info, instance.level)
-	instance.SetLevel(0)
-	assert.ToBeEqual(t, level.Level(0), instance.level)
+	coreInstance := provider.getLogger(RootLoggerName)
+	assert.ToBeEqual(t, level.Level(0), coreInstance.loggerNameToLevel[RootLoggerName])
+	coreInstance.SetLevel(level.Debug)
+	assert.ToBeEqual(t, level.Debug, coreInstance.loggerNameToLevel[RootLoggerName])
+	coreInstance.SetLevel(level.Info)
+	assert.ToBeEqual(t, level.Info, coreInstance.loggerNameToLevel[RootLoggerName])
+	coreInstance.SetLevel(0)
+	assert.ToBeEqual(t, level.Level(0), coreInstance.loggerNameToLevel[RootLoggerName])
+
+	otherInstance := provider.getLogger("other")
+	otherInstance2 := provider.getLogger("other")
+	assert.ToBeEqual(t, level.Level(0), otherInstance.loggerNameToLevel["other"])
+	otherInstance.SetLevel(level.Debug)
+	assert.ToBeEqual(t, level.Debug, otherInstance.loggerNameToLevel["other"])
+	assert.ToBeEqual(t, level.Debug, otherInstance2.GetLevel())
+	otherInstance.SetLevel(level.Info)
+	assert.ToBeEqual(t, level.Info, otherInstance.loggerNameToLevel["other"])
+	assert.ToBeEqual(t, level.Info, otherInstance2.GetLevel())
+	otherInstance.SetLevel(0)
+	assert.ToBeEqual(t, level.Level(0), otherInstance.loggerNameToLevel["other"])
+	assert.ToBeEqual(t, provider.GetLevel(), otherInstance2.GetLevel())
+
+	otherInstance.SetLevel(level.Error)
+
+	otherInstance3 := provider.getLogger("other")
+	assert.ToBeEqual(t, level.Error, otherInstance3.GetLevel())
 }

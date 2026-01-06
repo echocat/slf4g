@@ -78,9 +78,10 @@ type Provider struct {
 	timeFormat     string
 	levelFormatter tlevel.Formatter
 
-	coreRootLogger *coreLogger
-	rootLogger     log.Logger
-	initRootLogger sync.Once
+	coreRootLogger    *coreLogger
+	rootLogger        log.Logger
+	loggerNameToLevel map[string]level.Level
+	initOnce          sync.Once
 
 	// For testing only
 	interceptLogDepth func(string, uint16)
@@ -92,9 +93,10 @@ type Provider struct {
 func runtimeNano() int64
 
 func (instance *Provider) initIfRequired() {
-	instance.initRootLogger.Do(func() {
-		instance.coreRootLogger = &coreLogger{instance, RootLoggerName, 0}
+	instance.initOnce.Do(func() {
+		instance.coreRootLogger = &coreLogger{instance, RootLoggerName}
 		instance.rootLogger = log.NewLogger(instance.coreRootLogger)
+		instance.loggerNameToLevel = map[string]level.Level{}
 	})
 }
 
@@ -110,8 +112,17 @@ func (instance *Provider) GetLogger(name string) log.Logger {
 		return instance.GetRootLogger()
 	}
 
+	return log.NewLogger(instance.getLogger(name))
+}
+
+func (instance *Provider) getLogger(name string) *coreLogger {
 	instance.initIfRequired()
-	return log.NewLogger(&coreLogger{instance, name, 0})
+
+	if name == RootLoggerName {
+		return instance.coreRootLogger
+	}
+
+	return &coreLogger{instance, name}
 }
 
 // GetName implements log.Provider#GetName()
