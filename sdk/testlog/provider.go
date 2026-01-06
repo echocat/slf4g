@@ -93,7 +93,7 @@ func runtimeNano() int64
 
 func (instance *Provider) initIfRequired() {
 	instance.initLogger.Do(func() {
-		instance.coreLogger = &coreLogger{instance}
+		instance.coreLogger = &coreLogger{instance, 0}
 		instance.logger = log.NewLogger(instance.coreLogger)
 	})
 }
