@@ -136,10 +136,10 @@ func TestProvider_GetLogger(t *testing.T) {
 	assert.ToBeNotNil(t, actualRootLogger)
 
 	actualCoreLogger := log.UnwrapCoreLogger(actual)
-	assert.ToBeOfType(t, &coreLoggerRenamed{}, actualCoreLogger)
+	assert.ToBeOfType(t, &coreLogger{}, actualCoreLogger)
 
 	assert.ToBeEqual(t, "foo", actualCoreLogger.GetName())
-	assert.ToBeSame(t, actualRootCoreLogger, actualCoreLogger.(*coreLoggerRenamed).coreLogger)
+	assert.ToBeSame(t, instance, actualCoreLogger.(*coreLogger).Provider)
 }
 
 func TestProvider_GetLogger_rootLogger(t *testing.T) {

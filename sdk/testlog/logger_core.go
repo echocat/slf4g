@@ -20,6 +20,7 @@ const RootLoggerName = "ROOT"
 
 type coreLogger struct {
 	*Provider
+	name  string
 	level level.Level
 }
 
@@ -108,7 +109,7 @@ func (instance *coreLogger) IsLevelEnabled(v level.Level) bool {
 
 // GetName implements log.CoreLogger#GetName()
 func (instance *coreLogger) GetName() string {
-	return RootLoggerName
+	return instance.name
 }
 
 // GetProvider implements log.CoreLogger#GetProvider()
