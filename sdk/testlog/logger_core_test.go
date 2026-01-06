@@ -17,7 +17,7 @@ const (
 func Test_coreLogger_Log_regular(t *testing.T) {
 	provider := NewProvider(t)
 	provider.initIfRequired()
-	instance := provider.coreLogger
+	instance := provider.coreRootLogger
 
 	var actualMsg string
 	var actualskipFrames uint16
@@ -44,7 +44,7 @@ func Test_coreLogger_Log_regular(t *testing.T) {
 func Test_coreLogger_NewEvent(t *testing.T) {
 	provider := NewProvider(t)
 	provider.initIfRequired()
-	instance := provider.coreLogger
+	instance := provider.coreRootLogger
 
 	actual := instance.NewEvent(level.Level(666), map[string]interface{}{
 		"foo": 123,
@@ -64,7 +64,7 @@ func Test_coreLogger_NewEvent(t *testing.T) {
 func Test_coreLogger_Accepts(t *testing.T) {
 	provider := NewProvider(t, Level(level.Level(700)))
 	provider.initIfRequired()
-	instance := provider.coreLogger
+	instance := provider.coreRootLogger
 
 	givenAcceptable := instance.NewEvent(level.Level(666), map[string]interface{}{})
 
@@ -74,7 +74,7 @@ func Test_coreLogger_Accepts(t *testing.T) {
 func Test_coreLogger_Log_tooLowLevel(t *testing.T) {
 	provider := NewProvider(t)
 	provider.initIfRequired()
-	instance := provider.coreLogger
+	instance := provider.coreRootLogger
 
 	var actualMsg string
 	var actualskipFrames uint16
@@ -92,7 +92,7 @@ func Test_coreLogger_Log_tooLowLevel(t *testing.T) {
 func Test_coreLogger_Log_fail(t *testing.T) {
 	provider := NewProvider(t)
 	provider.initIfRequired()
-	instance := provider.coreLogger
+	instance := provider.coreRootLogger
 
 	var actualMsg string
 	var actualskipFrames uint16
@@ -120,7 +120,7 @@ func Test_coreLogger_Log_fail(t *testing.T) {
 func Test_coreLogger_Log_failNow(t *testing.T) {
 	provider := NewProvider(t)
 	provider.initIfRequired()
-	instance := provider.coreLogger
+	instance := provider.coreRootLogger
 
 	var actualMsg string
 	var actualskipFrames uint16
@@ -148,7 +148,7 @@ func Test_coreLogger_Log_failNow(t *testing.T) {
 func Test_coreLogger_formatTime_sinceTestStartedMcs(t *testing.T) {
 	provider := NewProvider(t, TimeFormat(SinceTestStartedMcsTimeFormat))
 	provider.initIfRequired()
-	instance := provider.coreLogger
+	instance := provider.coreRootLogger
 
 	givenTs, _ := time.Parse(dateTimeFormat, "2024-07-25 18:56:13")
 	givenEvent := instance.NewEvent(level.Info, map[string]interface{}{
@@ -161,7 +161,7 @@ func Test_coreLogger_formatTime_sinceTestStartedMcs(t *testing.T) {
 func Test_coreLogger_formatTime_noop(t *testing.T) {
 	provider := NewProvider(t, TimeFormat(NoopTimeFormat))
 	provider.initIfRequired()
-	instance := provider.coreLogger
+	instance := provider.coreRootLogger
 
 	givenTs, _ := time.Parse(dateTimeFormat, "2024-07-25 18:56:13")
 	givenEvent := instance.NewEvent(level.Info, map[string]interface{}{
@@ -174,7 +174,7 @@ func Test_coreLogger_formatTime_noop(t *testing.T) {
 func Test_coreLogger_formatTime_ts(t *testing.T) {
 	provider := NewProvider(t, TimeFormat(dateTimeFormat))
 	provider.initIfRequired()
-	instance := provider.coreLogger
+	instance := provider.coreRootLogger
 
 	givenTs, _ := time.Parse(dateTimeFormat, "2024-07-25 18:56:13")
 	givenEvent := instance.NewEvent(level.Info, map[string]interface{}{
@@ -187,7 +187,7 @@ func Test_coreLogger_formatTime_ts(t *testing.T) {
 func Test_coreLogger_formatTime_ts_defaultNow(t *testing.T) {
 	provider := NewProvider(t, TimeFormat(time.RFC3339))
 	provider.initIfRequired()
-	instance := provider.coreLogger
+	instance := provider.coreRootLogger
 
 	givenEvent := instance.NewEvent(level.Info, map[string]interface{}{})
 
@@ -204,7 +204,7 @@ func Test_coreLogger_formatTime_ts_defaultNow(t *testing.T) {
 func Test_coreLogger_GetLevel_default(t *testing.T) {
 	provider := NewProvider(t, TimeFormat(time.RFC3339))
 	provider.initIfRequired()
-	instance := provider.coreLogger
+	instance := provider.coreRootLogger
 
 	assert.ToBeEqual(t, level.Level(0), instance.level)
 	assert.ToBeEqual(t, level.Debug, instance.GetLevel())
@@ -213,7 +213,7 @@ func Test_coreLogger_GetLevel_default(t *testing.T) {
 func Test_coreLogger_GetLevel_setDirect(t *testing.T) {
 	provider := NewProvider(t, TimeFormat(time.RFC3339))
 	provider.initIfRequired()
-	instance := provider.coreLogger
+	instance := provider.coreRootLogger
 
 	instance.level = level.Warn
 	assert.ToBeEqual(t, level.Warn, instance.GetLevel())
@@ -222,7 +222,7 @@ func Test_coreLogger_GetLevel_setDirect(t *testing.T) {
 func Test_coreLogger_SetLevel(t *testing.T) {
 	provider := NewProvider(t, TimeFormat(time.RFC3339))
 	provider.initIfRequired()
-	instance := provider.coreLogger
+	instance := provider.coreRootLogger
 
 	assert.ToBeEqual(t, level.Level(0), instance.level)
 	instance.SetLevel(level.Debug)

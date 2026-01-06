@@ -78,9 +78,9 @@ type Provider struct {
 	timeFormat     string
 	levelFormatter tlevel.Formatter
 
-	coreLogger *coreLogger
-	logger     log.Logger
-	initLogger sync.Once
+	coreRootLogger *coreLogger
+	rootLogger     log.Logger
+	initRootLogger sync.Once
 
 	// For testing only
 	interceptLogDepth func(string, uint16)
@@ -92,16 +92,16 @@ type Provider struct {
 func runtimeNano() int64
 
 func (instance *Provider) initIfRequired() {
-	instance.initLogger.Do(func() {
-		instance.coreLogger = &coreLogger{instance, 0}
-		instance.logger = log.NewLogger(instance.coreLogger)
+	instance.initRootLogger.Do(func() {
+		instance.coreRootLogger = &coreLogger{instance, RootLoggerName, 0}
+		instance.rootLogger = log.NewLogger(instance.coreRootLogger)
 	})
 }
 
 // GetRootLogger implements log.Provider#GetRootLogger()
 func (instance *Provider) GetRootLogger() log.Logger {
 	instance.initIfRequired()
-	return instance.logger
+	return instance.rootLogger
 }
 
 // GetLogger implements log.Provider#GetLogger()
@@ -111,7 +111,7 @@ func (instance *Provider) GetLogger(name string) log.Logger {
 	}
 
 	instance.initIfRequired()
-	return log.NewLogger(&coreLoggerRenamed{instance.coreLogger, name})
+	return log.NewLogger(&coreLogger{instance, name, 0})
 }
 
 // GetName implements log.Provider#GetName()

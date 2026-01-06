@@ -23,7 +23,7 @@ func TestNewNamedLogger(t *testing.T) {
 	instance := NewNamedLogger(t, "foo", Level(666))
 
 	actualCoreLogger := log.UnwrapCoreLogger(instance)
-	assert.ToBeOfType(t, &coreLoggerRenamed{}, actualCoreLogger)
+	assert.ToBeOfType(t, &coreLogger{}, actualCoreLogger)
 
 	assert.ToBeEqual(t, "foo", actualCoreLogger.GetName())
 	assert.ToBeEqual(t, level.Level(666), instance.GetProvider().(*Provider).GetLevel())
