@@ -20,6 +20,7 @@ const RootLoggerName = "ROOT"
 
 type coreLogger struct {
 	*Provider
+	level level.Level
 }
 
 // Log implements log.CoreLogger#Log(event).
@@ -82,6 +83,22 @@ func (instance *coreLogger) log(loggerName string, event log.Event, skipFrames u
 		instance.fail()
 		return
 	}
+}
+
+// GetLevel implements level.Aware#GetLevel(v). If there was no SetLevel called before,
+// it will return the value of the holding Provider.
+func (instance *coreLogger) GetLevel() level.Level {
+	if v := instance.level; v != 0 {
+		return v
+	}
+	return instance.Provider.GetLevel()
+}
+
+// SetLevel implements level.MutableAware#SetLevel(v).
+//
+// If set to 0 it will reset the handling back to the value of the holding Provider.
+func (instance *coreLogger) SetLevel(v level.Level) {
+	instance.level = v
 }
 
 // IsLevelEnabled implements log.CoreLogger#IsLevelEnabled()

@@ -200,3 +200,35 @@ func Test_coreLogger_formatTime_ts_defaultNow(t *testing.T) {
 		t.Fatalf("the difference between %v(now) and %v(ts) should not be greather than 10s; bug was: %v", now, actualTs, diff)
 	}
 }
+
+func Test_coreLogger_GetLevel_default(t *testing.T) {
+	provider := NewProvider(t, TimeFormat(time.RFC3339))
+	provider.initIfRequired()
+	instance := provider.coreLogger
+
+	assert.ToBeEqual(t, level.Level(0), instance.level)
+	assert.ToBeEqual(t, level.Debug, instance.GetLevel())
+}
+
+func Test_coreLogger_GetLevel_setDirect(t *testing.T) {
+	provider := NewProvider(t, TimeFormat(time.RFC3339))
+	provider.initIfRequired()
+	instance := provider.coreLogger
+
+	instance.level = level.Warn
+	assert.ToBeEqual(t, level.Warn, instance.GetLevel())
+}
+
+func Test_coreLogger_SetLevel(t *testing.T) {
+	provider := NewProvider(t, TimeFormat(time.RFC3339))
+	provider.initIfRequired()
+	instance := provider.coreLogger
+
+	assert.ToBeEqual(t, level.Level(0), instance.level)
+	instance.SetLevel(level.Debug)
+	assert.ToBeEqual(t, level.Debug, instance.level)
+	instance.SetLevel(level.Info)
+	assert.ToBeEqual(t, level.Info, instance.level)
+	instance.SetLevel(0)
+	assert.ToBeEqual(t, level.Level(0), instance.level)
+}
