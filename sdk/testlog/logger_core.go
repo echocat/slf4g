@@ -15,13 +15,12 @@ import (
 )
 
 // RootLoggerName specifies the name of the root version of coreLogger
-// instances which are managed by Provider.
+// instances which Provider manages.
 const RootLoggerName = "ROOT"
 
 type coreLogger struct {
 	*Provider
-	name  string
-	level level.Level
+	name string
 }
 
 // Log implements log.CoreLogger#Log(event).
@@ -89,8 +88,10 @@ func (instance *coreLogger) log(loggerName string, event log.Event, skipFrames u
 // GetLevel implements level.Aware#GetLevel(v). If there was no SetLevel called before,
 // it will return the value of the holding Provider.
 func (instance *coreLogger) GetLevel() level.Level {
-	if v := instance.level; v != 0 {
-		return v
+	if vs := instance.loggerNameToLevel; vs != nil {
+		if v := vs[instance.name]; v != 0 {
+			return v
+		}
 	}
 	return instance.Provider.GetLevel()
 }
@@ -99,7 +100,13 @@ func (instance *coreLogger) GetLevel() level.Level {
 //
 // If set to 0 it will reset the handling back to the value of the holding Provider.
 func (instance *coreLogger) SetLevel(v level.Level) {
-	instance.level = v
+	if instance.loggerNameToLevel == nil {
+		instance.loggerNameToLevel = map[string]level.Level{}
+	}
+	if v == 0 {
+		delete(instance.loggerNameToLevel, instance.name)
+	}
+	instance.loggerNameToLevel[instance.name] = v
 }
 
 // IsLevelEnabled implements log.CoreLogger#IsLevelEnabled()
