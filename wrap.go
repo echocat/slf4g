@@ -17,8 +17,8 @@ func UnwrapLogger(in CoreLogger) Logger {
 	return nil
 }
 
-// UnwrapCoreLogger unwraps a wrapped CoreLogger inside of another CoreLogger.
-// For example by NewLoggerFacade.
+// UnwrapCoreLogger unwraps a wrapped CoreLogger inside another CoreLogger.
+// For example, by NewLoggerFacade.
 func UnwrapCoreLogger(in CoreLogger) CoreLogger {
 	if u, ok := in.(interface {
 		Unwrap() Logger
@@ -33,8 +33,8 @@ func UnwrapCoreLogger(in CoreLogger) CoreLogger {
 	return nil
 }
 
-// UnwrapProvider unwraps a wrapped Provider inside of another Provider. For
-// example by NewProviderFacade.
+// UnwrapProvider unwraps a wrapped Provider inside another Provider. For
+// example, by NewProviderFacade.
 func UnwrapProvider(in Provider) Provider {
 	if u, ok := in.(interface {
 		Unwrap() Provider
