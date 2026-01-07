@@ -109,3 +109,35 @@ func Test_fallbackProvider_GetFieldKeysSpec(t *testing.T) {
 	assert.ToBeEqual(t, "message", actual.GetMessage())
 	assert.ToBeEqual(t, "timestamp", actual.GetTimestamp())
 }
+
+func Test_fallbackProvider_levelAware(t *testing.T) {
+	defer func() {
+		fallbackProviderV.level = 0
+	}()
+
+	actual, actualOk := level.Get(fallbackProviderV)
+	assert.ToBeEqual(t, level.Info, actual)
+	assert.ToBeEqual(t, true, actualOk)
+	assert.ToBeEqual(t, true, level.Set(fallbackProviderV, level.Level(666)))
+
+	actual2, actualOk2 := level.Get(fallbackProviderV)
+	assert.ToBeEqual(t, level.Level(666), actual2)
+	assert.ToBeEqual(t, true, actualOk2)
+}
+
+func Test_fallbackProvider_levelAwareLogger(t *testing.T) {
+	defer func() {
+		fallbackProviderV.level = 0
+	}()
+
+	fooLogger := fallbackProviderV.GetLogger("foo")
+	actual, actualOk := level.Get(fooLogger)
+	assert.ToBeEqual(t, level.Info, actual)
+	assert.ToBeEqual(t, true, actualOk)
+	assert.ToBeEqual(t, true, level.Set(fooLogger, level.Level(666)))
+
+	fooLogger2 := fallbackProviderV.GetLogger("foo")
+	actual2, actualOk2 := level.Get(fooLogger2)
+	assert.ToBeEqual(t, level.Level(666), actual2)
+	assert.ToBeEqual(t, true, actualOk2)
+}

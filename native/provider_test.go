@@ -290,6 +290,34 @@ func Test_Provider_factory_usingCustomizer(t *testing.T) {
 	assert.ToBeSame(t, givenCoreLogger, log.UnwrapCoreLogger(actual))
 }
 
+func Test_Provider_levelAware(t *testing.T) {
+	instance := &Provider{}
+
+	actual, actualOk := level.Get(instance)
+	assert.ToBeEqual(t, level.Info, actual)
+	assert.ToBeEqual(t, true, actualOk)
+	assert.ToBeEqual(t, true, level.Set(instance, level.Level(666)))
+
+	actual2, actualOk2 := level.Get(instance)
+	assert.ToBeEqual(t, level.Level(666), actual2)
+	assert.ToBeEqual(t, true, actualOk2)
+}
+
+func Test_Provider_levelAwareLogger(t *testing.T) {
+	instance := &Provider{}
+
+	fooLogger := instance.GetLogger("foo")
+	actual, actualOk := level.Get(fooLogger)
+	assert.ToBeEqual(t, level.Info, actual)
+	assert.ToBeEqual(t, true, actualOk)
+	assert.ToBeEqual(t, true, level.Set(fooLogger, level.Level(666)))
+
+	fooLogger2 := instance.GetLogger("foo")
+	actual2, actualOk2 := level.Get(fooLogger2)
+	assert.ToBeEqual(t, level.Level(666), actual2)
+	assert.ToBeEqual(t, true, actualOk2)
+}
+
 func Test_init_providerWasRegistered(t *testing.T) {
 	for _, candidate := range log.GetAllProviders() {
 		if candidate == DefaultProvider {
