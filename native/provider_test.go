@@ -1,7 +1,11 @@
 package native
 
 import (
+	"runtime"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	log "github.com/echocat/slf4g"
 
@@ -14,6 +18,27 @@ import (
 	"github.com/echocat/slf4g/level"
 	"github.com/echocat/slf4g/native/consumer"
 )
+
+type strictCoreLogger struct {
+	log.CoreLogger
+	token *int
+}
+
+func (instance *strictCoreLogger) NewEvent(v level.Level, values map[string]interface{}) log.Event {
+	return instance.CoreLogger.NewEvent(v, values).With("strict-owner", instance.token)
+}
+
+func (instance *strictCoreLogger) Accepts(event log.Event) bool {
+	actual, exists := event.Get("strict-owner")
+	return exists && actual == instance.token
+}
+
+func (instance *strictCoreLogger) Log(event log.Event, skipFrames uint16) {
+	if !instance.Accepts(event) {
+		panic("foreign event")
+	}
+	instance.CoreLogger.Log(event.Without("strict-owner"), skipFrames+1)
+}
 
 func Test_Provider_GetName_specified(t *testing.T) {
 	instance, _ := newProvider()
@@ -288,6 +313,249 @@ func Test_Provider_factory_usingCustomizer(t *testing.T) {
 	actual := instance.factory("foo")
 
 	assert.ToBeSame(t, givenCoreLogger, log.UnwrapCoreLogger(actual))
+}
+
+func Test_Provider_GetRootLogger_supportsReentrantCustomizer(t *testing.T) {
+	instance, recorder := newProvider()
+	var customizerCalls int32
+	instance.CoreLoggerCustomizer = func(actualProvider *Provider, actualLogger *CoreLogger) log.CoreLogger {
+		atomic.AddInt32(&customizerCalls, 1)
+		actualProvider.GetRootLogger().Info("during customization")
+		return actualLogger
+	}
+
+	done := make(chan log.Logger)
+	go func() {
+		done <- instance.GetRootLogger()
+	}()
+
+	select {
+	case actual := <-done:
+		assert.ToBeSame(t, instance.GetRootLogger(), actual)
+	case <-time.After(time.Second):
+		t.Fatal("reentrant root logger customizer did not complete")
+	}
+	assert.ToBeEqual(t, int32(1), atomic.LoadInt32(&customizerCalls))
+	assert.ToBeEqual(t, 1, recorder.Len())
+}
+
+func Test_Provider_GetRootLogger_customizesOnceDuringConcurrentInitialization(t *testing.T) {
+	instance, _ := newProvider()
+	customizerEntered := make(chan struct{})
+	releaseCustomizer := make(chan struct{})
+	var customizerCalls int32
+	instance.CoreLoggerCustomizer = func(_ *Provider, logger *CoreLogger) log.CoreLogger {
+		if atomic.AddInt32(&customizerCalls, 1) == 1 {
+			close(customizerEntered)
+		}
+		<-releaseCustomizer
+		return logger
+	}
+
+	firstResult := make(chan log.Logger, 1)
+	go func() {
+		firstResult <- instance.GetRootLogger()
+	}()
+	<-customizerEntered
+
+	results := make(chan log.Logger, 31)
+	var wait sync.WaitGroup
+	for i := 0; i < cap(results); i++ {
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			results <- instance.GetRootLogger()
+		}()
+	}
+	wait.Wait()
+	close(results)
+	close(releaseCustomizer)
+	expected := <-firstResult
+
+	for actual := range results {
+		assert.ToBeSame(t, expected, actual)
+	}
+	assert.ToBeEqual(t, int32(1), atomic.LoadInt32(&customizerCalls))
+}
+
+func Test_Provider_GetRootLogger_preservesCustomizedLogger(t *testing.T) {
+	instance, recorder := newProvider()
+	instance.CoreLoggerCustomizer = func(_ *Provider, logger *CoreLogger) log.CoreLogger {
+		return log.NewLogger(logger).With("custom", "value")
+	}
+
+	instance.GetRootLogger().Info("message")
+
+	assert.ToBeEqual(t, 1, recorder.Len())
+	actual, exists := recorder.Get(0).Get("custom")
+	assert.ToBeEqual(t, true, exists)
+	assert.ToBeEqual(t, "value", actual)
+}
+
+func Test_Provider_GetRootLogger_updatesDerivedLoggerAfterCustomization(t *testing.T) {
+	instance, recorder := newProvider()
+	customizerEntered := make(chan struct{})
+	releaseCustomizer := make(chan struct{})
+	instance.CoreLoggerCustomizer = func(_ *Provider, logger *CoreLogger) log.CoreLogger {
+		close(customizerEntered)
+		<-releaseCustomizer
+		return log.NewLogger(logger).With("custom", "value")
+	}
+
+	initialized := make(chan struct{})
+	go func() {
+		defer close(initialized)
+		instance.GetRootLogger()
+	}()
+	<-customizerEntered
+	derived := instance.GetRootLogger().With("derived", "value")
+	close(releaseCustomizer)
+	<-initialized
+
+	derived.Info("message")
+
+	assert.ToBeEqual(t, 1, recorder.Len())
+	for _, key := range []string{"custom", "derived"} {
+		actual, exists := recorder.Get(0).Get(key)
+		assert.ToBeEqual(t, true, exists)
+		assert.ToBeEqual(t, "value", actual)
+	}
+}
+
+func Test_Provider_GetRootLogger_keepsEventWithCreatingLogger(t *testing.T) {
+	instance, recorder := newProvider()
+	customizerEntered := make(chan struct{})
+	releaseCustomizer := make(chan struct{})
+	instance.CoreLoggerCustomizer = func(_ *Provider, logger *CoreLogger) log.CoreLogger {
+		close(customizerEntered)
+		<-releaseCustomizer
+		return &strictCoreLogger{CoreLogger: logger, token: new(int)}
+	}
+
+	initialized := make(chan struct{})
+	go func() {
+		defer close(initialized)
+		instance.GetRootLogger()
+	}()
+	<-customizerEntered
+	root := instance.GetRootLogger()
+	event := root.NewEvent(level.Info, nil)
+	close(releaseCustomizer)
+	<-initialized
+
+	assert.ToBeEqual(t, true, root.Accepts(event))
+	root.Log(event, 0)
+	assert.ToBeEqual(t, 1, recorder.Len())
+}
+
+func Test_Provider_GetRootLogger_preservesOptionalInterfacesAndUnwrap(t *testing.T) {
+	instance, _ := newProvider()
+	expected := &CoreLogger{provider: instance, name: rootLoggerName}
+	instance.CoreLoggerCustomizer = func(_ *Provider, _ *CoreLogger) log.CoreLogger {
+		return log.NewLogger(expected).With("custom", "value")
+	}
+
+	actual := instance.GetRootLogger()
+
+	assert.ToBeSame(t, expected, log.UnwrapCoreLogger(actual))
+	_, isLoggerFacade := actual.(log.LoggerFacade)
+	assert.ToBeEqual(t, true, isLoggerFacade)
+	_, isEventFactoryWithFields := actual.(log.EventFactoryWithFields)
+	assert.ToBeEqual(t, true, isEventFactoryWithFields)
+}
+
+func Test_Provider_GetRootLogger_acceptsReentrantRootAsCustomization(t *testing.T) {
+	instance, recorder := newProvider()
+	instance.CoreLoggerCustomizer = func(actualProvider *Provider, _ *CoreLogger) log.CoreLogger {
+		return actualProvider.GetRootLogger().With("custom", "value")
+	}
+
+	instance.GetRootLogger().Info("message")
+
+	assert.ToBeEqual(t, 1, recorder.Len())
+	actual, exists := recorder.Get(0).Get("custom")
+	assert.ToBeEqual(t, true, exists)
+	assert.ToBeEqual(t, "value", actual)
+}
+
+func Test_Provider_GetRootLogger_exposesCustomizerFailure(t *testing.T) {
+	instance, _ := newProvider()
+	instance.CoreLoggerCustomizer = func(_ *Provider, _ *CoreLogger) log.CoreLogger {
+		panic("expected")
+	}
+
+	func() {
+		defer func() { assert.ToBeEqual(t, "expected", recover()) }()
+		instance.GetRootLogger()
+	}()
+	func() {
+		defer func() { assert.ToBeEqual(t, "Root logger customizer did not complete.", recover()) }()
+		instance.GetRootLogger().Info("message")
+	}()
+}
+
+func Test_Provider_GetRootLogger_rejectsProvisionalEventAfterCustomizerFailure(t *testing.T) {
+	instance, _ := newProvider()
+	customizerEntered := make(chan struct{})
+	releaseCustomizer := make(chan struct{})
+	instance.CoreLoggerCustomizer = func(_ *Provider, _ *CoreLogger) log.CoreLogger {
+		close(customizerEntered)
+		<-releaseCustomizer
+		panic("expected")
+	}
+
+	done := make(chan struct{})
+	go func() {
+		defer func() {
+			assert.ToBeEqual(t, "expected", recover())
+			close(done)
+		}()
+		instance.GetRootLogger()
+	}()
+	<-customizerEntered
+	root := instance.GetRootLogger()
+	event := root.NewEvent(level.Info, nil)
+	close(releaseCustomizer)
+	<-done
+
+	defer func() { assert.ToBeEqual(t, "Root logger customizer did not complete.", recover()) }()
+	root.Log(event, 0)
+}
+
+func Test_Provider_GetRootLogger_exposesCustomizerGoexit(t *testing.T) {
+	instance, _ := newProvider()
+	instance.CoreLoggerCustomizer = func(_ *Provider, _ *CoreLogger) log.CoreLogger {
+		runtime.Goexit()
+		return nil
+	}
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		instance.GetRootLogger()
+	}()
+	<-done
+
+	defer func() { assert.ToBeEqual(t, "Root logger customizer did not complete.", recover()) }()
+	instance.GetRootLogger().Info("message")
+}
+
+func logThroughCustomizedRoot(instance *Provider) {
+	instance.GetRootLogger().Info("message")
+}
+
+func Test_Provider_GetRootLogger_preservesCallerLocation(t *testing.T) {
+	instance, recorder := newProvider()
+	instance.LocationDiscovery = location.NewCallerDiscovery()
+	instance.CoreLoggerCustomizer = func(_ *Provider, logger *CoreLogger) log.CoreLogger {
+		return logger
+	}
+
+	logThroughCustomizedRoot(instance)
+
+	actual, exists := recorder.Get(0).Get(instance.getFieldKeysSpec().GetLocation())
+	assert.ToBeEqual(t, true, exists)
+	assert.ToBeEqual(t, "github.com/echocat/slf4g/native.logThroughCustomizedRoot", actual.(location.Caller).GetFrame().Function)
 }
 
 func Test_Provider_levelAware(t *testing.T) {
