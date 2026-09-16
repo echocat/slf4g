@@ -119,7 +119,7 @@ func isSame(expected, actual interface{}) bool {
 	if expectedV.Kind() == reflect.Func {
 		return actualV.Kind() == reflect.Func && expectedV.Pointer() == actualV.Pointer()
 	}
-	if expectedV.Kind() != reflect.Ptr || actualV.Kind() != reflect.Ptr {
+	if expectedV.Kind() != reflect.Pointer || actualV.Kind() != reflect.Pointer {
 		return false
 	}
 	if reflect.TypeOf(expected) != reflect.TypeOf(actual) {
@@ -213,7 +213,7 @@ func isNil(object interface{}) bool {
 		[]reflect.Kind{
 			reflect.Chan, reflect.Func,
 			reflect.Interface, reflect.Map,
-			reflect.Ptr, reflect.Slice},
+			reflect.Pointer, reflect.Slice},
 		kind)
 
 	if isNilableKind && value.IsNil() {
