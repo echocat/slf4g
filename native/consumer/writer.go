@@ -37,7 +37,9 @@ type Writer struct {
 
 	// Synchronized defines if this instance can be used in concurrent
 	// environments; which is meaningful in the most context. It might have
-	// additional performance costs.
+	// additional performance costs. If an event is already being consumed,
+	// concurrent or reentrant calls are queued and can return before their event
+	// was written.
 	Synchronized bool
 
 	// OnFormatError will be called if their as any kind of error while
@@ -55,6 +57,13 @@ type Writer struct {
 	out            io.Writer
 	colorSupported *color.Supported
 	mutex          sync.Mutex
+	consuming      bool
+	pending        []writerRequest
+}
+
+type writerRequest struct {
+	event  log.Event
+	source log.CoreLogger
 }
 
 // NewWriter creates a new instance of Writer which can be customized using
@@ -77,11 +86,58 @@ func (instance *Writer) Consume(event log.Event, source log.CoreLogger) {
 		return
 	}
 
-	if instance.Synchronized {
-		instance.mutex.Lock()
-		defer instance.mutex.Unlock()
+	if !instance.Synchronized {
+		instance.consume(event, source)
+		return
 	}
 
+	// A single caller drains the queue without holding the mutex while invoking
+	// callbacks. Reentrant calls can therefore enqueue safely, while formatting
+	// and output remain serialized.
+	instance.mutex.Lock()
+	if instance.consuming {
+		instance.pending = append(instance.pending, writerRequest{event, source})
+		instance.mutex.Unlock()
+		return
+	}
+	instance.consuming = true
+	instance.mutex.Unlock()
+
+	instance.consumePending(writerRequest{event, source})
+}
+
+func (instance *Writer) consumePending(request writerRequest) {
+	completed := false
+	defer func() {
+		if !completed {
+			// Do not leave the writer blocked if user-provided code panics or exits
+			// its goroutine. Requests accepted during the failed event are dropped.
+			instance.mutex.Lock()
+			instance.pending = nil
+			instance.consuming = false
+			instance.mutex.Unlock()
+		}
+	}()
+
+	for {
+		instance.consume(request.event, request.source)
+
+		instance.mutex.Lock()
+		if len(instance.pending) == 0 {
+			instance.pending = nil
+			instance.consuming = false
+			completed = true
+			instance.mutex.Unlock()
+			return
+		}
+		request = instance.pending[0]
+		instance.pending[0] = writerRequest{}
+		instance.pending = instance.pending[1:]
+		instance.mutex.Unlock()
+	}
+}
+
+func (instance *Writer) consume(event log.Event, source log.CoreLogger) {
 	out := instance.GetOut()
 	if out == nil {
 		return
