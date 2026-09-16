@@ -161,7 +161,9 @@ func Test_Json_Format(t *testing.T) {
 func Test_Json_Format_failing(t *testing.T) {
 	givenProvider := recording.NewProvider()
 	givenLogger := givenProvider.GetRootLogger()
-	givenEvent := givenLogger.NewEvent(level.Warn, nil)
+	givenEvent := givenLogger.NewEvent(level.Warn, map[string]interface{}{
+		"secret": "not-for-the-error",
+	})
 	givenError := errors.New("expected")
 	instance := NewJson(func(json *Json) {
 		json.LevelFormatter = LevelFunc(func(level.Level, log.Provider) (interface{}, error) {
@@ -171,7 +173,7 @@ func Test_Json_Format_failing(t *testing.T) {
 
 	actual, actualErr := instance.Format(givenEvent, givenProvider, nil)
 
-	assert.ToBeMatching(t, "cannot format event .+: expected", actualErr)
+	assert.ToBeEqual(t, "cannot format event: expected", actualErr.Error())
 	assert.ToBeEqual(t, "", string(actual))
 }
 

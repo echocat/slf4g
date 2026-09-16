@@ -107,9 +107,10 @@ func Test_fallbackCoreLogger_Log_withErrorWhileMarshalling(t *testing.T) {
 	instance, buf := newFallbackCoreLogger("foo")
 
 	instance.Log(instance.NewEvent(level.Info, nil).
+		With("secret", "not-for-the-log").
 		With("foo", failingJsonMarshalling("expected")), 0)
 
-	assert.ToBeMatching(t, `^ERR!! Cannot format event.+: expected`, buf.String())
+	assert.ToBeEqual(t, fallbackFormatError, buf.String())
 }
 
 func Test_fallbackCoreLogger_Log_levels(t *testing.T) {

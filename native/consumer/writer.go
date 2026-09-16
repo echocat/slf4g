@@ -1,7 +1,6 @@
 package consumer
 
 import (
-	"fmt"
 	"io"
 	"sync"
 
@@ -11,6 +10,8 @@ import (
 	"github.com/echocat/slf4g/native/hints"
 	"github.com/echocat/slf4g/native/interceptor"
 )
+
+const formatErrorFallback = "{\"error\":\"LOG_EVENT_FORMAT_ERROR\"}\n"
 
 // Writer is an implementation of Writer which formats the consumed log.Entry
 // using a configured Formatter and logs it to the configured io.Writer.
@@ -41,7 +42,9 @@ type Writer struct {
 
 	// OnFormatError will be called if their as any kind of error while
 	// formatting an log.Event using the configured Formatter. If nothing was
-	// provided these errors will result in a fallback message of the event.
+	// provided these errors will result in a generic fallback message without
+	// details from the event or error. A configured callback is responsible for
+	// safely encoding error details before writing them to out.
 	OnFormatError func(*Writer, io.Writer, error)
 
 	// OnColorInitializationError will be called if their as any kind of error
@@ -97,10 +100,11 @@ func (instance *Writer) Consume(event log.Event, source log.CoreLogger) {
 	h := instance.provideHints(event, source)
 	content, err := f.Format(event, source.GetProvider(), h)
 	if err != nil {
+		content = nil
 		if v := instance.OnFormatError; v != nil {
 			v(instance, out, err)
 		} else {
-			content = []byte(fmt.Sprintf("LOG_EVENT_FORMAT_ERROR (event: %v, error: %v)", event, err))
+			content = []byte(formatErrorFallback)
 		}
 	}
 

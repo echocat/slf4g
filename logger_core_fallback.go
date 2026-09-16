@@ -3,7 +3,6 @@ package log
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path"
 	"runtime"
@@ -19,6 +18,7 @@ import (
 const (
 	simpleTimeLayout       = "0102 15:04:05.000000"
 	fallbackRootLoggerName = "ROOT"
+	fallbackFormatError    = "ERR!! Cannot format event\n"
 )
 
 var (
@@ -102,7 +102,7 @@ func (instance *fallbackCoreLogger) format(event Event, skipFrames uint16) []byt
 		_, _ = buf.Write(v)
 		return nil
 	}); err != nil {
-		return []byte(fmt.Sprintf("ERR!! Cannot format event %v: %v", event, err))
+		return []byte(fallbackFormatError)
 	}
 
 	buf.WriteByte('\n')
