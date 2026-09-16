@@ -26,6 +26,23 @@ func TestAttrs_ForEach_success(t *testing.T) {
 	}, actual)
 }
 
+func TestAttrs_ForEach_resolvesLogValuer(t *testing.T) {
+	instance := attrs{
+		sdk.Any("secret", redactingLogValuer{"not-for-the-log"}),
+		sdk.Group("group", sdk.Any("nested", redactingLogValuer{"also-not-for-the-log"})),
+	}
+
+	actual, actualErr := fields.AsMap(instance)
+	assert.ToBeNoError(t, actualErr)
+	assert.ToBeEqual(t, map[string]interface{}{
+		"secret": "[REDACTED]",
+		"group": []sdk.Attr{
+			sdk.String("nested", "[REDACTED]"),
+		},
+	}, actual)
+	assert.ToBeEqual(t, sdk.KindLogValuer, instance[1].Value.Group()[0].Value.Kind())
+}
+
 func TestAttrs_ForEach_empty(t *testing.T) {
 	instance := attrs{}
 
@@ -58,6 +75,7 @@ func TestAttrs_Get(t *testing.T) {
 	instance := attrs{
 		{Key: "foo", Value: sdk.IntValue(1)},
 		{Key: "bar", Value: sdk.IntValue(2)},
+		sdk.Any("secret", redactingLogValuer{"not-for-the-log"}),
 	}
 
 	cases := []struct {
@@ -66,6 +84,7 @@ func TestAttrs_Get(t *testing.T) {
 	}{
 		{"foo", int64(1)},
 		{"bar", int64(2)},
+		{"secret", "[REDACTED]"},
 		{"xyz", nil},
 	}
 	for _, c := range cases {
@@ -80,6 +99,14 @@ func TestAttrs_Get(t *testing.T) {
 			}
 		})
 	}
+}
+
+type redactingLogValuer struct {
+	Secret string
+}
+
+func (instance redactingLogValuer) LogValue() sdk.Value {
+	return sdk.StringValue("[REDACTED]")
 }
 
 func TestAttrs_With(t *testing.T) {

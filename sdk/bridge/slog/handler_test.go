@@ -154,6 +154,19 @@ func TestHandler_eventOfRecord(t *testing.T) {
 			},
 		},
 		{
+			"recordLogValuer",
+			&Handler{},
+			attrs{
+				sdk.Any("secret", redactingLogValuer{"not-for-the-log"}),
+			},
+			level.Fatal,
+			map[string]interface{}{
+				"timestamp": aTime,
+				"message":   "aMessage",
+				"secret":    "[REDACTED]",
+			},
+		},
+		{
 			"handlerWithAttrs",
 			&Handler{attrs: attrs{
 				sdk.Int("foo", 1),
@@ -166,6 +179,19 @@ func TestHandler_eventOfRecord(t *testing.T) {
 				"message":   "aMessage",
 				"foo":       int64(1),
 				"bar":       int64(2),
+			},
+		},
+		{
+			"handlerWithLogValuer",
+			&Handler{attrs: attrs{
+				sdk.Any("secret", redactingLogValuer{"not-for-the-log"}),
+			}},
+			nil,
+			level.Fatal,
+			map[string]interface{}{
+				"timestamp": aTime,
+				"message":   "aMessage",
+				"secret":    "[REDACTED]",
 			},
 		},
 		{
