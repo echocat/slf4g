@@ -10,5 +10,6 @@ replace (
 require (
 	github.com/echocat/slf4g v0.0.0
 	github.com/echocat/slf4g/native v0.0.0
-	golang.org/x/sys v0.35.0
 )
+
+require golang.org/x/sys v0.35.0 // indirect
