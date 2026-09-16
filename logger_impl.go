@@ -20,8 +20,9 @@ func (instance *loggerImpl) GetName() string {
 }
 
 func (instance *loggerImpl) Log(event Event, skipFrames uint16) {
-	instance.Helper()()
-	instance.Unwrap().Log(event, skipFrames+1)
+	delegate := instance.Unwrap()
+	helperOf(delegate)()
+	delegate.Log(event, skipFrames+1)
 }
 
 func (instance *loggerImpl) NewEvent(l level.Level, values map[string]interface{}) Event {
@@ -64,8 +65,8 @@ func (instance *loggerImpl) doLog(level level.Level, skipFrames uint16, args ...
 	if !delegate.IsLevelEnabled(level) {
 		return func() {}, helper
 	}
-	provider := instance.GetProvider()
-	e := instance.NewEventWithFields(level, instance.fields)
+	provider := delegate.GetProvider()
+	e := NewEventWithFields(delegate, level, instance.fields)
 
 	if len(args) == 1 {
 		e = e.With(provider.GetFieldKeysSpec().GetMessage(), args[0])
@@ -75,7 +76,7 @@ func (instance *loggerImpl) doLog(level level.Level, skipFrames uint16, args ...
 
 	return func() {
 		helper()
-		instance.Unwrap().Log(e, skipFrames+1)
+		delegate.Log(e, skipFrames+1)
 	}, helper
 
 }
@@ -92,13 +93,13 @@ func (instance *loggerImpl) doLogf(level level.Level, skipFrames uint16, format 
 	if !delegate.IsLevelEnabled(level) {
 		return func() {}, helper
 	}
-	provider := instance.GetProvider()
-	e := instance.NewEventWithFields(level, instance.fields).
+	provider := delegate.GetProvider()
+	e := NewEventWithFields(delegate, level, instance.fields).
 		Withf(provider.GetFieldKeysSpec().GetMessage(), format, args...)
 
 	return func() {
 		helper()
-		instance.Unwrap().Log(e, skipFrames+1)
+		delegate.Log(e, skipFrames+1)
 	}, helper
 }
 
