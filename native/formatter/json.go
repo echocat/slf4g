@@ -24,7 +24,8 @@ const (
 // line in the output.
 type Json struct {
 	// KeyLevel is the key to write the level of log entries to the output with.
-	// If not set DefaultKeyLevel is used.
+	// If not set DefaultKeyLevel is used. Event fields with the same key are
+	// omitted.
 	KeyLevel string
 
 	// LevelFormatter is used to format the level.Level of a given log.Entry.
@@ -109,7 +110,11 @@ func (instance *Json) encodeValuesChecked(of log.Event, using log.Provider, to e
 		keySorter := instance.getKeySorter()
 		printRootLogger := instance.getPrintRootLogger()
 		loggerKey := using.GetFieldKeysSpec().GetLogger()
+		levelKey := instance.getLevelKey()
 		consumer := func(k string, v interface{}) error {
+			if k == levelKey {
+				return nil
+			}
 			if vl, ok := v.(fields.Filtered); ok {
 				fv, shouldBeRespected := vl.Filter(of)
 				if !shouldBeRespected {
