@@ -67,7 +67,7 @@ func (instance *Json) Format(event log.Event, using log.Provider, _ hints.Hints)
 		instance.encodeValuesChecked(event, using, to),
 		to.WriteBytesChecked([]byte{'}', '\n'}),
 	); err != nil {
-		return nil, fmt.Errorf("cannot format event (%v): %w", event, err)
+		return nil, fmt.Errorf("cannot format event: %w", err)
 	}
 
 	return to.Bytes(), nil

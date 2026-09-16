@@ -56,21 +56,21 @@ func Test_Writer_Consume(t *testing.T) {
 	assert.ToBeEqual(t, "expectedResult", givenOut.String())
 }
 
-func Test_Writer_Consume_panicsOnFormatErrors(t *testing.T) {
+func Test_Writer_Consume_writesSafeFallbackOnFormatErrors(t *testing.T) {
 	givenOut := new(bytes.Buffer)
 	givenLogger := recording.NewLogger()
-	givenEvent := givenLogger.NewEvent(level.Info, nil)
-	givenError := errors.New("expected")
+	givenEvent := givenLogger.NewEvent(level.Info, nil).With("secret", "not-for-the-log")
+	givenError := errors.New("expected\nforged")
 
 	instance := NewWriter(givenOut, func(writer *Writer) {
 		writer.Formatter = formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
-			return nil, givenError
+			return []byte("partial-not-for-the-log"), givenError
 		})
 	})
 
 	instance.Consume(givenEvent, givenLogger)
 
-	assert.ToBeMatching(t, "^LOG_EVENT_FORMAT_ERROR \\(event: .+?, error: expected\\)$", givenOut.String())
+	assert.ToBeEqual(t, formatErrorFallback, givenOut.String())
 }
 
 func Test_Writer_Consume_callsHookOnFormatErrors(t *testing.T) {
@@ -87,7 +87,7 @@ func Test_Writer_Consume_callsHookOnFormatErrors(t *testing.T) {
 			assert.ToBeSame(t, givenError, actualErr)
 		}
 		writer.Formatter = formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
-			return nil, givenError
+			return []byte("partial-not-for-the-log"), givenError
 		})
 	})
 

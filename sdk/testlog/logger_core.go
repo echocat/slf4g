@@ -184,7 +184,7 @@ func (instance *coreLogger) format(event log.Event) string {
 		_, _ = buf.Write(v)
 		return nil
 	}); err != nil {
-		instance.tb.Fatalf("ERR!! Cannot format event %v: %v", event, err)
+		instance.tb.Fatalf("ERR!! Cannot format event")
 		return ""
 	}
 
