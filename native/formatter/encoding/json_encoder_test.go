@@ -55,6 +55,15 @@ func Test_bufferedJsonEncoder_WriteValue_error(t *testing.T) {
 	assert.ToBeEqual(t, `"abc"`, instance.buffer.String())
 }
 
+func Test_bufferedJsonEncoder_WriteValue_typedNilError(t *testing.T) {
+	instance := NewBufferedJsonEncoder().(*bufferedJsonEncoder)
+
+	actualErr := instance.WriteValue((*typedNilError)(nil))
+
+	assert.ToBeNil(t, actualErr)
+	assert.ToBeEqual(t, `null`, instance.buffer.String())
+}
+
 func Test_bufferedJsonEncoder_WriteValueChecked(t *testing.T) {
 	instance := NewBufferedJsonEncoder().(*bufferedJsonEncoder)
 
@@ -118,4 +127,10 @@ func Test_filteringTailingNewLineWriter_Write(t *testing.T) {
 
 func pstring(v string) *string {
 	return &v
+}
+
+type typedNilError struct{}
+
+func (*typedNilError) Error() string {
+	panic("must not be called")
 }

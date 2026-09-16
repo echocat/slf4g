@@ -28,6 +28,7 @@ func Test_DefaultValueEquality(t *testing.T) {
 		"bothLazyMismatch": {LazyFormat("foo1"), LazyFormat("foo2"), false},
 		"leftLazy":         {LazyFormat("foo"), "foo", true},
 		"rightLazy":        {"foo", LazyFormat("foo"), true},
+		"typedNilLazy":     {(*nilLazy)(nil), nil, true},
 	}
 
 	for name, c := range cases {

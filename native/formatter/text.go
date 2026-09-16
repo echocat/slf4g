@@ -5,9 +5,9 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/echocat/slf4g/internal/support"
 	"github.com/echocat/slf4g/native/formatter/encoding"
 
-	"github.com/echocat/slf4g/internal/support"
 	"github.com/echocat/slf4g/native/execution"
 
 	log "github.com/echocat/slf4g"
@@ -217,13 +217,21 @@ func (instance *Text) printFieldsChecked(using log.Provider, h hints.Hints, even
 
 func (instance *Text) printField(ctx fields.FilterContext, k string, v interface{}, h hints.Hints, using log.Provider, to encoding.TextEncoder) (bool, error) {
 	if vl, ok := v.(fields.Filtered); ok {
-		fv, shouldBeRespected := vl.Filter(ctx)
-		if !shouldBeRespected {
-			return false, nil
+		if support.IsNil(vl) {
+			v = nil
+		} else {
+			fv, shouldBeRespected := vl.Filter(ctx)
+			if !shouldBeRespected {
+				return false, nil
+			}
+			v = fv
 		}
-		v = fv
 	} else if vl, ok := v.(fields.Lazy); ok {
-		v = vl.Get()
+		if support.IsNil(vl) {
+			v = nil
+		} else {
+			v = vl.Get()
+		}
 	}
 	if v == fields.Exclude {
 		return false, nil

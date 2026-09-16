@@ -41,6 +41,14 @@ func Test_RequireMaximalLevelLazy_Get(t *testing.T) {
 	assert.ToBeEqual(t, expected, actual)
 }
 
+func Test_RequireMaximalLevelLazy_Get_withTypedNil(t *testing.T) {
+	var givenLazy *nilLazy
+
+	actual := RequireMaximalLevelLazy(level.Info, givenLazy).Get()
+
+	assert.ToBeNil(t, actual)
+}
+
 func Test_RequireMaximalLevelLazy_Filter_respected(t *testing.T) {
 	expected := struct{ foo string }{foo: "bar"}
 	givenLazy := LazyFunc(func() interface{} { return expected })
@@ -88,6 +96,14 @@ func Test_IgnoreLevelsLazy_Get(t *testing.T) {
 	actual := actualInstance.Get()
 
 	assert.ToBeEqual(t, expected, actual)
+}
+
+func Test_IgnoreLevelsLazy_Get_withTypedNil(t *testing.T) {
+	var givenLazy *nilLazy
+
+	actual := IgnoreLevelsLazy(level.Info, level.Warn, givenLazy).Get()
+
+	assert.ToBeNil(t, actual)
 }
 
 func Test_IgnoreLevelsLazy_Filter_respectedBelow(t *testing.T) {

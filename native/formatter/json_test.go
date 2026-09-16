@@ -363,6 +363,14 @@ func Test_Json_encodeValuesChecked(t *testing.T) {
 		}),
 		unsorted: true,
 		expected: `,"foo":"foo"`,
+	}, {
+		name: "withTypedNilValues",
+		given: givenLogger.NewEvent(0, map[string]interface{}{
+			"error":    (*typedNilError)(nil),
+			"filtered": (*typedNilFiltered)(nil),
+			"lazy":     (*typedNilLazy)(nil),
+		}),
+		expected: `,"error":null,"filtered":null,"lazy":null`,
 	}}
 
 	for _, c := range cases {

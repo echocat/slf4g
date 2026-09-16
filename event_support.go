@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/echocat/slf4g/fields"
+	"github.com/echocat/slf4g/internal/support"
 )
 
 // GetMessageOf returns for the given Event the contained message (if exists).
@@ -20,8 +21,14 @@ func GetMessageOf(e Event, using Provider) *string {
 	case string:
 		return &v
 	case *string:
+		if v == nil {
+			return nil
+		}
 		return v
 	case fmt.Stringer:
+		if support.IsNil(v) {
+			return nil
+		}
 		s := v.String()
 		return &s
 	case []string:
@@ -47,12 +54,21 @@ func GetErrorOf(e Event, using Provider) error {
 	case nil:
 		return nil
 	case error:
+		if support.IsNil(v) {
+			return nil
+		}
 		return v
 	case string:
 		return stringError(v)
 	case *string:
+		if v == nil {
+			return nil
+		}
 		return stringError(*v)
 	case fmt.Stringer:
+		if support.IsNil(v) {
+			return nil
+		}
 		return stringError(v.String())
 	default:
 		return stringError(fmt.Sprint(pv))
@@ -74,6 +90,9 @@ func GetTimestampOf(e Event, using Provider) *time.Time {
 		}
 		return &v
 	case *time.Time:
+		if v == nil {
+			return nil
+		}
 		if v.IsZero() {
 			return nil
 		}
@@ -97,16 +116,28 @@ func GetLoggerOf(e Event, using Provider) *string {
 	case string:
 		return &v
 	case *string:
+		if v == nil {
+			return nil
+		}
 		return v
 	case Logger:
+		if support.IsNil(v) {
+			return nil
+		}
 		result := v.GetName()
 		return &result
 	case interface {
 		GetName() string
 	}:
+		if support.IsNil(v) {
+			return nil
+		}
 		result := v.GetName()
 		return &result
 	case fmt.Stringer:
+		if support.IsNil(v) {
+			return nil
+		}
 		result := v.String()
 		return &result
 	default:
@@ -116,7 +147,13 @@ func GetLoggerOf(e Event, using Provider) *string {
 }
 
 func resolveEventValue(event Event, value interface{}) interface{} {
+	if value == nil {
+		return nil
+	}
 	if filtered, ok := value.(fields.Filtered); ok {
+		if support.IsNil(filtered) {
+			return nil
+		}
 		resolved, respected := filtered.Filter(event)
 		if !respected {
 			return nil
@@ -124,6 +161,9 @@ func resolveEventValue(event Event, value interface{}) interface{} {
 		return resolved
 	}
 	if lazy, ok := value.(fields.Lazy); ok {
+		if support.IsNil(lazy) {
+			return nil
+		}
 		return lazy.Get()
 	}
 	return value

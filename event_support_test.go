@@ -184,6 +184,50 @@ func Test_GetMessageOf_withFilteredLazyValue(t *testing.T) {
 	}
 }
 
+func Test_EventSupport_withTypedNilValues(t *testing.T) {
+	var (
+		message   *nilLazyMock
+		givenErr  *nilErrorMock
+		timestamp *time.Time
+		logger    *nilNamedMock
+	)
+	givenProvider := newMockProvider("test").withRootLogger()
+	givenSpec := givenProvider.GetFieldKeysSpec()
+	givenEvent := givenProvider.newEvent(level.Info).
+		With(givenSpec.GetMessage(), message).
+		With(givenSpec.GetError(), givenErr).
+		With(givenSpec.GetTimestamp(), timestamp).
+		With(givenSpec.GetLogger(), logger)
+
+	assert.ToBeNil(t, GetMessageOf(givenEvent, givenProvider))
+	assert.ToBeNil(t, GetErrorOf(givenEvent, givenProvider))
+	assert.ToBeNil(t, GetTimestampOf(givenEvent, givenProvider))
+	assert.ToBeNil(t, GetLoggerOf(givenEvent, givenProvider))
+}
+
+func Test_GetMessageOf_withTypedNilFilteredValue(t *testing.T) {
+	givenProvider := newMockProvider("test").withRootLogger()
+	givenEvent := givenProvider.newEvent(level.Info).
+		With(givenProvider.fieldKeysSpec.GetMessage(), (*nilFilteredMock)(nil))
+
+	actual := GetMessageOf(givenEvent, givenProvider)
+
+	assert.ToBeNil(t, actual)
+}
+
+func Test_GetMessageOf_withLazyTypedNilResult(t *testing.T) {
+	givenProvider := newMockProvider("test").withRootLogger()
+	givenEvent := givenProvider.newEvent(level.Info).
+		With(givenProvider.fieldKeysSpec.GetMessage(), fields.LazyFunc(func() interface{} {
+			var result *string
+			return result
+		}))
+
+	actual := GetMessageOf(givenEvent, givenProvider)
+
+	assert.ToBeNil(t, actual)
+}
+
 func Test_GetErrorOf_withNilEvent(t *testing.T) {
 	givenProvider := newMockProvider("test").withRootLogger()
 
@@ -527,4 +571,32 @@ type namedMock string
 
 func (instance namedMock) GetName() string {
 	return string(instance)
+}
+
+type nilLazyMock struct{}
+
+func (*nilLazyMock) Get() interface{} {
+	panic("must not be called")
+}
+
+type nilErrorMock struct{}
+
+func (*nilErrorMock) Error() string {
+	panic("must not be called")
+}
+
+type nilFilteredMock struct{}
+
+func (*nilFilteredMock) Get() interface{} {
+	panic("must not be called")
+}
+
+func (*nilFilteredMock) Filter(fields.FilterContext) (interface{}, bool) {
+	panic("must not be called")
+}
+
+type nilNamedMock struct{}
+
+func (*nilNamedMock) GetName() string {
+	panic("must not be called")
 }

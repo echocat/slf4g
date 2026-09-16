@@ -3,6 +3,7 @@ package formatter
 import (
 	"fmt"
 
+	"github.com/echocat/slf4g/internal/support"
 	"github.com/echocat/slf4g/level"
 
 	"github.com/echocat/slf4g/native/execution"
@@ -116,13 +117,21 @@ func (instance *Json) encodeValuesChecked(of log.Event, using log.Provider, to e
 				return nil
 			}
 			if vl, ok := v.(fields.Filtered); ok {
-				fv, shouldBeRespected := vl.Filter(of)
-				if !shouldBeRespected {
-					return nil
+				if support.IsNil(vl) {
+					v = nil
+				} else {
+					fv, shouldBeRespected := vl.Filter(of)
+					if !shouldBeRespected {
+						return nil
+					}
+					v = fv
 				}
-				v = fv
 			} else if vl, ok := v.(fields.Lazy); ok {
-				v = vl.Get()
+				if support.IsNil(vl) {
+					v = nil
+				} else {
+					v = vl.Get()
+				}
 			}
 			if v == fields.Exclude {
 				return nil

@@ -29,6 +29,12 @@ func Test_LazyFunc_callsItselfOnGet(t *testing.T) {
 	assert.ToBeEqual(t, expected, actual)
 }
 
+func Test_LazyFunc_nil(t *testing.T) {
+	actual := LazyFunc(nil).Get()
+
+	assert.ToBeNil(t, actual)
+}
+
 func ExampleLazyFormat() {
 	lazy := LazyFormat("Hello, %s!", "world")
 
@@ -53,9 +59,23 @@ func Test_LazyFormat_formats(t *testing.T) {
 	assert.ToBeEqual(t, "foobar", actual)
 }
 
+func Test_LazyFormat_withTypedNilLazy(t *testing.T) {
+	var value *nilLazy
+
+	actual := LazyFormat("%v", value).Get()
+
+	assert.ToBeEqual(t, "<nil>", actual)
+}
+
 var someVariable = &someStruct{}
 
 type someStruct struct {
+}
+
+type nilLazy struct{}
+
+func (*nilLazy) Get() interface{} {
+	panic("must not be called")
 }
 
 func (instance *someStruct) someResourceIntensiveMethod() string {

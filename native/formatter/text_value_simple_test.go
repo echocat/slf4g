@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/internal/test/assert"
 )
 
@@ -47,6 +48,8 @@ func Test_SimpleTextValue_FormatTextValue(t *testing.T) {
 		{panError("abc"), "abc", "\"abc\"", "\"abc\""},
 		{anError("abc%"), "\"abc%\"", "\"abc%\"", "\"abc%\""},
 		{panError("abc%"), "\"abc%\"", "\"abc%\"", "\"abc%\""},
+		{(*typedNilError)(nil), "", `""`, `""`},
+		{(*typedNilLazy)(nil), "", `""`, `""`},
 		{1, "1", "1", "\"1\""},
 		{1.2, "1.2", "1.2", "\"1.2\""},
 		{true, "true", "true", "\"true\""},
@@ -127,4 +130,26 @@ func (instance anError) Error() string {
 func panError(v string) *anError {
 	va := anError(v)
 	return &va
+}
+
+type typedNilError struct{}
+
+func (*typedNilError) Error() string {
+	panic("must not be called")
+}
+
+type typedNilFiltered struct{}
+
+func (*typedNilFiltered) Get() interface{} {
+	panic("must not be called")
+}
+
+func (*typedNilFiltered) Filter(fields.FilterContext) (interface{}, bool) {
+	panic("must not be called")
+}
+
+type typedNilLazy struct{}
+
+func (*typedNilLazy) Get() interface{} {
+	panic("must not be called")
 }

@@ -432,6 +432,21 @@ func Test_Text_printField(t *testing.T) {
 	}, {
 		givenLevel: level.Info,
 		givenKey:   "foo",
+		givenValue: (*typedNilFiltered)(nil),
+		expected:   " foo=",
+	}, {
+		givenLevel: level.Info,
+		givenKey:   "foo",
+		givenValue: (*typedNilLazy)(nil),
+		expected:   " foo=",
+	}, {
+		givenLevel: level.Info,
+		givenKey:   "foo",
+		givenValue: (*typedNilError)(nil),
+		expected:   " foo=",
+	}, {
+		givenLevel: level.Info,
+		givenKey:   "foo",
 		givenValue: fields.LazyFormat("b%sr", "a"),
 		expected:   " foo=bar",
 	}, {
