@@ -189,6 +189,10 @@ func Test_Text_getMessage(t *testing.T) {
 		given:          "abc\ndef",
 		allowMultiline: true,
 		expected:       "abc\ndef",
+	}, {
+		given:          "abc\x1b[2J\u202edef",
+		allowMultiline: false,
+		expected:       `abc\x1b[2J\u202edef`,
 	}}
 
 	for i, c := range cases {
@@ -420,6 +424,11 @@ func Test_Text_printField(t *testing.T) {
 		givenKey:   "foo",
 		givenValue: "bar",
 		expected:   " foo=bar",
+	}, {
+		givenLevel: level.Info,
+		givenKey:   "foo\r\n\t\x1b[2J",
+		givenValue: "bar",
+		expected:   ` foo\r\n\t\x1b[2J=bar`,
 	}, {
 		givenLevel: level.Info,
 		givenKey:   "foo",

@@ -41,6 +41,23 @@ func Test_coreLogger_Log_regular(t *testing.T) {
 	assert.ToBeEqual(t, uint16(6), actualSkipFrames)
 }
 
+func Test_coreLogger_Log_escapesControlCharacters(t *testing.T) {
+	provider := NewProvider(t)
+	provider.initIfRequired()
+	instance := provider.coreRootLogger
+
+	var actualMsg string
+	instance.interceptLogDepth = func(msg string, _ uint16) {
+		actualMsg = msg
+	}
+
+	provider.GetRootLogger().
+		With("key\r\n\t\x1b[2J", "value").
+		Info("hello\r\x1b[2J\u202eforged\nline")
+
+	assert.ToBeMatching(t, `^\d+ \[ INFO] hello\\r\\x1b\[2J\\u202eforged⏎line key\\r\\n\\t\\x1b\[2J="value"$`, actualMsg)
+}
+
 func Test_coreLogger_NewEvent(t *testing.T) {
 	provider := NewProvider(t)
 	provider.initIfRequired()

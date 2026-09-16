@@ -95,6 +95,16 @@ func Test_fallbackCoreLogger_Log_withFilteredValue_ignored(t *testing.T) {
 	assert.ToBeMatching(t, `^I.+logger_core_fallback_test.go:\d+] logger="foo"`, buf.String())
 }
 
+func Test_fallbackCoreLogger_Log_escapesControlCharacters(t *testing.T) {
+	instance, buf := newFallbackCoreLogger("foo")
+
+	instance.Log(instance.NewEvent(level.Info, nil).
+		With("message", "hello\r\x1b[2J\u202eforged\nline").
+		With("key\r\n\t\x1b[2J", "value"), 0)
+
+	assert.ToBeMatching(t, `^I.+logger_core_fallback_test.go:\d+] hello\\r\\x1b\[2J\\u202eforged⏎line key\\r\\n\\t\\x1b\[2J="value" logger="foo"`, buf.String())
+}
+
 func Test_fallbackCoreLogger_Log_brokenCallDepth(t *testing.T) {
 	instance, buf := newFallbackCoreLogger("foo")
 
