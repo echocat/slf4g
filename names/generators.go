@@ -21,7 +21,7 @@ func FullLoggerNameGenerator(something interface{}) string {
 	}
 
 	t := reflect.TypeOf(something)
-	for t != nil && t.Kind() == reflect.Ptr {
+	for t != nil && t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	var result string
