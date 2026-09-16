@@ -57,6 +57,28 @@ func Test_loggerImpl_Log(t *testing.T) {
 	}
 }
 
+func Test_loggerImpl_Log_usesSingleDelegate(t *testing.T) {
+	givenFirst := newMockCoreLogger("first")
+	givenFirst.initLoggedEvents()
+	givenSecond := newMockCoreLogger("second")
+	givenSecond.initLoggedEvents()
+	var resolutions int
+	instance := NewLoggerFacade(func() CoreLogger {
+		resolutions++
+		if resolutions == 1 {
+			return givenFirst
+		}
+		return givenSecond
+	})
+	givenEvent := givenFirst.NewEvent(level.Info, nil)
+
+	instance.Log(givenEvent, 0)
+
+	assert.ToBeEqual(t, 1, resolutions)
+	assert.ToBeEqual(t, 1, len(*givenFirst.loggedEvents))
+	assert.ToBeEqual(t, 0, len(*givenSecond.loggedEvents))
+}
+
 func Test_loggerImpl_IsLevelEnabled(t *testing.T) {
 	for _, l := range level.GetProvider().GetLevels() {
 		t.Run(fmt.Sprintf("level-%d", l), func(t *testing.T) {
@@ -159,6 +181,41 @@ func Test_loggerImpl_logf(t *testing.T) {
 				givenLogger.loggedEvent(1),
 				AreEventsEqual,
 			)
+		})
+	}
+}
+
+func Test_loggerImpl_log_usesSingleDelegate(t *testing.T) {
+	cases := []struct {
+		name string
+		log  func(Logger)
+	}{
+		{"regular", func(logger Logger) { logger.Info("message") }},
+		{"formatted", func(logger Logger) { logger.Infof("%s", "message") }},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			givenFirst := newMockCoreLogger("first")
+			givenFirst.level = level.Info
+			givenFirst.initLoggedEvents()
+			givenSecond := newMockCoreLogger("second")
+			givenSecond.level = level.Info
+			givenSecond.initLoggedEvents()
+			var resolutions int
+			instance := NewLoggerFacade(func() CoreLogger {
+				resolutions++
+				if resolutions == 1 {
+					return givenFirst
+				}
+				return givenSecond
+			})
+
+			c.log(instance)
+
+			assert.ToBeEqual(t, 1, resolutions)
+			assert.ToBeEqual(t, 1, len(*givenFirst.loggedEvents))
+			assert.ToBeEqual(t, 0, len(*givenSecond.loggedEvents))
 		})
 	}
 }
