@@ -58,6 +58,25 @@ func Test_coreLogger_Log_escapesControlCharacters(t *testing.T) {
 	assert.ToBeMatching(t, `^\d+ \[ INFO] hello\\r\\x1b\[2J\\u202eforged⏎line key\\r\\n\\t\\x1b\[2J="value"$`, actualMsg)
 }
 
+func Test_coreLogger_Log_withTypedNilValues(t *testing.T) {
+	provider := NewProvider(t)
+	provider.initIfRequired()
+	instance := provider.coreRootLogger
+
+	var actualMsg string
+	instance.interceptLogDepth = func(msg string, _ uint16) {
+		actualMsg = msg
+	}
+
+	provider.GetRootLogger().
+		With("error", (*typedNilError)(nil)).
+		With("filtered", (*typedNilFiltered)(nil)).
+		With("lazy", (*typedNilLazy)(nil)).
+		Info("message")
+
+	assert.ToBeMatching(t, `^\d+ \[ INFO] message error=null filtered=null lazy=null$`, actualMsg)
+}
+
 func Test_coreLogger_NewEvent(t *testing.T) {
 	provider := NewProvider(t)
 	provider.initIfRequired()
@@ -274,4 +293,26 @@ func Test_coreLogger_SetLevel(t *testing.T) {
 
 	otherInstance3 := provider.getLogger("other")
 	assert.ToBeEqual(t, level.Error, otherInstance3.GetLevel())
+}
+
+type typedNilError struct{}
+
+func (*typedNilError) Error() string {
+	panic("must not be called")
+}
+
+type typedNilFiltered struct{}
+
+func (*typedNilFiltered) Get() interface{} {
+	panic("must not be called")
+}
+
+func (*typedNilFiltered) Filter(fields.FilterContext) (interface{}, bool) {
+	panic("must not be called")
+}
+
+type typedNilLazy struct{}
+
+func (*typedNilLazy) Get() interface{} {
+	panic("must not be called")
 }

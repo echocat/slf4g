@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/echocat/slf4g/internal/support"
 	"github.com/echocat/slf4g/native/execution"
 )
 
@@ -53,10 +54,18 @@ func (instance *bufferedJsonEncoder) WriteKeyValueChecked(k string, v interface{
 
 func (instance *bufferedJsonEncoder) WriteValue(v interface{}) error {
 	if ve, ok := v.(error); ok {
-		v = ve.Error()
+		if support.IsNil(ve) {
+			v = nil
+		} else {
+			v = ve.Error()
+		}
 	}
 	if vs, ok := v.(*string); ok {
-		v = *vs
+		if vs == nil {
+			v = nil
+		} else {
+			v = *vs
+		}
 	}
 	if vs, ok := v.(string); ok {
 		v = strings.TrimRightFunc(vs, unicode.IsSpace)

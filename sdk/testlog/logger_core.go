@@ -156,13 +156,21 @@ func (instance *coreLogger) format(event log.Event) string {
 	timestampKey := instance.GetFieldKeysSpec().GetTimestamp()
 	if err := fields.SortedForEach(event, nil, func(k string, vp interface{}) error {
 		if vl, ok := vp.(fields.Filtered); ok {
-			fv, shouldBeRespected := vl.Filter(event)
-			if !shouldBeRespected {
-				return nil
+			if support.IsNil(vl) {
+				vp = nil
+			} else {
+				fv, shouldBeRespected := vl.Filter(event)
+				if !shouldBeRespected {
+					return nil
+				}
+				vp = fv
 			}
-			vp = fv
 		} else if vl, ok := vp.(fields.Lazy); ok {
-			vp = vl.Get()
+			if support.IsNil(vl) {
+				vp = nil
+			} else {
+				vp = vl.Get()
+			}
 		}
 		if vp == fields.Exclude {
 			return nil
@@ -236,7 +244,11 @@ func (instance *coreLogger) formatMessage(event log.Event) string {
 
 func (instance *coreLogger) formatValue(v interface{}) ([]byte, error) {
 	if ve, ok := v.(error); ok {
-		v = ve.Error()
+		if support.IsNil(ve) {
+			v = nil
+		} else {
+			v = ve.Error()
+		}
 	}
 	return json.Marshal(v)
 }

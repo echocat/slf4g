@@ -1,6 +1,10 @@
 package fields
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/echocat/slf4g/internal/support"
+)
 
 // Lazy is a value which CAN be initialized on usage.
 //
@@ -22,6 +26,9 @@ func LazyFunc(provider func() interface{}) Lazy {
 type lazyFunc func() interface{}
 
 func (instance lazyFunc) Get() interface{} {
+	if instance == nil {
+		return nil
+	}
 	return instance()
 }
 
@@ -43,10 +50,20 @@ func (instance *lazyFormat) Get() interface{} {
 func (instance *lazyFormat) String() string {
 	targetArgs := make([]interface{}, len(instance.args))
 	for i, arg := range instance.args {
-		if l, ok := arg.(Lazy); ok {
-			arg = l.Get()
-		}
-		targetArgs[i] = arg
+		targetArgs[i] = resolveLazy(arg)
 	}
 	return fmt.Sprintf(instance.format, targetArgs...)
+}
+
+func resolveLazy(value interface{}) interface{} {
+	if value == nil {
+		return nil
+	}
+	if lazy, ok := value.(Lazy); ok {
+		if support.IsNil(lazy) {
+			return nil
+		}
+		return lazy.Get()
+	}
+	return value
 }

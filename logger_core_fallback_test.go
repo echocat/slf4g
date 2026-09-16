@@ -105,6 +105,17 @@ func Test_fallbackCoreLogger_Log_escapesControlCharacters(t *testing.T) {
 	assert.ToBeMatching(t, `^I.+logger_core_fallback_test.go:\d+] hello\\r\\x1b\[2J\\u202eforged⏎line key\\r\\n\\t\\x1b\[2J="value" logger="foo"`, buf.String())
 }
 
+func Test_fallbackCoreLogger_Log_withTypedNilValues(t *testing.T) {
+	instance, buf := newFallbackCoreLogger("foo")
+
+	instance.Log(instance.NewEvent(level.Info, nil).
+		With("error", (*typedNilError)(nil)).
+		With("filtered", (*typedNilFiltered)(nil)).
+		With("lazy", (*typedNilLazy)(nil)), 0)
+
+	assert.ToBeMatching(t, `^I.+logger_core_fallback_test.go:\d+] error=null filtered=null lazy=null logger="foo"`, buf.String())
+}
+
 func Test_fallbackCoreLogger_Log_brokenCallDepth(t *testing.T) {
 	instance, buf := newFallbackCoreLogger("foo")
 
@@ -281,4 +292,26 @@ type failingJsonMarshalling string
 
 func (instance failingJsonMarshalling) MarshalJSON() ([]byte, error) {
 	return nil, stringError(instance)
+}
+
+type typedNilError struct{}
+
+func (*typedNilError) Error() string {
+	panic("must not be called")
+}
+
+type typedNilFiltered struct{}
+
+func (*typedNilFiltered) Get() interface{} {
+	panic("must not be called")
+}
+
+func (*typedNilFiltered) Filter(fields.FilterContext) (interface{}, bool) {
+	panic("must not be called")
+}
+
+type typedNilLazy struct{}
+
+func (*typedNilLazy) Get() interface{} {
+	panic("must not be called")
 }

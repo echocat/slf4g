@@ -6,12 +6,8 @@ import "reflect"
 // initialization of this global variable should be able to deal with
 // the majority of the cases.
 var DefaultValueEquality ValueEquality = ValueEqualityFunc(func(key string, leftValue, rightValue interface{}) (bool, error) {
-	if v, ok := leftValue.(Lazy); ok {
-		leftValue = v.Get()
-	}
-	if v, ok := rightValue.(Lazy); ok {
-		rightValue = v.Get()
-	}
+	leftValue = resolveLazy(leftValue)
+	rightValue = resolveLazy(rightValue)
 
 	if isFunction(leftValue) {
 		lV, rV := reflect.ValueOf(leftValue), reflect.ValueOf(rightValue)
