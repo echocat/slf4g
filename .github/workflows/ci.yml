@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
-        module: [ ., native ]
+        module: [ ., native, platform/windows/eventlog ]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
@@ -136,11 +136,36 @@ jobs:
           format: golang
           file: native/profile.cov
 
+  test-eventlog:
+    name: Test eventlog
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: [ '1.23', 'stable' ]
+    runs-on: windows-latest
+    env:
+      GOTOOLCHAIN: local
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Install Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: '${{ matrix.go-version }}'
+          check-latest: 'true'
+          cache: false
+
+      - name: Test
+        working-directory: platform/windows/eventlog
+        run: go test --tags=mock -v -race ./...
+
   finish:
     name: Finish
     needs:
       - test
       - test-native
+      - test-eventlog
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
