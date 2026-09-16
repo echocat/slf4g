@@ -14,3 +14,8 @@ updates:
     directory: "/native"
     schedule:
       interval: "daily"
+
+  - package-ecosystem: "gomod"
+    directory: "/platform/windows/eventlog"
+    schedule:
+      interval: "daily"
