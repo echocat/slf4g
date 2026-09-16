@@ -1,6 +1,6 @@
 module github.com/echocat/slf4g/platform/windows/eventlog
 
-go 1.23.0
+go 1.26.0
 
 replace (
 	github.com/echocat/slf4g => ../../../
@@ -10,5 +10,5 @@ replace (
 require (
 	github.com/echocat/slf4g v0.0.0
 	github.com/echocat/slf4g/native v0.0.0
-	golang.org/x/sys v0.35.0
+	golang.org/x/sys v0.48.0
 )
