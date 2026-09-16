@@ -37,13 +37,41 @@ func resolvedValueOf(value sdk.Value) sdk.Value {
 		return value
 	}
 
-	originalGroup := value.Group()
-	group := make([]sdk.Attr, len(originalGroup))
-	copy(group, originalGroup)
-	for i := range group {
-		group[i].Value = resolvedValueOf(group[i].Value)
+	type frame struct {
+		group       []sdk.Attr
+		next        int
+		parentIndex int
 	}
-	return sdk.GroupValue(group...)
+	newFrame := func(value sdk.Value, parentIndex int) frame {
+		originalGroup := value.Group()
+		group := make([]sdk.Attr, len(originalGroup))
+		copy(group, originalGroup)
+		return frame{group: group, parentIndex: parentIndex}
+	}
+
+	stack := []frame{newFrame(value, 0)}
+	for {
+		current := &stack[len(stack)-1]
+		if current.next < len(current.group) {
+			index := current.next
+			current.next++
+			resolved := current.group[index].Value.Resolve()
+			if resolved.Kind() == sdk.KindGroup {
+				stack = append(stack, newFrame(resolved, index))
+			} else {
+				current.group[index].Value = resolved
+			}
+			continue
+		}
+
+		resolved := sdk.GroupValue(current.group...)
+		parentIndex := current.parentIndex
+		stack = stack[:len(stack)-1]
+		if len(stack) == 0 {
+			return resolved
+		}
+		stack[len(stack)-1].group[parentIndex].Value = resolved
+	}
 }
 
 func (instance attrs) With(key string, value interface{}) fields.Fields {

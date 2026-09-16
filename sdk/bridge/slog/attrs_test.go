@@ -43,6 +43,53 @@ func TestAttrs_ForEach_resolvesLogValuer(t *testing.T) {
 	assert.ToBeEqual(t, sdk.KindLogValuer, instance[1].Value.Group()[0].Value.Kind())
 }
 
+func TestResolvedValueOf_resolvesDeepLogValuerGroups(t *testing.T) {
+	const depth = 20_000
+	actual := resolvedValueOf(sdk.AnyValue(nestedGroupLogValuer(depth)))
+
+	value := actual
+	for i := 0; i < depth; i++ {
+		group := value.Group()
+		if len(group) != 1 || group[0].Key != "nested" {
+			t.Fatalf("unexpected group at depth %d: %v", i, group)
+		}
+		value = group[0].Value
+	}
+	assert.ToBeEqual(t, sdk.KindString, value.Kind())
+	assert.ToBeEqual(t, "resolved", value.String())
+}
+
+func TestResolvedValueOf_preservesNestedGroupOrder(t *testing.T) {
+	instance := sdk.GroupValue(
+		sdk.String("before", "a"),
+		sdk.Group("group",
+			sdk.String("nestedBefore", "b"),
+			sdk.Any("secret", redactingLogValuer{"not-for-the-log"}),
+			sdk.Any("empty", emptyGroupLogValuer{}),
+			sdk.String("nestedAfter", "c"),
+		),
+		sdk.String("after", "d"),
+	)
+
+	actual := resolvedValueOf(instance).Group()
+
+	if len(actual) != 3 {
+		t.Fatalf("unexpected root group: %v", actual)
+	}
+	assert.ToBeEqual(t, "before", actual[0].Key)
+	assert.ToBeEqual(t, "group", actual[1].Key)
+	assert.ToBeEqual(t, "after", actual[2].Key)
+	nested := actual[1].Value.Group()
+	if len(nested) != 3 {
+		t.Fatalf("unexpected nested group: %v", nested)
+	}
+	assert.ToBeEqual(t, "nestedBefore", nested[0].Key)
+	assert.ToBeEqual(t, "secret", nested[1].Key)
+	assert.ToBeEqual(t, "[REDACTED]", nested[1].Value.String())
+	assert.ToBeEqual(t, "nestedAfter", nested[2].Key)
+	assert.ToBeEqual(t, sdk.KindLogValuer, instance.Group()[1].Value.Group()[1].Value.Kind())
+}
+
 func TestAttrs_ForEach_empty(t *testing.T) {
 	instance := attrs{}
 
@@ -107,6 +154,21 @@ type redactingLogValuer struct {
 
 func (instance redactingLogValuer) LogValue() sdk.Value {
 	return sdk.StringValue("[REDACTED]")
+}
+
+type emptyGroupLogValuer struct{}
+
+func (emptyGroupLogValuer) LogValue() sdk.Value {
+	return sdk.GroupValue()
+}
+
+type nestedGroupLogValuer int
+
+func (instance nestedGroupLogValuer) LogValue() sdk.Value {
+	if instance == 0 {
+		return sdk.StringValue("resolved")
+	}
+	return sdk.GroupValue(sdk.Any("nested", instance-1))
 }
 
 func TestAttrs_With(t *testing.T) {
