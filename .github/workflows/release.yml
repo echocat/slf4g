@@ -38,25 +38,36 @@ jobs:
           TAG="${{ github.event.release.tag_name }}"
           NATIVE_TAG="native/${TAG}"
 
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --force origin "refs/tags/${TAG}:refs/tags/${TAG}"
+          COMMIT="$(git rev-parse --verify "refs/tags/${TAG}^{commit}")"
 
-          if git rev-parse --verify --quiet "${TAG}" >/dev/null; then
-            COMMIT="$(git rev-list -n 1 "${TAG}")"
-          else
-            COMMIT="${{ github.event.release.target_commitish }}"
+          if git ls-remote --exit-code --refs origin "refs/tags/${NATIVE_TAG}" >/dev/null; then
+            git fetch --force origin "refs/tags/${NATIVE_TAG}:refs/tags/${NATIVE_TAG}"
+            EXISTING_COMMIT="$(git rev-parse --verify "refs/tags/${NATIVE_TAG}^{commit}")"
+            if [[ "$EXISTING_COMMIT" == "$COMMIT" ]]; then
+              echo "$NATIVE_TAG already points to $COMMIT; nothing to do."
+              exit 0
+            fi
+            echo "::error::$NATIVE_TAG already points to $EXISTING_COMMIT instead of $COMMIT."
+            exit 1
           fi
 
           echo "Set $NATIVE_TAG to $COMMIT..."
 
-          # Remove existing remote tag(s) if already exists (overwrite)
-          git push origin ":refs/tags/$NATIVE_TAG" || true
-
-          # Remove existing local tag(s) if already exists (overwrite)
-          git tag -d "$NATIVE_TAG" 2>/dev/null || true
-
           # Create tag(s)...
           git tag "$NATIVE_TAG" "$COMMIT"
-          
+
           # Push tags(s)...
-          git push origin "refs/tags/$NATIVE_TAG"
+          if git push origin "refs/tags/$NATIVE_TAG"; then
+            exit 0
+          fi
+
+          # A concurrent workflow might have created the same immutable tag.
+          git fetch --force origin "refs/tags/${NATIVE_TAG}:refs/tags/${NATIVE_TAG}"
+          EXISTING_COMMIT="$(git rev-parse --verify "refs/tags/${NATIVE_TAG}^{commit}")"
+          if [[ "$EXISTING_COMMIT" == "$COMMIT" ]]; then
+            echo "$NATIVE_TAG was concurrently created at $COMMIT; nothing to do."
+            exit 0
+          fi
+          echo "::error::$NATIVE_TAG was concurrently created at $EXISTING_COMMIT instead of $COMMIT."
+          exit 1
