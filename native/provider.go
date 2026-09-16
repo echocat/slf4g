@@ -181,9 +181,35 @@ func (instance *Provider) getCache() log.LoggerCache {
 			return *v
 		}
 
-		c := log.NewLoggerCache(instance.rootFactory, instance.factory)
+		customizer := instance.CoreLoggerCustomizer
+		if customizer == nil {
+			c := log.NewLoggerCache(instance.rootFactory, instance.factory)
+			if atomic.CompareAndSwapPointer(&instance.cachePointer, unsafe.Pointer(v), unsafe.Pointer(&c)) {
+				return c
+			}
+			continue
+		}
+
+		provisional := &CoreLogger{
+			provider: instance,
+			name:     rootLoggerName,
+		}
+		cl := &CoreLogger{
+			provider: instance,
+			name:     rootLoggerName,
+		}
+		root := newRootLoggerFacade(provisional)
+		c := log.NewLoggerCache(func() log.Logger { return root }, instance.factory)
 
 		if atomic.CompareAndSwapPointer(&instance.cachePointer, unsafe.Pointer(v), unsafe.Pointer(&c)) {
+			completed := false
+			defer func() {
+				if !completed {
+					root.setFailed()
+				}
+			}()
+			root.setDelegate(customizer(instance, cl))
+			completed = true
 			return c
 		}
 	}
