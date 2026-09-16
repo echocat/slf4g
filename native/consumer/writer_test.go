@@ -5,7 +5,9 @@ import (
 	"errors"
 	"io"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/echocat/slf4g/level"
 	"github.com/echocat/slf4g/testing/recording"
@@ -188,6 +190,149 @@ func Test_Writer_Consume_initIfRequiredConcurrently(t *testing.T) {
 	wait.Wait()
 
 	assert.ToBeNotNil(t, instance.colorSupported)
+}
+
+func Test_Writer_Consume_reentrantInterceptor(t *testing.T) {
+	givenOut := new(bytes.Buffer)
+	givenLogger := recording.NewLogger()
+	givenEvent := givenLogger.NewEvent(level.Info, nil)
+	var reentered atomic.Bool
+	var instance *Writer
+	instance = NewWriter(givenOut, func(writer *Writer) {
+		writer.Interceptor = interceptor.OnBeforeLogFunc(func(event log.Event, _ log.Provider) log.Event {
+			if reentered.CompareAndSwap(false, true) {
+				instance.Consume(event, givenLogger)
+			}
+			return event
+		})
+		writer.Formatter = formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
+			return []byte("expected\n"), nil
+		})
+	})
+
+	done := make(chan struct{})
+	go func() {
+		instance.Consume(givenEvent, givenLogger)
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("reentrant interceptor deadlocked")
+	}
+	assert.ToBeEqual(t, "expected\nexpected\n", givenOut.String())
+}
+
+func Test_Writer_Consume_reentrantOut(t *testing.T) {
+	givenLogger := recording.NewLogger()
+	givenEvent := givenLogger.NewEvent(level.Info, nil)
+	givenOut := newReentrantWriter()
+	instance := NewWriter(givenOut, func(writer *Writer) {
+		writer.Formatter = formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
+			return []byte("expected\n"), nil
+		})
+	})
+	givenOut.onFirstWrite = func() {
+		instance.Consume(givenEvent, givenLogger)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		instance.Consume(givenEvent, givenLogger)
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("reentrant output writer deadlocked")
+	}
+	assert.ToBeEqual(t, int32(2), givenOut.writes.Load())
+	assert.ToBeEqual(t, false, givenOut.concurrent.Load())
+}
+
+func Test_Writer_Consume_serializesFormatter(t *testing.T) {
+	givenLogger := recording.NewLogger()
+	givenEvent := givenLogger.NewEvent(level.Info, nil)
+	var active atomic.Int32
+	var concurrent atomic.Bool
+	var formatted atomic.Int32
+	instance := NewWriter(io.Discard, func(writer *Writer) {
+		writer.Formatter = formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
+			if active.Add(1) != 1 {
+				concurrent.Store(true)
+			}
+			time.Sleep(time.Millisecond)
+			active.Add(-1)
+			formatted.Add(1)
+			return nil, nil
+		})
+	})
+
+	start := make(chan struct{})
+	var wait sync.WaitGroup
+	for i := 0; i < 32; i++ {
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			<-start
+			instance.Consume(givenEvent, givenLogger)
+		}()
+	}
+	close(start)
+	wait.Wait()
+
+	assert.ToBeEqual(t, false, concurrent.Load())
+	assert.ToBeEqual(t, int32(32), formatted.Load())
+}
+
+func Test_Writer_Consume_recoversStateAfterFormatterPanic(t *testing.T) {
+	givenLogger := recording.NewLogger()
+	givenEvent := givenLogger.NewEvent(level.Info, nil)
+	var calls atomic.Int32
+	instance := NewWriter(io.Discard, func(writer *Writer) {
+		writer.Formatter = formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
+			if calls.Add(1) == 1 {
+				panic("expected")
+			}
+			return nil, nil
+		})
+	})
+
+	func() {
+		defer func() {
+			assert.ToBeEqual(t, "expected", recover())
+		}()
+		instance.Consume(givenEvent, givenLogger)
+	}()
+	instance.Consume(givenEvent, givenLogger)
+
+	assert.ToBeEqual(t, int32(2), calls.Load())
+	assert.ToBeEqual(t, false, instance.consuming)
+	assert.ToBeEqual(t, 0, len(instance.pending))
+}
+
+type reentrantWriter struct {
+	onFirstWrite func()
+	writes       atomic.Int32
+	activeWrites atomic.Int32
+	concurrent   atomic.Bool
+}
+
+func newReentrantWriter() *reentrantWriter {
+	return &reentrantWriter{}
+}
+
+func (instance *reentrantWriter) Write(p []byte) (int, error) {
+	if instance.activeWrites.Add(1) != 1 {
+		instance.concurrent.Store(true)
+	}
+	defer instance.activeWrites.Add(-1)
+	if instance.writes.Add(1) == 1 && instance.onFirstWrite != nil {
+		instance.onFirstWrite()
+	}
+	return len(p), nil
 }
 
 func Test_Writer_Consume_beforeLog_continues(t *testing.T) {
