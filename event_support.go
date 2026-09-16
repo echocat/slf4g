@@ -3,6 +3,8 @@ package log
 import (
 	"fmt"
 	"time"
+
+	"github.com/echocat/slf4g/fields"
 )
 
 // GetMessageOf returns for the given Event the contained message (if exists).
@@ -11,11 +13,7 @@ func GetMessageOf(e Event, using Provider) *string {
 		return nil
 	}
 	pv, _ := e.Get(using.GetFieldKeysSpec().GetMessage())
-	if lv, ok := pv.(interface {
-		Get() interface{}
-	}); ok {
-		pv = lv.Get()
-	}
+	pv = resolveEventValue(e, pv)
 	switch v := pv.(type) {
 	case nil:
 		return nil
@@ -44,11 +42,7 @@ func GetErrorOf(e Event, using Provider) error {
 		return nil
 	}
 	pv, _ := e.Get(using.GetFieldKeysSpec().GetError())
-	if lv, ok := pv.(interface {
-		Get() interface{}
-	}); ok {
-		pv = lv.Get()
-	}
+	pv = resolveEventValue(e, pv)
 	switch v := pv.(type) {
 	case nil:
 		return nil
@@ -72,11 +66,7 @@ func GetTimestampOf(e Event, using Provider) *time.Time {
 		return nil
 	}
 	pv, _ := e.Get(using.GetFieldKeysSpec().GetTimestamp())
-	if lv, ok := pv.(interface {
-		Get() interface{}
-	}); ok {
-		pv = lv.Get()
-	}
+	pv = resolveEventValue(e, pv)
 	switch v := pv.(type) {
 	case time.Time:
 		if v.IsZero() {
@@ -100,11 +90,7 @@ func GetLoggerOf(e Event, using Provider) *string {
 		return nil
 	}
 	pv, _ := e.Get(using.GetFieldKeysSpec().GetLogger())
-	if lv, ok := pv.(interface {
-		Get() interface{}
-	}); ok {
-		pv = lv.Get()
-	}
+	pv = resolveEventValue(e, pv)
 	switch v := pv.(type) {
 	case nil:
 		return nil
@@ -127,6 +113,20 @@ func GetLoggerOf(e Event, using Provider) *string {
 		result := fmt.Sprint(pv)
 		return &result
 	}
+}
+
+func resolveEventValue(event Event, value interface{}) interface{} {
+	if filtered, ok := value.(fields.Filtered); ok {
+		resolved, respected := filtered.Filter(event)
+		if !respected {
+			return nil
+		}
+		return resolved
+	}
+	if lazy, ok := value.(fields.Lazy); ok {
+		return lazy.Get()
+	}
+	return value
 }
 
 type stringError string
