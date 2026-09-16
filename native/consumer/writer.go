@@ -77,16 +77,17 @@ func (instance *Writer) Consume(event log.Event, source log.CoreLogger) {
 		return
 	}
 
-	out := instance.GetOut()
-	if out == nil {
-		return
-	}
-
 	if instance.Synchronized {
 		instance.mutex.Lock()
 		defer instance.mutex.Unlock()
 	}
+
+	out := instance.GetOut()
+	if out == nil {
+		return
+	}
 	instance.initIfRequired()
+	out = instance.GetOut()
 
 	if event = instance.onBeforeLog(event, source); event == nil {
 		return
