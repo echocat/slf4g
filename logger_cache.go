@@ -20,25 +20,35 @@ type LoggerCache interface {
 }
 
 // NewLoggerCache creates a new instance of LoggerCache by the given
-// rootFactory and factory.
+// rootFactory and factory. The factory may request loggers with other names
+// from the created cache, but must not recursively request the name it is
+// currently creating.
 func NewLoggerCache(rootFactory func() Logger, factory func(name string) Logger) LoggerCache {
 	root := rootFactory()
 	if root == nil {
 		panic("Root factory returned a nil root logger.")
 	}
 	return &loggerCache{
-		factory: factory,
-		root:    root,
-		loggers: make(map[string]Logger),
+		factory:   factory,
+		root:      root,
+		loggers:   make(map[string]Logger),
+		creations: make(map[string]*loggerCreation),
 	}
 }
 
 type loggerCache struct {
 	factory func(name string) Logger
 
-	root    Logger
-	loggers map[string]Logger
-	mutex   sync.RWMutex
+	root      Logger
+	loggers   map[string]Logger
+	creations map[string]*loggerCreation
+	mutex     sync.RWMutex
+}
+
+type loggerCreation struct {
+	done   chan struct{}
+	logger Logger
+	failed bool
 }
 
 func (instance *loggerCache) GetRootLogger() Logger {
@@ -47,31 +57,54 @@ func (instance *loggerCache) GetRootLogger() Logger {
 
 func (instance *loggerCache) GetLogger(name string) Logger {
 	instance.mutex.RLock()
-	rLocked := true
+	if l, ok := instance.loggers[name]; ok {
+		instance.mutex.RUnlock()
+		return l
+	}
+	instance.mutex.RUnlock()
+
+	instance.mutex.Lock()
+	if l, ok := instance.loggers[name]; ok {
+		instance.mutex.Unlock()
+		return l
+	}
+	if instance.creations == nil {
+		instance.creations = make(map[string]*loggerCreation)
+	}
+	if creation := instance.creations[name]; creation != nil {
+		instance.mutex.Unlock()
+		<-creation.done
+		if creation.failed {
+			panic("Logger factory did not complete.")
+		}
+		return creation.logger
+	}
+	creation := &loggerCreation{done: make(chan struct{})}
+	instance.creations[name] = creation
+	instance.mutex.Unlock()
+
+	completed := false
 	defer func() {
-		if rLocked {
-			instance.mutex.RUnlock()
+		if !completed {
+			instance.mutex.Lock()
+			delete(instance.creations, name)
+			creation.failed = true
+			close(creation.done)
+			instance.mutex.Unlock()
 		}
 	}()
-
-	if l, ok := instance.loggers[name]; ok {
-		return l
-	}
-
-	instance.mutex.RUnlock()
-	rLocked = false
-	instance.mutex.Lock()
-	defer instance.mutex.Unlock()
-
-	if l, ok := instance.loggers[name]; ok {
-		return l
-	}
-
 	l := instance.factory(name)
 	if l == nil {
 		l = instance.root
 	}
+
+	instance.mutex.Lock()
 	instance.loggers[name] = l
+	delete(instance.creations, name)
+	creation.logger = l
+	close(creation.done)
+	completed = true
+	instance.mutex.Unlock()
 
 	return l
 }
