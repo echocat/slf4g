@@ -2,7 +2,10 @@ package log
 
 import (
 	"sort"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/echocat/slf4g/internal/test/assert"
 )
@@ -87,6 +90,94 @@ func Test_loggerCache_GetLogger_returnsRootIfFactoryReturnsNil(t *testing.T) {
 
 	assert.ToBeSame(t, givenRootLogger, actual1)
 	assert.ToBeSame(t, givenRootLogger, actual2)
+}
+
+func Test_loggerCache_GetLogger_supportsReentrantFactory(t *testing.T) {
+	var instance LoggerCache
+	instance = NewLoggerCache(
+		func() Logger { return newMockLogger("root") },
+		func(name string) Logger {
+			if name == "outer" {
+				assert.ToBeEqual(t, "inner", instance.GetLogger("inner").GetName())
+			}
+			return newMockLogger(name)
+		},
+	)
+
+	done := make(chan Logger)
+	go func() {
+		done <- instance.GetLogger("outer")
+	}()
+
+	select {
+	case actual := <-done:
+		assert.ToBeEqual(t, "outer", actual.GetName())
+	case <-time.After(time.Second):
+		t.Fatal("reentrant logger factory deadlocked")
+	}
+}
+
+func Test_loggerCache_GetLogger_createsConcurrentNameOnce(t *testing.T) {
+	var factoryCalls int32
+	factoryEntered := make(chan struct{})
+	releaseFactory := make(chan struct{})
+	instance := NewLoggerCache(
+		func() Logger { return newMockLogger("root") },
+		func(name string) Logger {
+			if atomic.AddInt32(&factoryCalls, 1) == 1 {
+				close(factoryEntered)
+			}
+			<-releaseFactory
+			return newMockLogger(name)
+		},
+	)
+
+	start := make(chan struct{})
+	results := make(chan Logger, 32)
+	var wait sync.WaitGroup
+	for i := 0; i < cap(results); i++ {
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			<-start
+			results <- instance.GetLogger("same")
+		}()
+	}
+	close(start)
+	<-factoryEntered
+	close(releaseFactory)
+	wait.Wait()
+	close(results)
+
+	var expected Logger
+	for actual := range results {
+		if expected == nil {
+			expected = actual
+		} else {
+			assert.ToBeSame(t, expected, actual)
+		}
+	}
+	assert.ToBeEqual(t, int32(1), atomic.LoadInt32(&factoryCalls))
+}
+
+func Test_loggerCache_GetLogger_recoversAfterFactoryPanic(t *testing.T) {
+	var factoryCalls int
+	instance := NewLoggerCache(
+		func() Logger { return newMockLogger("root") },
+		func(name string) Logger {
+			factoryCalls++
+			if factoryCalls == 1 {
+				panic("expected")
+			}
+			return newMockLogger(name)
+		},
+	)
+
+	assert.Execution(t, func() {
+		instance.GetLogger("name")
+	}).WillPanicWith("expected")
+	assert.ToBeEqual(t, "name", instance.GetLogger("name").GetName())
+	assert.ToBeEqual(t, 2, factoryCalls)
 }
 
 func Test_loggerCache_GetNames(t *testing.T) {
