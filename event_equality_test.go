@@ -317,6 +317,28 @@ func Test_EventEqualityImpl_AreEventsEqual_functionWithErr(t *testing.T) {
 	assert.ToBeEqual(t, false, actual)
 }
 
+func Test_EventEqualityImpl_AreEventsEqual_doesNotRepeatedlySearchRight(t *testing.T) {
+	givenLogger := newMockLogger("foo")
+	givenLeft := givenLogger.NewEvent(level.Error, nil).
+		With("a", 1).
+		With("b", 2).
+		With("c", 3)
+	givenRight := &getCountingEvent{Event: givenLogger.NewEvent(level.Error, nil).
+		With("a", 1).
+		With("b", 2).
+		With("c", 3)}
+	instance := EventEqualityImpl{
+		CompareLevel:       true,
+		CompareValuesUsing: fields.DefaultValueEquality,
+	}
+
+	actual, actualErr := instance.AreEventsEqual(givenLeft, givenRight)
+
+	assert.ToBeNoError(t, actualErr)
+	assert.ToBeEqual(t, true, actual)
+	assert.ToBeEqual(t, 0, givenRight.getCalls)
+}
+
 func Test_EventEqualityImpl_AreEventsEqual_WithIgnoringKeys(t *testing.T) {
 	instance := &EventEqualityImpl{}
 
@@ -481,4 +503,14 @@ func Test_ignoringKeysEventEquality_AreEventsEqual_WithIgnoringKeys(t *testing.T
 	assert.ToBeOfType(t, &ignoringKeysEventEquality{}, actual)
 	assert.ToBeSame(t, delegate, actual.(*ignoringKeysEventEquality).parent)
 	assert.ToBeEqual(t, []string{"a", "b", "c", "d"}, actual.(*ignoringKeysEventEquality).keysToIgnore)
+}
+
+type getCountingEvent struct {
+	Event
+	getCalls int
+}
+
+func (instance *getCountingEvent) Get(key string) (interface{}, bool) {
+	instance.getCalls++
+	return instance.Event.Get(key)
 }

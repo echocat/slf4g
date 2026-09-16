@@ -70,12 +70,6 @@ func (instance attrs) Len() (result int) {
 	return len(instance)
 }
 
-func (instance attrs) clone() attrs {
-	result := make(attrs, len(instance))
-	copy(result, instance)
-	return result
-}
-
 func (instance *attrs) add(keyPrefix string, vs ...sdk.Attr) {
 	for _, v := range vs {
 		nv := sdk.Attr{

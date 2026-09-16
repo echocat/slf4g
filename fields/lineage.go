@@ -17,48 +17,11 @@ type lineage struct {
 }
 
 func (instance *lineage) ForEach(consumer func(key string, value interface{}) error) error {
-	if instance == nil || consumer == nil {
-		return nil
-	}
-
-	handledKeys := map[string]bool{}
-	duplicatePreventingConsumer := func(key string, value interface{}) error {
-		if handledKeys[key] {
-			return nil
-		} else {
-			handledKeys[key] = true
-			return consumer(key, value)
-		}
-	}
-
-	if f := instance.target; f != nil {
-		if err := f.ForEach(duplicatePreventingConsumer); err != nil {
-			return err
-		}
-	}
-	if f := instance.parent; f != nil {
-		if err := f.ForEach(duplicatePreventingConsumer); err != nil {
-			return err
-		}
-	}
-	return nil
+	return forEachField(instance, consumer, false)
 }
 
 func (instance *lineage) Get(key string) (interface{}, bool) {
-	if instance == nil {
-		return nil, false
-	}
-	if f := instance.target; f != nil {
-		if v, exists := f.Get(key); exists {
-			return v, true
-		}
-	}
-	if f := instance.parent; f != nil {
-		if v, exists := f.Get(key); exists {
-			return v, true
-		}
-	}
-	return nil, false
+	return getField(instance, key)
 }
 
 func (instance *lineage) With(key string, value interface{}) Fields {
@@ -82,21 +45,5 @@ func (instance *lineage) Without(keys ...string) Fields {
 }
 
 func (instance *lineage) Len() int {
-	if instance == nil {
-		return 0
-	}
-	consumedKeys := keySet{}
-	if f := instance.target; f != nil {
-		_ = f.ForEach(func(key string, value interface{}) error {
-			consumedKeys[key] = keyPresent
-			return nil
-		})
-	}
-	if f := instance.parent; f != nil {
-		_ = f.ForEach(func(key string, value interface{}) error {
-			consumedKeys[key] = keyPresent
-			return nil
-		})
-	}
-	return len(consumedKeys)
+	return fieldCount(instance)
 }

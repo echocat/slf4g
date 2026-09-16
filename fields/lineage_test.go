@@ -2,6 +2,7 @@ package fields
 
 import (
 	"errors"
+	"strconv"
 	"testing"
 
 	"github.com/echocat/slf4g/internal/test/assert"
@@ -84,6 +85,54 @@ func Test_lineage_ForEach(t *testing.T) {
 		"foo": 1,
 		"bar": 2,
 	}, actualConsumed)
+}
+
+func Test_lineage_ForEach_targetBeforeParent(t *testing.T) {
+	instance := &lineage{With("target", 1), With("parent", 2)}
+
+	var actualKeys []string
+	actualErr := instance.ForEach(func(key string, _ interface{}) error {
+		actualKeys = append(actualKeys, key)
+		return nil
+	})
+
+	assert.ToBeNoError(t, actualErr)
+	assert.ToBeEqual(t, []string{"target", "parent"}, actualKeys)
+}
+
+func Test_lineage_ForEach_excludedTargetDoesNotHideParent(t *testing.T) {
+	hiddenTarget := NewWithout(
+		NewLineage(With("shared", "target"), With("shared", "target-parent")),
+		"shared",
+	)
+	instance := NewLineage(hiddenTarget, With("shared", "parent"))
+
+	actual, actualErr := asMap(instance)
+
+	assert.ToBeNoError(t, actualErr)
+	assert.ToBeEqual(t, mapped{"shared": "parent"}, actual)
+}
+
+func Test_lineage_deepMixedTraversal(t *testing.T) {
+	const depth = 20_000
+	instance := With("base", -1)
+	for i := 0; i < depth; i++ {
+		instance = instance.With(strconv.Itoa(i), i).Without("removed")
+	}
+	instance = instance.With("removed", "visible")
+
+	actualBase, actualBaseExists := instance.Get("base")
+	assert.ToBeEqual(t, -1, actualBase)
+	assert.ToBeEqual(t, true, actualBaseExists)
+	assert.ToBeEqual(t, depth+2, instance.Len())
+
+	actualCount := 0
+	actualErr := instance.ForEach(func(string, interface{}) error {
+		actualCount++
+		return nil
+	})
+	assert.ToBeNoError(t, actualErr)
+	assert.ToBeEqual(t, depth+2, actualCount)
 }
 
 func Test_lineage_ForEach_isForwardingTargetErrors(t *testing.T) {

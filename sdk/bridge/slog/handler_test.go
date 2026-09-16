@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	sdk "log/slog"
+	"strconv"
 	"testing"
 	"time"
 
@@ -370,11 +371,47 @@ func TestHandler_WithAttrs(t *testing.T) {
 	assert.ToBeSame(t, instance, actualC.parent)
 	assert.ToBeEqual(t, "foo.", actualC.fieldKeyPrefix)
 	assert.ToBeEqual(t, attrs{
-		sdk.Int("foo", -1),
-		sdk.Int("foo.foo", 1),
-		sdk.Int("foo.xyz", 666),
 		sdk.Int("foo.bar", 2),
+		sdk.Int("foo.xyz", 666),
 	}, actualC.attrs)
+}
+
+func TestHandler_fields_deepLineage(t *testing.T) {
+	const depth = 20_000
+	var instance sdk.Handler = &Handler{}
+	for i := 0; i < depth; i++ {
+		instance = instance.WithAttrs([]sdk.Attr{sdk.Int(strconv.Itoa(i), i)})
+	}
+
+	actual := instance.(*Handler).fields()
+
+	assert.ToBeEqual(t, depth, actual.Len())
+	actualFirst, actualFirstExists := actual.Get("0")
+	assert.ToBeEqual(t, int64(0), actualFirst)
+	assert.ToBeEqual(t, true, actualFirstExists)
+	actualLast, actualLastExists := actual.Get(strconv.Itoa(depth - 1))
+	assert.ToBeEqual(t, int64(depth-1), actualLast)
+	assert.ToBeEqual(t, true, actualLastExists)
+}
+
+func TestHandler_fields_preservesLineageOrder(t *testing.T) {
+	instance := (&Handler{}).
+		WithAttrs([]sdk.Attr{sdk.Int("first", 1), sdk.Int("replaced", 1)}).
+		WithAttrs([]sdk.Attr{sdk.Int("replaced", 2), sdk.Int("last", 3)}).
+		WithGroup("group").
+		WithAttrs([]sdk.Attr{sdk.Int("child", 4)}).(*Handler)
+
+	var actualKeys []string
+	actualErr := instance.fields().ForEach(func(key string, _ interface{}) error {
+		actualKeys = append(actualKeys, key)
+		return nil
+	})
+
+	assert.ToBeNoError(t, actualErr)
+	assert.ToBeEqual(t, []string{"group.child", "first", "replaced", "last"}, actualKeys)
+	actualReplaced, actualReplacedExists := instance.fields().Get("replaced")
+	assert.ToBeEqual(t, int64(2), actualReplaced)
+	assert.ToBeEqual(t, true, actualReplacedExists)
 }
 
 func TestHandler_WithGroup(t *testing.T) {

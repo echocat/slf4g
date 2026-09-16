@@ -69,8 +69,12 @@ func (instance *EqualityImpl) AreFieldsEqual(left, right Fields) (bool, error) {
 	}
 
 	if ve != nil {
+		rightValues, err := asMap(right)
+		if err != nil {
+			return false, err
+		}
 		if err := left.ForEach(func(key string, lValue interface{}) error {
-			rValue, rExists := right.Get(key)
+			rValue, rExists := rightValues[key]
 			if !rExists {
 				return errEntriesNotEqualV
 			}

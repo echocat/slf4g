@@ -113,10 +113,42 @@ func (instance *Handler) fieldsOfRecord(logger log.CoreLogger, record sdk.Record
 }
 
 func (instance *Handler) fields() fields.Fields {
-	if parent := instance.parent; parent != nil {
-		return fields.NewLineage(instance.attrs, parent.fields())
+	var lineage []*Handler
+	totalAttrs := 0
+	for current := instance; current != nil; current = current.parent {
+		lineage = append(lineage, current)
+		totalAttrs += len(current.attrs)
 	}
-	return instance.attrs
+
+	result := make(attrs, 0, totalAttrs)
+	handledKeys := make(map[string]struct{}, totalAttrs)
+	for start := 0; start < len(lineage); {
+		end := start + 1
+		for end < len(lineage) && lineage[end].fieldKeyPrefix == lineage[start].fieldKeyPrefix {
+			end++
+		}
+
+		var segment attrs
+		indexes := map[string]int{}
+		for i := end - 1; i >= start; i-- {
+			for _, attr := range lineage[i].attrs {
+				if index, exists := indexes[attr.Key]; exists {
+					segment[index] = attr
+				} else {
+					indexes[attr.Key] = len(segment)
+					segment = append(segment, attr)
+				}
+			}
+		}
+		for _, attr := range segment {
+			if _, handled := handledKeys[attr.Key]; !handled {
+				handledKeys[attr.Key] = struct{}{}
+				result = append(result, attr)
+			}
+		}
+		start = end
+	}
+	return result
 }
 
 func (instance *Handler) levelOfRecord(record sdk.Record) (level.Level, error) {
@@ -133,7 +165,7 @@ func (instance *Handler) mapFromSdkLevel(sl sdk.Level) (level.Level, error) {
 
 // WithAttrs implements [sdk.Handler.WithAttrs]
 func (instance *Handler) WithAttrs(vs []sdk.Attr) sdk.Handler {
-	nvs := instance.attrs.clone()
+	nvs := make(attrs, 0, len(vs))
 	nvs.add(instance.fieldKeyPrefix, vs...)
 	return &Handler{
 		instance.Delegate,
