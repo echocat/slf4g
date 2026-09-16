@@ -78,10 +78,11 @@ type Provider struct {
 	timeFormat     string
 	levelFormatter tlevel.Formatter
 
-	coreRootLogger    *coreLogger
-	rootLogger        log.Logger
-	loggerNameToLevel map[string]level.Level
-	initOnce          sync.Once
+	coreRootLogger         *coreLogger
+	rootLogger             log.Logger
+	loggerNameToLevel      map[string]level.Level
+	loggerNameToLevelMutex sync.RWMutex
+	initOnce               sync.Once
 
 	// For testing only
 	interceptLogDepth func(string, uint16)

@@ -2,6 +2,7 @@ package testlog
 
 import (
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -293,6 +294,36 @@ func Test_coreLogger_SetLevel(t *testing.T) {
 
 	otherInstance3 := provider.getLogger("other")
 	assert.ToBeEqual(t, level.Error, otherInstance3.GetLevel())
+}
+
+func Test_coreLogger_SetLevel_concurrentlyWithGetLevel(t *testing.T) {
+	provider := NewProvider(t, TimeFormat(time.RFC3339))
+	writer := provider.getLogger("same")
+	reader := provider.getLogger("same")
+
+	start := make(chan struct{})
+	var wait sync.WaitGroup
+	wait.Add(2)
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < 1000; i++ {
+			writer.SetLevel(level.Debug)
+			writer.SetLevel(level.Info)
+		}
+	}()
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < 1000; i++ {
+			_ = reader.GetLevel()
+		}
+	}()
+	close(start)
+	wait.Wait()
+
+	writer.SetLevel(level.Warn)
+	assert.ToBeEqual(t, level.Warn, reader.GetLevel())
 }
 
 type typedNilError struct{}
