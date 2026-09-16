@@ -131,6 +131,59 @@ func Test_GetMessageOf_withLazyValue(t *testing.T) {
 	assert.ToBeEqual(t, support.PString("666"), actual)
 }
 
+func Test_GetMessageOf_withFilteredValue(t *testing.T) {
+	givenProvider := newMockProvider("test").withRootLogger()
+
+	cases := []struct {
+		name     string
+		filtered fields.Filtered
+		expected *string
+	}{
+		{"respected", fields.RequireMaximalLevel(level.Info, "value"), support.PString("value")},
+		{"ignored", fields.RequireMaximalLevel(level.Debug, "secret"), nil},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			givenEvent := givenProvider.newEvent(level.Info).
+				With(givenProvider.fieldKeysSpec.GetMessage(), c.filtered)
+
+			actual := GetMessageOf(givenEvent, givenProvider)
+
+			assert.ToBeEqual(t, c.expected, actual)
+		})
+	}
+}
+
+func Test_GetMessageOf_withFilteredLazyValue(t *testing.T) {
+	givenProvider := newMockProvider("test").withRootLogger()
+
+	cases := []struct {
+		name          string
+		maximalLevel  level.Level
+		expected      *string
+		expectedCalls int
+	}{
+		{"respected", level.Info, support.PString("value"), 1},
+		{"ignored", level.Debug, nil, 0},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			calls := 0
+			filtered := fields.RequireMaximalLevelLazy(c.maximalLevel, fields.LazyFunc(func() interface{} {
+				calls++
+				return "value"
+			}))
+			givenEvent := givenProvider.newEvent(level.Info).
+				With(givenProvider.fieldKeysSpec.GetMessage(), filtered)
+
+			actual := GetMessageOf(givenEvent, givenProvider)
+
+			assert.ToBeEqual(t, c.expected, actual)
+			assert.ToBeEqual(t, c.expectedCalls, calls)
+		})
+	}
+}
+
 func Test_GetErrorOf_withNilEvent(t *testing.T) {
 	givenProvider := newMockProvider("test").withRootLogger()
 
@@ -209,6 +262,30 @@ func Test_GetErrorOf_withLazyValue(t *testing.T) {
 	assert.ToBeEqual(t, stringError("666"), actual)
 }
 
+func Test_GetErrorOf_withFilteredValue(t *testing.T) {
+	givenProvider := newMockProvider("test").withRootLogger()
+	givenError := errors.New("value")
+
+	cases := []struct {
+		name     string
+		filtered fields.Filtered
+		expected error
+	}{
+		{"respected", fields.RequireMaximalLevel(level.Info, givenError), givenError},
+		{"ignored", fields.RequireMaximalLevel(level.Debug, errors.New("secret")), nil},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			givenEvent := givenProvider.newEvent(level.Info).
+				With(givenProvider.fieldKeysSpec.GetError(), c.filtered)
+
+			actual := GetErrorOf(givenEvent, givenProvider)
+
+			assert.ToBeEqual(t, c.expected, actual)
+		})
+	}
+}
+
 func Test_GetTimestampOf_withNilEvent(t *testing.T) {
 	givenProvider := newMockProvider("test").withRootLogger()
 
@@ -281,6 +358,30 @@ func Test_GetTimestampOf_withLazyValue(t *testing.T) {
 	actual := GetTimestampOf(givenEvent, givenProvider)
 
 	assert.ToBeSame(t, givenTimestamp, actual)
+}
+
+func Test_GetTimestampOf_withFilteredValue(t *testing.T) {
+	givenProvider := newMockProvider("test").withRootLogger()
+	givenTimestamp := time.Now()
+
+	cases := []struct {
+		name     string
+		filtered fields.Filtered
+		expected *time.Time
+	}{
+		{"respected", fields.RequireMaximalLevel(level.Info, givenTimestamp), &givenTimestamp},
+		{"ignored", fields.RequireMaximalLevel(level.Debug, givenTimestamp), nil},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			givenEvent := givenProvider.newEvent(level.Info).
+				With(givenProvider.fieldKeysSpec.GetTimestamp(), c.filtered)
+
+			actual := GetTimestampOf(givenEvent, givenProvider)
+
+			assert.ToBeEqual(t, c.expected, actual)
+		})
+	}
 }
 
 func Test_GetLoggerOf_withNilEvent(t *testing.T) {
@@ -369,6 +470,29 @@ func Test_GetLoggerOf_withLazyValue(t *testing.T) {
 	actual := GetLoggerOf(givenEvent, givenProvider)
 
 	assert.ToBeEqual(t, support.PString("666"), actual)
+}
+
+func Test_GetLoggerOf_withFilteredValue(t *testing.T) {
+	givenProvider := newMockProvider("test").withRootLogger()
+
+	cases := []struct {
+		name     string
+		filtered fields.Filtered
+		expected *string
+	}{
+		{"respected", fields.RequireMaximalLevel(level.Info, "value"), support.PString("value")},
+		{"ignored", fields.RequireMaximalLevel(level.Debug, "secret"), nil},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			givenEvent := givenProvider.newEvent(level.Info).
+				With(givenProvider.fieldKeysSpec.GetLogger(), c.filtered)
+
+			actual := GetLoggerOf(givenEvent, givenProvider)
+
+			assert.ToBeEqual(t, c.expected, actual)
+		})
+	}
 }
 
 func Test_stringError_Error(t *testing.T) {
