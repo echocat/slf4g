@@ -128,6 +128,7 @@ func Test_Json_Format(t *testing.T) {
 	cases := []struct {
 		name     string
 		given    log.Event
+		keyLevel string
 		expected string
 	}{{
 		name: "withStringAndInteger",
@@ -143,6 +144,23 @@ func Test_Json_Format(t *testing.T) {
 		expected: `{"level":"WARN"}
 `,
 	}, {
+		name: "withDefaultLevelKeyCollision",
+		given: logger.NewEvent(level.Info, map[string]interface{}{
+			"foo":   "foo",
+			"level": "ERROR",
+		}),
+		expected: `{"level":"INFO","foo":"foo"}
+`,
+	}, {
+		name: "withCustomLevelKeyCollision",
+		given: logger.NewEvent(level.Info, map[string]interface{}{
+			"foo":      "foo",
+			"severity": "ERROR",
+		}),
+		keyLevel: "severity",
+		expected: `{"severity":"INFO","foo":"foo"}
+`,
+	}, {
 		name:     "nilEvent",
 		given:    nil,
 		expected: ``,
@@ -150,6 +168,7 @@ func Test_Json_Format(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			instance.KeyLevel = c.keyLevel
 			actual, actualErr := instance.Format(c.given, provider, nil)
 
 			assert.ToBeNil(t, actualErr)
