@@ -89,10 +89,11 @@ func (instance *coreLogger) log(loggerName string, event log.Event, skipFrames u
 // GetLevel implements level.Aware#GetLevel(v). If there was no SetLevel called before,
 // it will return the value of the holding Provider.
 func (instance *coreLogger) GetLevel() level.Level {
-	if vs := instance.loggerNameToLevel; vs != nil {
-		if v := vs[instance.name]; v != 0 {
-			return v
-		}
+	instance.loggerNameToLevelMutex.RLock()
+	v := instance.loggerNameToLevel[instance.name]
+	instance.loggerNameToLevelMutex.RUnlock()
+	if v != 0 {
+		return v
 	}
 	return instance.Provider.GetLevel()
 }
@@ -101,6 +102,9 @@ func (instance *coreLogger) GetLevel() level.Level {
 //
 // If set to 0 it will reset the handling back to the value of the holding Provider.
 func (instance *coreLogger) SetLevel(v level.Level) {
+	instance.loggerNameToLevelMutex.Lock()
+	defer instance.loggerNameToLevelMutex.Unlock()
+
 	if instance.loggerNameToLevel == nil {
 		instance.loggerNameToLevel = map[string]level.Level{}
 	}
