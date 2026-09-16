@@ -7,6 +7,7 @@ import (
 
 	"github.com/echocat/slf4g/native/formatter/encoding"
 
+	"github.com/echocat/slf4g/internal/support"
 	"github.com/echocat/slf4g/native/execution"
 
 	log "github.com/echocat/slf4g"
@@ -179,7 +180,7 @@ func (instance *Text) sanitizeMessage(message string) string {
 	if !instance.getAllowMultiLineMessage() {
 		message = strings.ReplaceAll(message, "\n", "\u23CE")
 	}
-	return message
+	return support.EscapeNonGraphic(message, instance.getAllowMultiLineMessage())
 }
 
 func (instance *Text) printTimestampChecked(event log.Event, using log.Provider, h hints.Hints, to encoding.TextEncoder) execution.Execution {
@@ -240,7 +241,8 @@ func (instance *Text) printField(ctx fields.FilterContext, k string, v interface
 	if err != nil {
 		return false, err
 	}
-	return true, to.WriteString(` ` + instance.colorize(ctx.GetLevel(), k, h) + `=` + string(b))
+	safeKey := support.EscapeNonGraphic(k, false)
+	return true, to.WriteString(` ` + instance.colorize(ctx.GetLevel(), safeKey, h) + `=` + string(b))
 }
 
 func (instance *Text) printMessageAsSingleLineIfRequiredChecked(message *string, predicate bool, to encoding.TextEncoder) execution.Execution {

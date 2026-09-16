@@ -9,6 +9,7 @@ import (
 	"unicode"
 
 	"github.com/echocat/slf4g/fields"
+	"github.com/echocat/slf4g/internal/support"
 
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/level"
@@ -179,7 +180,7 @@ func (instance *coreLogger) format(event log.Event) string {
 		}
 
 		_ = buf.WriteByte(' ')
-		_, _ = buf.WriteString(k)
+		_, _ = buf.WriteString(support.EscapeNonGraphic(k, false))
 		_ = buf.WriteByte('=')
 		_, _ = buf.Write(v)
 		return nil
@@ -225,6 +226,7 @@ func (instance *coreLogger) formatMessage(event log.Event) string {
 			return r == '\r' || !unicode.IsGraphic(r)
 		})
 		message = strings.ReplaceAll(message, "\n", "\u23CE")
+		message = support.EscapeNonGraphic(message, false)
 		if message != "" {
 			message = " " + message
 		}

@@ -12,6 +12,7 @@ import (
 	"unicode"
 
 	"github.com/echocat/slf4g/fields"
+	"github.com/echocat/slf4g/internal/support"
 	"github.com/echocat/slf4g/level"
 )
 
@@ -97,7 +98,7 @@ func (instance *fallbackCoreLogger) format(event Event, skipFrames uint16) []byt
 		}
 
 		_ = buf.WriteByte(' ')
-		_, _ = buf.WriteString(k)
+		_, _ = buf.WriteString(support.EscapeNonGraphic(k, false))
 		_ = buf.WriteByte('=')
 		_, _ = buf.Write(v)
 		return nil
@@ -169,6 +170,7 @@ func (instance *fallbackCoreLogger) formatMessage(event Event) string {
 			return r == '\r' || !unicode.IsGraphic(r)
 		})
 		message = strings.ReplaceAll(message, "\n", "\u23CE")
+		message = support.EscapeNonGraphic(message, false)
 		if message != "" {
 			message = " " + message
 		}
