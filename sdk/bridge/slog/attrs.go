@@ -15,7 +15,7 @@ func (instance attrs) ForEach(consumer func(key string, value interface{}) error
 		return nil
 	}
 	for _, a := range instance {
-		if err := consumer(a.Key, a.Value.Any()); err != nil {
+		if err := consumer(a.Key, resolvedValueOf(a.Value).Any()); err != nil {
 			return err
 		}
 	}
@@ -25,10 +25,25 @@ func (instance attrs) ForEach(consumer func(key string, value interface{}) error
 func (instance attrs) Get(key string) (interface{}, bool) {
 	for _, a := range instance {
 		if a.Key == key {
-			return a.Value.Any(), true
+			return resolvedValueOf(a.Value).Any(), true
 		}
 	}
 	return nil, false
+}
+
+func resolvedValueOf(value sdk.Value) sdk.Value {
+	value = value.Resolve()
+	if value.Kind() != sdk.KindGroup {
+		return value
+	}
+
+	originalGroup := value.Group()
+	group := make([]sdk.Attr, len(originalGroup))
+	copy(group, originalGroup)
+	for i := range group {
+		group[i].Value = resolvedValueOf(group[i].Value)
+	}
+	return sdk.GroupValue(group...)
 }
 
 func (instance attrs) With(key string, value interface{}) fields.Fields {
