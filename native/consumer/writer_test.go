@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"sync"
 	"testing"
 
 	"github.com/echocat/slf4g/level"
@@ -160,6 +161,31 @@ func Test_Writer_Consume_initIfRequired(t *testing.T) {
 	assert.ToBeNil(t, instance.colorSupported)
 
 	instance.Consume(givenEvent, givenLogger)
+
+	assert.ToBeNotNil(t, instance.colorSupported)
+}
+
+func Test_Writer_Consume_initIfRequiredConcurrently(t *testing.T) {
+	givenLogger := recording.NewLogger()
+	givenEvent := givenLogger.NewEvent(level.Info, nil)
+	instance := NewWriter(io.Discard, func(writer *Writer) {
+		writer.Formatter = formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
+			return nil, nil
+		})
+	})
+
+	start := make(chan struct{})
+	var wait sync.WaitGroup
+	for i := 0; i < 32; i++ {
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			<-start
+			instance.Consume(givenEvent, givenLogger)
+		}()
+	}
+	close(start)
+	wait.Wait()
 
 	assert.ToBeNotNil(t, instance.colorSupported)
 }
