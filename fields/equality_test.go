@@ -155,6 +155,18 @@ func Test_EqualityImpl_AreFieldsEqual_functionWithErr(t *testing.T) {
 	assert.ToBeEqual(t, false, actual)
 }
 
+func Test_EqualityImpl_AreFieldsEqual_doesNotRepeatedlySearchRight(t *testing.T) {
+	instance := &EqualityImpl{ValueEquality: DefaultValueEquality}
+	givenLeft := With("a", 1).With("b", 2).With("c", 3)
+	givenRight := &getCountingFields{Fields: With("a", 1).With("b", 2).With("c", 3)}
+
+	actual, actualErr := instance.AreFieldsEqual(givenLeft, givenRight)
+
+	assert.ToBeNoError(t, actualErr)
+	assert.ToBeEqual(t, true, actual)
+	assert.ToBeEqual(t, 0, givenRight.getCalls)
+}
+
 func Test_EqualityFunc_AreFieldsEqual(t *testing.T) {
 	givenLeft := With("a", 1)
 	givenRight := With("a", 2)
@@ -196,4 +208,14 @@ func Test_equalityFacade_AreFieldsEqual(t *testing.T) {
 
 	assert.ToBeSame(t, givenErr, actualErr)
 	assert.ToBeEqual(t, true, actual)
+}
+
+type getCountingFields struct {
+	Fields
+	getCalls int
+}
+
+func (instance *getCountingFields) Get(key string) (interface{}, bool) {
+	instance.getCalls++
+	return instance.Fields.Get(key)
 }

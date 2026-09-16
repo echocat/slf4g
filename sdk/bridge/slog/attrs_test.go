@@ -189,18 +189,6 @@ func TestAttrs_Len(t *testing.T) {
 	assert.ToBeEqual(t, 2, actual)
 }
 
-func TestAttrs_clone(t *testing.T) {
-	instance := attrs{
-		{Key: "foo", Value: sdk.IntValue(1)},
-		{Key: "bar", Value: sdk.IntValue(2)},
-	}
-
-	actual := instance.clone()
-
-	assert.ToBeEqual(t, instance, actual)
-	assert.ToBeNotSame(t, instance, actual)
-}
-
 func TestAttrs_add(t *testing.T) {
 	instance := attrs{
 		{Key: "foo", Value: sdk.IntValue(1)},

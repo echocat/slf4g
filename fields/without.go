@@ -26,41 +26,11 @@ type without struct {
 var keyPresent = struct{}{}
 
 func (instance *without) ForEach(consumer func(key string, value interface{}) error) error {
-	if instance == nil || consumer == nil {
-		return nil
-	}
-	f := instance.fields
-	if f == nil {
-		return nil
-	}
-
-	excludedKeys := instance.excludedKeys
-	filteringConsumer := func(key string, value interface{}) error {
-		if _, ok := excludedKeys[key]; ok {
-			return nil
-		} else {
-			return consumer(key, value)
-		}
-	}
-
-	return f.ForEach(filteringConsumer)
+	return forEachField(instance, consumer, false)
 }
 
 func (instance *without) Get(key string) (interface{}, bool) {
-	if instance == nil {
-		return nil, false
-	}
-	f := instance.fields
-	if f == nil {
-		return nil, false
-	}
-
-	excludedKeys := instance.excludedKeys
-	if _, ok := excludedKeys[key]; ok {
-		return nil, false
-	}
-
-	return f.Get(key)
+	return getField(instance, key)
 }
 
 func (instance *without) With(key string, value interface{}) Fields {
@@ -84,26 +54,5 @@ func (instance *without) asParentOf(fields Fields) Fields {
 }
 
 func (instance *without) Len() (result int) {
-	if instance == nil {
-		return
-	}
-
-	f := instance.fields
-	if f == nil {
-		return
-	}
-	result = f.Len()
-
-	ek := instance.excludedKeys
-	if ek == nil {
-		return
-	}
-
-	for k := range instance.excludedKeys {
-		if _, exists := f.Get(k); exists {
-			result--
-		}
-	}
-
-	return
+	return fieldCount(instance)
 }

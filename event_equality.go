@@ -81,9 +81,13 @@ func (instance *EventEqualityImpl) AreEventsEqual(left, right Event) (bool, erro
 		if left.Len() != right.Len() {
 			return false, nil
 		}
+		rightValues, err := fields.AsMap(right)
+		if err != nil {
+			return false, err
+		}
 
 		if err := left.ForEach(func(key string, lValue interface{}) error {
-			rValue, rExists := right.Get(key)
+			rValue, rExists := rightValues[key]
 			if !rExists {
 				return errEntriesNotEqualV
 			}
