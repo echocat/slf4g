@@ -32,7 +32,7 @@ type CoreLogger struct {
 	Consumer          consumer.Consumer
 	LocationDiscovery location.Discovery
 
-	levelState levelState
+	levelState synchronizedValue[level.Level]
 	provider   *Provider
 	name       string
 }
