@@ -30,7 +30,8 @@ type Provider struct {
 	// Level represents the level.Level of this Provider that is at least
 	// required that the loggers managed by this Provider will respect logged
 	// events. This can be overwritten by individual loggers. If this value is
-	// not set it will be log.Info by default.
+	// not set it will be log.Info by default. Set this field only before the
+	// Provider is first used; use SetLevel for runtime changes.
 	Level level.Level
 
 	// LevelNames is used to format the levels as human-readable
@@ -61,6 +62,7 @@ type Provider struct {
 	// needs to be created (if configured).
 	CoreLoggerCustomizer CoreLoggerCustomizer
 
+	levelState   levelState
 	cachePointer unsafe.Pointer
 }
 
@@ -85,12 +87,12 @@ func (instance *Provider) GetLogger(name string) log.Logger {
 // SetLevel changes the current level.Level of this log.Provider. If set to
 // 0 it will force this Provider to use log.Info.
 func (instance *Provider) SetLevel(v level.Level) {
-	instance.Level = v
+	instance.levelState.store(&instance.Level, v)
 }
 
 // GetLevel returns the current level.Level where this log.Provider is set to.
 func (instance *Provider) GetLevel() level.Level {
-	if v := instance.Level; v != 0 {
+	if v := instance.levelState.load(&instance.Level); v != 0 {
 		return v
 	}
 	return level.Info

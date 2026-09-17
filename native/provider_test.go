@@ -110,17 +110,12 @@ func Test_Provider_GetLevel_absent(t *testing.T) {
 }
 
 func Test_Provider_GetLevel(t *testing.T) {
-	instance, _ := newProvider()
-
-	assert.ToBeEqual(t, level.Info, instance.GetLevel())
-
-	for _, l := range instance.GetAllLevels() {
+	template, _ := newProvider()
+	for _, l := range template.GetAllLevels() {
+		instance, _ := newProvider()
 		instance.Level = l
 		assert.ToBeEqual(t, l, instance.GetLevel())
 	}
-
-	instance.Level = 0
-	assert.ToBeEqual(t, level.Info, instance.GetLevel())
 }
 
 func Test_Provider_SetLevel(t *testing.T) {
@@ -131,10 +126,54 @@ func Test_Provider_SetLevel(t *testing.T) {
 	for _, l := range instance.GetAllLevels() {
 		instance.SetLevel(l)
 		assert.ToBeEqual(t, l, instance.Level)
+		assert.ToBeEqual(t, l, instance.GetLevel())
 	}
+	instance.SetLevel(level.Level(^uint16(0)))
+	assert.ToBeEqual(t, level.Level(^uint16(0)), instance.GetLevel())
 
 	instance.SetLevel(0)
 	assert.ToBeEqual(t, level.Level(0), instance.Level)
+	assert.ToBeEqual(t, level.Info, instance.GetLevel())
+}
+
+func Test_Provider_SetLevel_concurrentlyWithGetLevel(t *testing.T) {
+	instance, _ := newProvider()
+	start := make(chan struct{})
+	var wait sync.WaitGroup
+	wait.Add(2)
+
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < 1000; i++ {
+			instance.SetLevel(level.Debug)
+			instance.SetLevel(level.Info)
+		}
+	}()
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < 1000; i++ {
+			_ = instance.GetLevel()
+		}
+	}()
+
+	close(start)
+	wait.Wait()
+	instance.SetLevel(level.Warn)
+	assert.ToBeEqual(t, level.Warn, instance.GetLevel())
+}
+
+func Test_Provider_GetLevel_fromCopy(t *testing.T) {
+	instance, _ := newProvider()
+	instance.Level = level.Debug
+	assert.ToBeEqual(t, level.Debug, instance.GetLevel())
+
+	copied := *instance
+	copied.Level = level.Warn
+
+	assert.ToBeEqual(t, level.Warn, copied.GetLevel())
+	assert.ToBeEqual(t, level.Debug, instance.GetLevel())
 }
 
 func Test_Provider_GetLevelNames_specified(t *testing.T) {

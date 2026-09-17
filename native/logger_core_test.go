@@ -2,6 +2,7 @@ package native
 
 import (
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -303,10 +304,54 @@ func Test_CoreLogger_SetLevel(t *testing.T) {
 	for _, l := range level.GetProvider().GetLevels() {
 		instance.SetLevel(l)
 		assert.ToBeEqual(t, l, instance.Level)
+		assert.ToBeEqual(t, l, instance.GetLevel())
 	}
+	instance.SetLevel(level.Level(^uint16(0)))
+	assert.ToBeEqual(t, level.Level(^uint16(0)), instance.GetLevel())
 
 	instance.SetLevel(0)
 	assert.ToBeEqual(t, level.Level(0), instance.Level)
+	assert.ToBeEqual(t, instance.provider.GetLevel(), instance.GetLevel())
+}
+
+func Test_CoreLogger_SetLevel_concurrentlyWithGetLevel(t *testing.T) {
+	instance, _ := newCoreLogger()
+	start := make(chan struct{})
+	var wait sync.WaitGroup
+	wait.Add(2)
+
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < 1000; i++ {
+			instance.SetLevel(level.Debug)
+			instance.SetLevel(level.Info)
+		}
+	}()
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < 1000; i++ {
+			_ = instance.IsLevelEnabled(level.Info)
+		}
+	}()
+
+	close(start)
+	wait.Wait()
+	instance.SetLevel(level.Warn)
+	assert.ToBeEqual(t, level.Warn, instance.GetLevel())
+}
+
+func Test_CoreLogger_GetLevel_fromCopy(t *testing.T) {
+	instance, _ := newCoreLogger()
+	instance.Level = level.Debug
+	assert.ToBeEqual(t, level.Debug, instance.GetLevel())
+
+	copied := *instance
+	copied.Level = level.Warn
+
+	assert.ToBeEqual(t, level.Warn, copied.GetLevel())
+	assert.ToBeEqual(t, level.Debug, instance.GetLevel())
 }
 
 func Test_CoreLogger_GetProvider(t *testing.T) {
