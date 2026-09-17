@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -555,6 +556,83 @@ func Test_Writer_SetFormatter(t *testing.T) {
 	instance.SetFormatter(givenFormatter)
 
 	assert.ToBeSame(t, givenFormatter, instance.Formatter)
+	assert.ToBeSame(t, givenFormatter, instance.GetFormatter())
+}
+
+func Test_Writer_SetFormatter_concurrentlyWithConsume(t *testing.T) {
+	logger := recording.NewLogger()
+	event := logger.NewEvent(level.Info, nil)
+	var firstCount int32
+	first := formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
+		atomic.AddInt32(&firstCount, 1)
+		return nil, nil
+	})
+	var secondCount int32
+	second := formatter.NewFacade(func() formatter.Formatter {
+		return formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
+			atomic.AddInt32(&secondCount, 1)
+			return nil, nil
+		})
+	})
+	instance := NewWriter(io.Discard, func(writer *Writer) {
+		writer.Formatter = first
+	})
+	start := make(chan struct{})
+	var wait sync.WaitGroup
+	wait.Add(2)
+
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < 1000; i++ {
+			instance.SetFormatter(first)
+			instance.SetFormatter(second)
+			runtime.Gosched()
+		}
+	}()
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < 1000; i++ {
+			instance.Consume(event, logger)
+			runtime.Gosched()
+		}
+	}()
+
+	close(start)
+	wait.Wait()
+	assert.ToBeEqual(t, int32(1000), atomic.LoadInt32(&firstCount)+atomic.LoadInt32(&secondCount))
+}
+
+func Test_Writer_SetFormatter_reentrantFromFormatter(t *testing.T) {
+	logger := recording.NewLogger()
+	event := logger.NewEvent(level.Info, nil)
+	var secondCalls int32
+	second := formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
+		atomic.AddInt32(&secondCalls, 1)
+		return nil, nil
+	})
+	var instance *Writer
+	first := formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
+		instance.SetFormatter(second)
+		return nil, nil
+	})
+	instance = NewWriter(io.Discard, func(writer *Writer) {
+		writer.Formatter = first
+	})
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		instance.Consume(event, logger)
+	}()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("reentrant formatter update deadlocked")
+	}
+	instance.Consume(event, logger)
+	assert.ToBeEqual(t, int32(1), atomic.LoadInt32(&secondCalls))
 }
 
 func Test_Writer_GetFormatter_explicit(t *testing.T) {
