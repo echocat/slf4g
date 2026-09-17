@@ -30,13 +30,19 @@ func TestDefaultLevelMapper_FromSdk(t *testing.T) {
 		expected    level.Level
 		expectedErr string
 	}{
+		{LevelTrace - 1, level.Trace, ""},
 		{LevelTrace, level.Trace, ""},
+		{LevelDebug - 1, level.Trace, ""},
 		{LevelDebug, level.Debug, ""},
+		{LevelInfo - 1, level.Debug, ""},
 		{LevelInfo, level.Info, ""},
+		{LevelWarn - 1, level.Info, ""},
 		{LevelWarn, level.Warn, ""},
+		{LevelError - 1, level.Warn, ""},
 		{LevelError, level.Error, ""},
+		{LevelFatal - 1, level.Error, ""},
 		{LevelFatal, level.Fatal, ""},
-		{666, 0, "unknown slog level: 666"},
+		{LevelFatal + 1, level.Fatal, ""},
 	}
 
 	for _, c := range cases {
@@ -61,13 +67,19 @@ func TestDefaultLevelMapper_ToSdk(t *testing.T) {
 		expected    sdk.Level
 		expectedErr string
 	}{
+		{level.Trace - 1, LevelTrace, ""},
 		{level.Trace, LevelTrace, ""},
+		{level.Debug - 1, LevelTrace, ""},
 		{level.Debug, LevelDebug, ""},
+		{level.Info - 1, LevelDebug, ""},
 		{level.Info, LevelInfo, ""},
+		{level.Warn - 1, LevelInfo, ""},
 		{level.Warn, LevelWarn, ""},
+		{level.Error - 1, LevelWarn, ""},
 		{level.Error, LevelError, ""},
+		{level.Fatal - 1, LevelError, ""},
 		{level.Fatal, LevelFatal, ""},
-		{666, 0, "unknown log level: 666"},
+		{level.Fatal + 1, LevelFatal, ""},
 	}
 
 	for _, c := range cases {
@@ -91,9 +103,9 @@ func TestLevelMapperFacade_FromSdk(t *testing.T) {
 	assert.ToBeNoError(t, actualErrA)
 	assert.ToBeEqual(t, level.Debug, actualA)
 
-	actualB, actualErrB := instance.FromSdk(sdk.Level(666))
-	assert.ToBeMatching(t, "unknown slog level: 666", actualErrB)
-	assert.ToBeEqual(t, level.Level(0), actualB)
+	actualB, actualErrB := instance.FromSdk(LevelWarn + 1)
+	assert.ToBeNoError(t, actualErrB)
+	assert.ToBeEqual(t, level.Warn, actualB)
 }
 
 func TestLevelMapperFacade_ToSdk(t *testing.T) {
@@ -103,9 +115,9 @@ func TestLevelMapperFacade_ToSdk(t *testing.T) {
 	assert.ToBeNoError(t, actualErrA)
 	assert.ToBeEqual(t, sdk.LevelDebug, actualA)
 
-	actualB, actualErrB := instance.ToSdk(level.Level(666))
-	assert.ToBeMatching(t, "unknown log level: 666", actualErrB)
-	assert.ToBeEqual(t, sdk.Level(0), actualB)
+	actualB, actualErrB := instance.ToSdk(level.Warn + 1)
+	assert.ToBeNoError(t, actualErrB)
+	assert.ToBeEqual(t, LevelWarn, actualB)
 }
 
 type testingLevelMapper struct {
