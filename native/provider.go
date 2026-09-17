@@ -45,7 +45,8 @@ type Provider struct {
 	LevelProvider level.Provider
 
 	// Consumer is used to handle the logged events with. If this is not set it
-	// will be consumer.Default by default.
+	// will be consumer.Default by default. Set this field only before the
+	// Provider is first used; use SetConsumer for runtime changes.
 	Consumer consumer.Consumer
 
 	// LocationDiscovery is used to discover the location.Location where events
@@ -62,8 +63,9 @@ type Provider struct {
 	// needs to be created (if configured).
 	CoreLoggerCustomizer CoreLoggerCustomizer
 
-	levelState   levelState
-	cachePointer unsafe.Pointer
+	levelState    synchronizedValue[level.Level]
+	consumerState synchronizedValue[consumer.Consumer]
+	cachePointer  unsafe.Pointer
 }
 
 // GetName implements log.Provider#GetName()
@@ -101,12 +103,12 @@ func (instance *Provider) GetLevel() level.Level {
 // SetConsumer changes the current consumer.Consumer of this log.Provider. If set
 // to nil consumer.Default will be used.
 func (instance *Provider) SetConsumer(v consumer.Consumer) {
-	instance.Consumer = v
+	instance.consumerState.store(&instance.Consumer, v)
 }
 
 // GetConsumer returns the current consumer.Consumer where this log.Provider is set to.
 func (instance *Provider) GetConsumer() consumer.Consumer {
-	if v := instance.Consumer; v != nil {
+	if v := instance.consumerState.load(&instance.Consumer); v != nil {
 		return v
 	}
 	if v := consumer.Default; v != nil {

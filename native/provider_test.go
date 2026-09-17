@@ -258,6 +258,57 @@ func Test_Provider_SetConsumer_specified(t *testing.T) {
 	instance.SetConsumer(givenConsumer)
 
 	assert.ToBeSame(t, givenConsumer, instance.Consumer)
+	assert.ToBeSame(t, givenConsumer, instance.GetConsumer())
+}
+
+func Test_Provider_SetConsumer_concurrentlyWithLogging(t *testing.T) {
+	first := consumer.NewRecorder()
+	var secondCount int32
+	second := consumer.Func(func(log.Event, log.CoreLogger) {
+		atomic.AddInt32(&secondCount, 1)
+	})
+	instance, _ := newProvider()
+	instance.Consumer = first
+	logger := instance.GetLogger("test")
+	start := make(chan struct{})
+	var wait sync.WaitGroup
+	wait.Add(2)
+
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < 1000; i++ {
+			instance.SetConsumer(first)
+			instance.SetConsumer(second)
+			runtime.Gosched()
+		}
+	}()
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < 1000; i++ {
+			logger.Info("message")
+			runtime.Gosched()
+		}
+	}()
+
+	close(start)
+	wait.Wait()
+	assert.ToBeEqual(t, 1000, first.Len()+int(atomic.LoadInt32(&secondCount)))
+}
+
+func Test_Provider_GetConsumer_fromCopy(t *testing.T) {
+	first := consumer.NewRecorder()
+	second := consumer.NewRecorder()
+	instance, _ := newProvider()
+	instance.Consumer = first
+	assert.ToBeSame(t, first, instance.GetConsumer())
+
+	copied := *instance
+	copied.Consumer = second
+
+	assert.ToBeSame(t, second, copied.GetConsumer())
+	assert.ToBeSame(t, first, instance.GetConsumer())
 }
 
 func Test_Provider_GetConsumer_specified(t *testing.T) {
