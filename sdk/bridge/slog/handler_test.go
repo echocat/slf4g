@@ -47,9 +47,11 @@ func TestHandler_Enabled(t *testing.T) {
 	}{
 		{LevelDebug, false},
 		{LevelInfo, false},
+		{LevelWarn - 1, false},
 		{LevelWarn, true},
+		{LevelWarn + 1, true},
 		{LevelFatal, true},
-		{LevelFatal + 1, false},
+		{LevelFatal + 1, true},
 	}
 
 	for _, c := range cases {
@@ -72,7 +74,8 @@ func TestHandler_Handle(t *testing.T) {
 		expectedError string
 	}{
 		{"regular", LevelInfo, level.Info, ""},
-		{"failing", 666, 0, "unknown slog level: 666"},
+		{"custom", LevelWarn + 1, level.Warn, ""},
+		{"above fatal", 666, level.Fatal, ""},
 	}
 
 	for _, c := range cases {

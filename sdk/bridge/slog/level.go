@@ -3,7 +3,6 @@
 package sdk
 
 import (
-	"fmt"
 	sdk "log/slog"
 
 	"github.com/echocat/slf4g/level"
@@ -32,40 +31,36 @@ func NewLevelMapper() LevelMapper {
 type defaultLevelMapper struct{}
 
 func (instance *defaultLevelMapper) FromSdk(v sdk.Level) (level.Level, error) {
-	switch v {
-	case LevelTrace:
+	switch {
+	case v < LevelDebug:
 		return level.Trace, nil
-	case LevelDebug:
+	case v < LevelInfo:
 		return level.Debug, nil
-	case LevelInfo:
+	case v < LevelWarn:
 		return level.Info, nil
-	case LevelWarn:
+	case v < LevelError:
 		return level.Warn, nil
-	case LevelError:
+	case v < LevelFatal:
 		return level.Error, nil
-	case LevelFatal:
-		return level.Fatal, nil
 	default:
-		return 0, fmt.Errorf("unknown slog level: %d", v)
+		return level.Fatal, nil
 	}
 }
 
 func (instance *defaultLevelMapper) ToSdk(v level.Level) (sdk.Level, error) {
-	switch v {
-	case level.Trace:
+	switch {
+	case v < level.Debug:
 		return LevelTrace, nil
-	case level.Debug:
+	case v < level.Info:
 		return LevelDebug, nil
-	case level.Info:
+	case v < level.Warn:
 		return LevelInfo, nil
-	case level.Warn:
+	case v < level.Error:
 		return LevelWarn, nil
-	case level.Error:
+	case v < level.Fatal:
 		return LevelError, nil
-	case level.Fatal:
-		return LevelFatal, nil
 	default:
-		return 0, fmt.Errorf("unknown log level: %d", v)
+		return LevelFatal, nil
 	}
 }
 
