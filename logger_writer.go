@@ -29,6 +29,7 @@ type LoggingWriter struct {
 
 // Write implements io.Writer.
 func (instance *LoggingWriter) Write(p []byte) (int, error) {
+	written := len(p)
 	if logger := instance.Logger; logger != nil {
 		helper := helperOf(logger)
 		helper()
@@ -50,7 +51,7 @@ func (instance *LoggingWriter) Write(p []byte) (int, error) {
 
 		instance.Logger.Log(event, instance.SkipFrames+1)
 	}
-	return len(p), nil
+	return written, nil
 }
 
 func (instance *LoggingWriter) levelOf(p []byte) (level.Level, error) {
