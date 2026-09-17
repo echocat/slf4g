@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"sync/atomic"
 	"testing"
 
 	"github.com/echocat/slf4g/fields"
@@ -266,18 +265,14 @@ func setProvider(to Provider) func() {
 	providerVLock.Lock()
 	oldProviderV := providerV
 
-	oldProvider := (*Provider)(atomic.LoadPointer(&providerPointer))
+	oldProvider := loadProvider()
 
 	SetProvider(to)
 	providerV = to
 	return func() {
 		defer providerVLock.Unlock()
 		providerV = oldProviderV
-		if oldProvider != nil && *oldProvider != nil {
-			SetProvider(*oldProvider)
-		} else {
-			SetProvider(nil)
-		}
+		SetProvider(oldProvider)
 	}
 }
 

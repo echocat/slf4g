@@ -27,3 +27,16 @@ func TestHook(t *testing.T) {
 	assert.ToBeEqual(t, level.Level(666), actual2)
 	assert.ToBeEqual(t, true, actualOk2)
 }
+
+func TestHook_cleanupDoesNotOverwriteLaterProvider(t *testing.T) {
+	previous := log.SetProvider(nil)
+	defer log.SetProvider(previous)
+	later := NewProvider(t)
+
+	t.Run("hooked", func(t *testing.T) {
+		Hook(t)
+		log.SetProvider(later)
+	})
+
+	assert.ToBeSame(t, later, log.UnwrapProvider(log.GetProvider()))
+}

@@ -6,6 +6,7 @@ import (
 
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
+	"github.com/echocat/slf4g/internal/globalprovider"
 	"github.com/echocat/slf4g/level"
 )
 
@@ -56,10 +57,7 @@ func NewProvider() *Provider {
 // This is quite useful in tests where you want to record also test outputs
 // and want to reset everything afterward into a clean state.
 func (instance *Provider) HookGlobally() func() {
-	previous := log.SetProvider(instance)
-	return func() {
-		log.SetProvider(previous)
-	}
+	return globalprovider.Push(instance)
 }
 
 // Contains checks if the given log.Event was recorded by at least of one
