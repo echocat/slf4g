@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"os"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -98,6 +99,49 @@ func Test_Writer_Consume_callsHookOnFormatErrors(t *testing.T) {
 	instance.Consume(givenEvent, givenLogger)
 
 	assert.ToBeEqual(t, "", givenOut.String())
+}
+
+func Test_Writer_Consume_writesSafeFallbackOnWriteFailures(t *testing.T) {
+	cases := []struct {
+		name string
+		out  io.Writer
+	}{
+		{"error", writerFunc(func([]byte) (int, error) {
+			return 0, errors.New("expected")
+		})},
+		{"short write", writerFunc(func(p []byte) (int, error) {
+			return len(p) - 1, nil
+		})},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			stderr, stderrOut, err := os.Pipe()
+			assert.ToBeNoError(t, err)
+			oldStderr := os.Stderr
+			os.Stderr = stderrOut
+			defer func() {
+				os.Stderr = oldStderr
+				_ = stderrOut.Close()
+				_ = stderr.Close()
+			}()
+
+			givenLogger := recording.NewLogger()
+			givenEvent := givenLogger.NewEvent(level.Info, nil)
+			instance := NewWriter(c.out, func(writer *Writer) {
+				writer.Formatter = formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
+					return []byte("expected"), nil
+				})
+			})
+
+			instance.Consume(givenEvent, givenLogger)
+			os.Stderr = oldStderr
+			assert.ToBeNoError(t, stderrOut.Close())
+			actual, err := io.ReadAll(stderr)
+			assert.ToBeNoError(t, err)
+			assert.ToBeEqual(t, "{\"error\":\"LOG_EVENT_WRITE_ERROR\"}\n", string(actual))
+		})
+	}
 }
 
 func Test_Writer_Consume_doNothingOnNilEvent(t *testing.T) {
@@ -319,6 +363,12 @@ type reentrantWriter struct {
 	writes       atomic.Int32
 	activeWrites atomic.Int32
 	concurrent   atomic.Bool
+}
+
+type writerFunc func([]byte) (int, error)
+
+func (instance writerFunc) Write(p []byte) (int, error) {
+	return instance(p)
 }
 
 func newReentrantWriter() *reentrantWriter {

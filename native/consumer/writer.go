@@ -2,6 +2,7 @@ package consumer
 
 import (
 	"io"
+	"os"
 	"sync"
 
 	log "github.com/echocat/slf4g"
@@ -12,6 +13,7 @@ import (
 )
 
 const formatErrorFallback = "{\"error\":\"LOG_EVENT_FORMAT_ERROR\"}\n"
+const writeErrorFallback = "{\"error\":\"LOG_EVENT_WRITE_ERROR\"}\n"
 
 // Writer is an implementation of Writer which formats the consumed log.Entry
 // using a configured Formatter and logs it to the configured io.Writer.
@@ -166,7 +168,10 @@ func (instance *Writer) consume(event log.Event, source log.CoreLogger) {
 		}
 	}
 
-	_, _ = out.Write(content)
+	written, writeErr := out.Write(content)
+	if writeErr != nil || written != len(content) {
+		_, _ = io.WriteString(os.Stderr, writeErrorFallback)
+	}
 
 	_ = instance.onAfterLog(event, source)
 }
