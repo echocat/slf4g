@@ -3,6 +3,7 @@ package log
 import (
 	"io"
 	"os"
+	"sync/atomic"
 
 	"github.com/echocat/slf4g/level"
 
@@ -24,7 +25,7 @@ func IsFallbackProvider(candidate Provider) bool {
 
 type fallbackProvider struct {
 	cache LoggerCache
-	level level.Level
+	level uint32
 	out   io.Writer
 }
 
@@ -61,14 +62,14 @@ func (instance *fallbackProvider) GetLogger(name string) Logger {
 }
 
 func (instance *fallbackProvider) GetLevel() level.Level {
-	if v := instance.level; v != 0 {
+	if v := level.Level(atomic.LoadUint32(&instance.level)); v != 0 {
 		return v
 	}
 	return level.Info
 }
 
 func (instance *fallbackProvider) SetLevel(in level.Level) {
-	instance.level = in
+	atomic.StoreUint32(&instance.level, uint32(in))
 }
 
 func (instance *fallbackProvider) GetAllLevels() level.Levels {

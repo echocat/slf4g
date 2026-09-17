@@ -150,7 +150,7 @@ func Test_fallbackCoreLogger_Log_levels(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.expectedC, func(t *testing.T) {
 			instance, buf := newFallbackCoreLogger("foo")
-			instance.level = 1
+			instance.SetLevel(1)
 
 			instance.Log(instance.NewEvent(c.level, nil), 0)
 
@@ -180,30 +180,60 @@ func Test_fallbackCoreLogger_GetLevel(t *testing.T) {
 	instance, _ := newFallbackCoreLogger("foo")
 
 	assert.ToBeEqual(t, level.Info, instance.GetLevel())
-	instance.fallbackProvider.level = level.Warn
+	instance.fallbackProvider.SetLevel(level.Warn)
 	assert.ToBeEqual(t, level.Warn, instance.GetLevel())
 
 	for _, l := range instance.GetAllLevels() {
-		instance.level = l
+		instance.SetLevel(l)
 		assert.ToBeEqual(t, l, instance.GetLevel())
 	}
+	instance.SetLevel(level.Level(^uint16(0)))
+	assert.ToBeEqual(t, level.Level(^uint16(0)), instance.GetLevel())
 
-	instance.level = 0
+	instance.SetLevel(0)
 	assert.ToBeEqual(t, level.Warn, instance.GetLevel())
 }
 
 func Test_fallbackCoreLogger_SetLevel(t *testing.T) {
 	instance, _ := newFallbackCoreLogger("foo")
 
-	assert.ToBeEqual(t, level.Level(0), instance.level)
+	assert.ToBeEqual(t, level.Info, instance.GetLevel())
 
 	for _, l := range instance.GetAllLevels() {
 		instance.SetLevel(l)
-		assert.ToBeEqual(t, l, instance.level)
+		assert.ToBeEqual(t, l, instance.GetLevel())
 	}
 
 	instance.SetLevel(0)
-	assert.ToBeEqual(t, level.Level(0), instance.level)
+	assert.ToBeEqual(t, level.Info, instance.GetLevel())
+}
+
+func Test_fallbackCoreLogger_SetLevel_concurrentlyWithGetLevel(t *testing.T) {
+	instance, _ := newFallbackCoreLogger("foo")
+	start := make(chan struct{})
+	done := make(chan struct{}, 2)
+
+	go func() {
+		defer func() { done <- struct{}{} }()
+		<-start
+		for i := 0; i < 1000; i++ {
+			instance.SetLevel(level.Debug)
+			instance.SetLevel(level.Info)
+		}
+	}()
+	go func() {
+		defer func() { done <- struct{}{} }()
+		<-start
+		for i := 0; i < 1000; i++ {
+			_ = instance.IsLevelEnabled(level.Info)
+		}
+	}()
+
+	close(start)
+	<-done
+	<-done
+	instance.SetLevel(level.Warn)
+	assert.ToBeEqual(t, level.Warn, instance.GetLevel())
 }
 
 func Test_fallbackCoreLogger_NewEvent(t *testing.T) {

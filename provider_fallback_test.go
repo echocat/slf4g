@@ -1,6 +1,7 @@
 package log
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/echocat/slf4g/level"
@@ -73,26 +74,56 @@ func Test_fallbackProvider_GetLevel(t *testing.T) {
 	assert.ToBeEqual(t, level.Info, instance.GetLevel())
 
 	for _, l := range instance.GetAllLevels() {
-		instance.level = l
+		instance.SetLevel(l)
 		assert.ToBeEqual(t, l, instance.GetLevel())
 	}
+	instance.SetLevel(level.Level(^uint16(0)))
+	assert.ToBeEqual(t, level.Level(^uint16(0)), instance.GetLevel())
 
-	instance.level = 0
+	instance.SetLevel(0)
 	assert.ToBeEqual(t, level.Info, instance.GetLevel())
 }
 
 func Test_fallbackProvider_SetLevel(t *testing.T) {
 	instance := &fallbackProvider{}
 
-	assert.ToBeEqual(t, level.Level(0), instance.level)
+	assert.ToBeEqual(t, level.Info, instance.GetLevel())
 
 	for _, l := range instance.GetAllLevels() {
 		instance.SetLevel(l)
-		assert.ToBeEqual(t, l, instance.level)
+		assert.ToBeEqual(t, l, instance.GetLevel())
 	}
 
 	instance.SetLevel(0)
-	assert.ToBeEqual(t, level.Level(0), instance.level)
+	assert.ToBeEqual(t, level.Info, instance.GetLevel())
+}
+
+func Test_fallbackProvider_SetLevel_concurrentlyWithGetLevel(t *testing.T) {
+	instance := &fallbackProvider{}
+	start := make(chan struct{})
+	var wait sync.WaitGroup
+	wait.Add(2)
+
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < 1000; i++ {
+			instance.SetLevel(level.Debug)
+			instance.SetLevel(level.Info)
+		}
+	}()
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < 1000; i++ {
+			_ = instance.GetLevel()
+		}
+	}()
+
+	close(start)
+	wait.Wait()
+	instance.SetLevel(level.Warn)
+	assert.ToBeEqual(t, level.Warn, instance.GetLevel())
 }
 
 func Test_fallbackProvider_GetAllLevels(t *testing.T) {
@@ -112,7 +143,7 @@ func Test_fallbackProvider_GetFieldKeysSpec(t *testing.T) {
 
 func Test_fallbackProvider_levelAware(t *testing.T) {
 	defer func() {
-		fallbackProviderV.level = 0
+		fallbackProviderV.SetLevel(0)
 	}()
 
 	actual, actualOk := level.Get(fallbackProviderV)
@@ -126,11 +157,12 @@ func Test_fallbackProvider_levelAware(t *testing.T) {
 }
 
 func Test_fallbackProvider_levelAwareLogger(t *testing.T) {
+	fooLogger := fallbackProviderV.GetLogger("foo")
 	defer func() {
-		fallbackProviderV.level = 0
+		fallbackProviderV.SetLevel(0)
+		level.Set(fooLogger, 0)
 	}()
 
-	fooLogger := fallbackProviderV.GetLogger("foo")
 	actual, actualOk := level.Get(fooLogger)
 	assert.ToBeEqual(t, level.Info, actual)
 	assert.ToBeEqual(t, true, actualOk)
