@@ -78,11 +78,13 @@ type Provider struct {
 	timeFormat     string
 	levelFormatter tlevel.Formatter
 
-	coreRootLogger         *coreLogger
-	rootLogger             log.Logger
-	loggerNameToLevel      map[string]level.Level
-	loggerNameToLevelMutex sync.RWMutex
-	initOnce               sync.Once
+	coreRootLogger          *coreLogger
+	rootLogger              log.Logger
+	loggerNameToLogger      map[string]log.Logger
+	loggerNameToLoggerMutex sync.Mutex
+	loggerNameToLevel       map[string]level.Level
+	loggerNameToLevelMutex  sync.RWMutex
+	initOnce                sync.Once
 
 	// For testing only
 	interceptLogDepth func(string, uint16)
@@ -97,6 +99,7 @@ func (instance *Provider) initIfRequired() {
 	instance.initOnce.Do(func() {
 		instance.coreRootLogger = &coreLogger{instance, RootLoggerName}
 		instance.rootLogger = log.NewLogger(instance.coreRootLogger)
+		instance.loggerNameToLogger = map[string]log.Logger{RootLoggerName: instance.rootLogger}
 		instance.loggerNameToLevel = map[string]level.Level{}
 	})
 }
@@ -109,21 +112,21 @@ func (instance *Provider) GetRootLogger() log.Logger {
 
 // GetLogger implements log.Provider#GetLogger()
 func (instance *Provider) GetLogger(name string) log.Logger {
-	if name == RootLoggerName {
-		return instance.GetRootLogger()
+	instance.initIfRequired()
+
+	instance.loggerNameToLoggerMutex.Lock()
+	defer instance.loggerNameToLoggerMutex.Unlock()
+	if result := instance.loggerNameToLogger[name]; result != nil {
+		return result
 	}
 
-	return log.NewLogger(instance.getLogger(name))
+	result := log.NewLogger(&coreLogger{instance, name})
+	instance.loggerNameToLogger[name] = result
+	return result
 }
 
 func (instance *Provider) getLogger(name string) *coreLogger {
-	instance.initIfRequired()
-
-	if name == RootLoggerName {
-		return instance.coreRootLogger
-	}
-
-	return &coreLogger{instance, name}
+	return log.UnwrapCoreLogger(instance.GetLogger(name)).(*coreLogger)
 }
 
 // GetName implements log.Provider#GetName()
