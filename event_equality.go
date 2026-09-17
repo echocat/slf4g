@@ -47,7 +47,7 @@ func (instance EventEqualityFunc) AreEventsEqual(left, right Event) (bool, error
 
 // WithIgnoringKeys implements EventEquality.WithIgnoringKeys().
 func (instance EventEqualityFunc) WithIgnoringKeys(keys ...string) EventEquality {
-	return &ignoringKeysEventEquality{instance, keys}
+	return newIgnoringKeysEventEquality(instance, keys)
 }
 
 type EventEqualityImpl struct {
@@ -110,7 +110,7 @@ func (instance *EventEqualityImpl) AreEventsEqual(left, right Event) (bool, erro
 
 // WithIgnoringKeys implements EventEquality.WithIgnoringKeys().
 func (instance *EventEqualityImpl) WithIgnoringKeys(keys ...string) EventEquality {
-	return &ignoringKeysEventEquality{instance, keys}
+	return newIgnoringKeysEventEquality(instance, keys)
 }
 
 // NewEventEqualityFacade creates a re-implementation of EventEquality which
@@ -129,7 +129,7 @@ func (instance eventEqualityFacade) AreEventsEqual(left, right Event) (bool, err
 }
 
 func (instance eventEqualityFacade) WithIgnoringKeys(keys ...string) EventEquality {
-	return &ignoringKeysEventEquality{instance, keys}
+	return newIgnoringKeysEventEquality(instance, keys)
 }
 
 func (instance eventEqualityFacade) Unwrap() EventEquality {
@@ -145,12 +145,21 @@ func (instance *privateEventEqualityImpl) AreEventsEqual(left, right Event) (boo
 }
 
 func (instance *privateEventEqualityImpl) WithIgnoringKeys(keys ...string) EventEquality {
-	return &ignoringKeysEventEquality{instance, keys}
+	return newIgnoringKeysEventEquality(instance, keys)
 }
 
 type ignoringKeysEventEquality struct {
 	parent       EventEquality
 	keysToIgnore []string
+}
+
+func newIgnoringKeysEventEquality(parent EventEquality, keys []string) EventEquality {
+	var keysToIgnore []string
+	if keys != nil {
+		keysToIgnore = make([]string, len(keys))
+		copy(keysToIgnore, keys)
+	}
+	return &ignoringKeysEventEquality{parent, keysToIgnore}
 }
 
 func (instance *ignoringKeysEventEquality) AreEventsEqual(left, right Event) (bool, error) {
@@ -168,9 +177,15 @@ func (instance *ignoringKeysEventEquality) AreEventsEqual(left, right Event) (bo
 }
 
 func (instance *ignoringKeysEventEquality) WithIgnoringKeys(keys ...string) EventEquality {
+	if len(keys) == 0 {
+		return &ignoringKeysEventEquality{instance.parent, instance.keysToIgnore}
+	}
+	keysToIgnore := make([]string, len(instance.keysToIgnore)+len(keys))
+	copy(keysToIgnore, instance.keysToIgnore)
+	copy(keysToIgnore[len(instance.keysToIgnore):], keys)
 	return &ignoringKeysEventEquality{
 		parent:       instance.parent,
-		keysToIgnore: append(instance.keysToIgnore, keys...),
+		keysToIgnore: keysToIgnore,
 	}
 }
 
