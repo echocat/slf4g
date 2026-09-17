@@ -347,6 +347,35 @@ func Test_EventEqualityImpl_AreEventsEqual_WithIgnoringKeys(t *testing.T) {
 	assert.ToBeEqual(t, &ignoringKeysEventEquality{instance, []string{"a", "b"}}, actual)
 }
 
+func Test_EventEquality_WithIgnoringKeys_copiesGivenKeys(t *testing.T) {
+	instances := []EventEquality{
+		&EventEqualityImpl{},
+		EventEqualityFunc(func(Event, Event) (bool, error) { return false, nil }),
+		eventEqualityFacade(func() EventEquality { return nil }),
+		&privateEventEqualityImpl{&EventEqualityImpl{}},
+	}
+
+	for _, instance := range instances {
+		keys := []string{"a", "b"}
+		actual := instance.WithIgnoringKeys(keys...).(*ignoringKeysEventEquality)
+
+		keys[0] = "changed"
+
+		assert.ToBeEqual(t, []string{"a", "b"}, actual.keysToIgnore)
+	}
+}
+
+func Test_EventEquality_WithIgnoringKeys_preservesEmptyKeys(t *testing.T) {
+	instance := &EventEqualityImpl{}
+	empty := []string{}
+
+	withNil := instance.WithIgnoringKeys().(*ignoringKeysEventEquality)
+	withEmpty := instance.WithIgnoringKeys(empty...).(*ignoringKeysEventEquality)
+
+	assert.ToBeEqual(t, true, withNil.keysToIgnore == nil)
+	assert.ToBeEqual(t, false, withEmpty.keysToIgnore == nil)
+}
+
 func Test_EventEqualityFunc_AreEventsEqual(t *testing.T) {
 	givenLogger := newMockLogger("foo")
 	givenLeft := givenLogger.NewEvent(level.Info, nil)
@@ -503,6 +532,54 @@ func Test_ignoringKeysEventEquality_AreEventsEqual_WithIgnoringKeys(t *testing.T
 	assert.ToBeOfType(t, &ignoringKeysEventEquality{}, actual)
 	assert.ToBeSame(t, delegate, actual.(*ignoringKeysEventEquality).parent)
 	assert.ToBeEqual(t, []string{"a", "b", "c", "d"}, actual.(*ignoringKeysEventEquality).keysToIgnore)
+}
+
+func Test_ignoringKeysEventEquality_WithIgnoringKeys_doesNotModifySibling(t *testing.T) {
+	delegate := &EventEqualityImpl{}
+	keys := make([]string, 2, 4)
+	keys[0] = "a"
+	keys[1] = "b"
+	instance := &ignoringKeysEventEquality{delegate, keys}
+
+	first := instance.WithIgnoringKeys("c").(*ignoringKeysEventEquality)
+	second := instance.WithIgnoringKeys("d").(*ignoringKeysEventEquality)
+
+	assert.ToBeEqual(t, []string{"a", "b"}, instance.keysToIgnore)
+	assert.ToBeEqual(t, []string{"a", "b", "c"}, first.keysToIgnore)
+	assert.ToBeEqual(t, []string{"a", "b", "d"}, second.keysToIgnore)
+}
+
+func Test_ignoringKeysEventEquality_WithIgnoringKeys_preservesKeysForEmptyAddition(t *testing.T) {
+	delegate := &EventEqualityImpl{}
+	keys := []string{"a"}
+	instance := &ignoringKeysEventEquality{delegate, keys}
+
+	actual := instance.WithIgnoringKeys().(*ignoringKeysEventEquality)
+
+	assert.ToBeSame(t, &keys[0], &actual.keysToIgnore[0])
+}
+
+func Test_ignoringKeysEventEquality_WithIgnoringKeys_concurrently(t *testing.T) {
+	keys := make([]string, 1, 2)
+	keys[0] = "a"
+	instance := &ignoringKeysEventEquality{&EventEqualityImpl{}, keys}
+	start := make(chan struct{})
+	done := make(chan struct{}, 2)
+
+	derive := func(key string) {
+		defer func() { done <- struct{}{} }()
+		<-start
+		for i := 0; i < 1000; i++ {
+			_ = instance.WithIgnoringKeys(key)
+		}
+	}
+	go derive("b")
+	go derive("c")
+
+	close(start)
+	<-done
+	<-done
+	assert.ToBeEqual(t, []string{"a"}, instance.keysToIgnore)
 }
 
 type getCountingEvent struct {
