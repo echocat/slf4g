@@ -25,12 +25,16 @@ const (
 // by the Provider instance. If you want to customize it you can use
 // Provider.CoreLoggerCustomizer to done this.
 type CoreLogger struct {
-	Level             level.Level
+	// Level can be configured directly before the logger is first used. Use
+	// SetLevel for runtime changes.
+	Level level.Level
+
 	Consumer          consumer.Consumer
 	LocationDiscovery location.Discovery
 
-	provider *Provider
-	name     string
+	levelState levelState
+	provider   *Provider
+	name       string
 }
 
 // Log implements log.CoreLogger#Log()
@@ -65,12 +69,12 @@ func (instance *CoreLogger) IsLevelEnabled(level level.Level) bool {
 // SetLevel changes the current level.Level of this log.CoreLogger. If set to
 // 0 it use the value of Provider.GetLevel().
 func (instance *CoreLogger) SetLevel(level level.Level) {
-	instance.Level = level
+	instance.levelState.store(&instance.Level, level)
 }
 
 // GetLevel returns the current level.Level where this log.CoreLogger is set to.
 func (instance *CoreLogger) GetLevel() level.Level {
-	if v := instance.Level; v != 0 {
+	if v := instance.levelState.load(&instance.Level); v != 0 {
 		return v
 	}
 	return instance.getProvider().GetLevel()
