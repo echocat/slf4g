@@ -44,6 +44,25 @@ func Test_Interceptors_Add(t *testing.T) {
 	assert.ToBeEqual(t, expected, []Interceptor(*instance))
 }
 
+func Test_Interceptors_Add_doesNotModifyExistingSnapshot(t *testing.T) {
+	instance := make(Interceptors, 2, 3)
+	instance[0] = noopInterceptorButSorted(1)
+	instance[1] = noopInterceptorButSorted(2)
+	snapshot := instance
+
+	instance.Add(noopInterceptorButSorted(0))
+
+	assert.ToBeEqual(t, []Interceptor{
+		noopInterceptorButSorted(1),
+		noopInterceptorButSorted(2),
+	}, []Interceptor(snapshot))
+	assert.ToBeEqual(t, []Interceptor{
+		noopInterceptorButSorted(0),
+		noopInterceptorButSorted(1),
+		noopInterceptorButSorted(2),
+	}, []Interceptor(instance))
+}
+
 func Test_Interceptors_OnBeforeLog(t *testing.T) {
 	givenLogger := recording.NewLogger()
 	givenEvent := givenLogger.NewEventWithFields(level.Warn, fields.With("foo", "bar"))
