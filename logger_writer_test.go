@@ -130,11 +130,11 @@ func Test_LoggingWriter_Write_withInterceptor(t *testing.T) {
 
 	actual1Written, actual1Err := instance.Write([]byte("I hello world!"))
 	assert.ToBeNil(t, actual1Err)
-	assert.ToBeEqual(t, 12, actual1Written)
+	assert.ToBeEqual(t, 14, actual1Written)
 
 	actual2Written, actual2Err := instance.Write([]byte("E hello world!"))
 	assert.ToBeNil(t, actual2Err)
-	assert.ToBeEqual(t, 12, actual2Written)
+	assert.ToBeEqual(t, 14, actual2Written)
 
 	assert.ToBeEqual(t, 2, len(*givenLogger.loggedEvents))
 
