@@ -1,10 +1,10 @@
 package log
 
 import (
-	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/echocat/slf4g/internal/globalprovider"
 	"github.com/echocat/slf4g/internal/test/assert"
 )
 
@@ -68,19 +68,18 @@ func Test_getProvider_cachedDoesNotWaitForRegistryUpdates(t *testing.T) {
 	SetProvider(instance)
 
 	done := make(chan Provider, 1)
-	knownProvidersMutex.Lock()
-	go func() {
-		done <- getProvider()
-	}()
-
 	var actual Provider
-	select {
-	case actual = <-done:
-	case <-time.After(time.Second):
-		knownProvidersMutex.Unlock()
-		t.Fatal("cached provider lookup waited for the registry lock")
-	}
-	knownProvidersMutex.Unlock()
+	globalprovider.Read(func() {
+		go func() {
+			done <- getProvider()
+		}()
+
+		select {
+		case actual = <-done:
+		case <-time.After(time.Second):
+			t.Fatal("cached provider lookup waited for the registry lock")
+		}
+	})
 
 	assert.ToBeSame(t, instance, actual)
 }
@@ -91,20 +90,19 @@ func Test_SetProvider_waitsForRegistryUpdates(t *testing.T) {
 	started := make(chan struct{})
 	done := make(chan Provider, 1)
 
-	knownProvidersMutex.Lock()
-	go func() {
-		close(started)
-		done <- SetProvider(instance)
-	}()
-	<-started
+	globalprovider.Read(func() {
+		go func() {
+			close(started)
+			done <- SetProvider(instance)
+		}()
+		<-started
 
-	select {
-	case <-done:
-		knownProvidersMutex.Unlock()
-		t.Fatal("provider update completed while the registry lock was held")
-	case <-time.After(10 * time.Millisecond):
-	}
-	knownProvidersMutex.Unlock()
+		select {
+		case <-done:
+			t.Fatal("provider update completed while the registry lock was held")
+		case <-time.After(10 * time.Millisecond):
+		}
+	})
 
 	var previous Provider
 	select {
@@ -191,6 +189,20 @@ func Test_RegisterProvider_ignoresDoubleRegistrationOfSameInstance(t *testing.T)
 	assert.ToBeNil(t, getCurrentProvider())
 }
 
+func Test_RegisterProvider_supersedesScopedProvider(t *testing.T) {
+	defer resetGlobal()
+	installed := newMockProvider("installed")
+	registered := newMockProvider("registered")
+	cleanup := globalprovider.Push(installed)
+	defer cleanup()
+
+	RegisterProvider(registered)
+	assert.ToBeSame(t, registered, getProvider())
+	cleanup()
+
+	assert.ToBeSame(t, registered, getProvider())
+}
+
 func Test_UnregisterProvider(t *testing.T) {
 	defer resetGlobal()
 	instanceA := newMockProvider("instanceA")
@@ -210,6 +222,21 @@ func Test_UnregisterProvider(t *testing.T) {
 	assert.ToBeNil(t, getCurrentProvider())
 }
 
+func Test_UnregisterProvider_supersedesScopedProvider(t *testing.T) {
+	defer resetGlobal()
+	registered := newMockProvider("registered")
+	installed := newMockProvider("installed")
+	RegisterProvider(registered)
+	cleanup := globalprovider.Push(installed)
+	defer cleanup()
+
+	UnregisterProvider(registered.GetName())
+	assert.ToBeSame(t, fallbackProviderV, getProvider())
+	cleanup()
+
+	assert.ToBeSame(t, fallbackProviderV, getProvider())
+}
+
 func Test_GetAllProviders_nonRegistered(t *testing.T) {
 	defer resetGlobal()
 
@@ -225,17 +252,13 @@ func Test_GetAllProviders_afterOneRegistered(t *testing.T) {
 }
 
 func resetGlobal() {
-	knownProvidersMutex.Lock()
-	defer knownProvidersMutex.Unlock()
-	knownProviders = map[string]Provider{}
-	storeProvider(nil)
+	globalprovider.Invalidate(func() {
+		knownProviders = map[string]Provider{}
+	})
 }
 
 func getCurrentProvider() Provider {
-	if v := (*Provider)(atomic.LoadPointer(&providerPointer)); v != nil && *v != nil {
-		return *v
-	}
-	return nil
+	return loadProvider()
 }
 
 func newOtherMockProvider(name string) Provider {

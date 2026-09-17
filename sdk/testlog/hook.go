@@ -3,7 +3,7 @@ package testlog
 import (
 	"testing"
 
-	log "github.com/echocat/slf4g"
+	"github.com/echocat/slf4g/internal/globalprovider"
 )
 
 // Hook creates and registers for the given *testing.T, *testing.B or *testing.F
@@ -19,11 +19,7 @@ import (
 func Hook(tb testing.TB, customizer ...func(*Provider)) *Provider {
 	provider := NewProvider(tb, customizer...)
 
-	previous := log.SetProvider(provider)
-
-	tb.Cleanup(func() {
-		log.SetProvider(previous)
-	})
+	tb.Cleanup(globalprovider.Push(provider))
 
 	return provider
 }

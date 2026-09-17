@@ -44,6 +44,36 @@ func Test_Provider_HookGlobally(t *testing.T) {
 	assert.ToBeEqual(t, true, log.IsFallbackProvider(log.GetProvider()))
 }
 
+func Test_Provider_HookGlobally_cleanupDoesNotOverwriteLaterProvider(t *testing.T) {
+	defer log.SetProvider(nil)
+	instance := NewProvider()
+	later := NewProvider()
+	cleanup := instance.HookGlobally()
+	defer cleanup()
+
+	log.SetProvider(later)
+	cleanup()
+
+	assert.ToBeSame(t, later, log.UnwrapProvider(log.GetProvider()))
+}
+
+func Test_Provider_HookGlobally_skipsAlreadyCleanedUpProviders(t *testing.T) {
+	defer log.SetProvider(nil)
+	previous := log.UnwrapProvider(log.GetProvider())
+	first := NewProvider()
+	second := NewProvider()
+	cleanupFirst := first.HookGlobally()
+	defer cleanupFirst()
+	cleanupSecond := second.HookGlobally()
+	defer cleanupSecond()
+
+	cleanupFirst()
+	assert.ToBeSame(t, second, log.UnwrapProvider(log.GetProvider()))
+
+	cleanupSecond()
+	assert.ToBeSame(t, previous, log.UnwrapProvider(log.GetProvider()))
+}
+
 func Test_Provider_MustContains(t *testing.T) {
 	instance := NewProvider()
 	instanceRootLogger := instance.GetRootLogger()
