@@ -42,8 +42,11 @@ type Interceptors []Interceptor
 // Add appends a given Interceptor to this instance and ensures that everything
 // inside is ordered according to Interceptor.GetPriority().
 func (instance *Interceptors) Add(v Interceptor) *Interceptors {
-	*instance = append(*instance, v)
-	sort.Sort(*instance)
+	updated := make(Interceptors, len(*instance)+1)
+	copy(updated, *instance)
+	updated[len(updated)-1] = v
+	sort.Sort(updated)
+	*instance = updated
 	return instance
 }
 
