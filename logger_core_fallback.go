@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 	"unicode"
 
@@ -42,7 +43,7 @@ func IsFallbackLogger(candidate CoreLogger) bool {
 type fallbackCoreLogger struct {
 	*fallbackProvider
 	name  string
-	level level.Level
+	level uint32
 }
 
 func (instance *fallbackCoreLogger) Log(event Event, skipFrames uint16) {
@@ -210,14 +211,14 @@ func (instance *fallbackCoreLogger) GetProvider() Provider {
 }
 
 func (instance *fallbackCoreLogger) GetLevel() level.Level {
-	if v := instance.level; v != 0 {
+	if v := level.Level(atomic.LoadUint32(&instance.level)); v != 0 {
 		return v
 	}
 	return instance.fallbackProvider.GetLevel()
 }
 
 func (instance *fallbackCoreLogger) SetLevel(in level.Level) {
-	instance.level = in
+	atomic.StoreUint32(&instance.level, uint32(in))
 }
 
 func (instance *fallbackCoreLogger) NewEvent(l level.Level, values map[string]interface{}) Event {
