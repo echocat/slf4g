@@ -72,10 +72,7 @@ func (instance *CoreLogger) MustContains(expected log.Event) bool {
 // ContainsCustom checks if the given log.Event was recorded by this CoreLogger.
 // It will use the given log.EventEquality to checks the equality.
 func (instance *CoreLogger) ContainsCustom(eef log.EventEquality, expected log.Event) (bool, error) {
-	instance.mutex.RLock()
-	defer instance.mutex.RUnlock()
-
-	for _, candidate := range instance.recorded {
+	for _, candidate := range instance.GetAll() {
 		if matches, err := eef.AreEventsEqual(expected, candidate); err != nil {
 			return false, err
 		} else if matches {
@@ -142,9 +139,6 @@ func (instance *CoreLogger) Log(event log.Event, _ uint16) {
 		return
 	}
 
-	instance.mutex.Lock()
-	defer instance.mutex.Unlock()
-
 	provider := instance.GetProvider()
 	if v := log.GetTimestampOf(event, provider); v == nil {
 		event = event.With(provider.GetFieldKeysSpec().GetTimestamp(), time.Now())
@@ -152,6 +146,9 @@ func (instance *CoreLogger) Log(event log.Event, _ uint16) {
 	if v := log.GetLoggerOf(event, provider); v == nil {
 		event = event.With(provider.GetFieldKeysSpec().GetLogger(), instance)
 	}
+
+	instance.mutex.Lock()
+	defer instance.mutex.Unlock()
 
 	instance.recorded = append(instance.recorded, event)
 }

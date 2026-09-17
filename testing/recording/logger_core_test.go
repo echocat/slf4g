@@ -2,7 +2,9 @@ package recording
 
 import (
 	"errors"
+	"sync"
 	"testing"
+	"time"
 
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
@@ -118,6 +120,68 @@ func Test_CoreLogger_MustContainsCustom_panics(t *testing.T) {
 	}).WillPanicWith("^expected$")
 }
 
+func Test_CoreLogger_ContainsCustom_doesNotHoldLockDuringEquality(t *testing.T) {
+	instance := NewLogger()
+	instance.Info("a")
+	expected := instance.NewEvent(level.Info, nil).With("message", "a")
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	result := make(chan struct {
+		matches bool
+		err     error
+	}, 1)
+	updatesDone := make(chan struct{})
+	var releaseOnce sync.Once
+	releaseEquality := func() {
+		releaseOnce.Do(func() { close(release) })
+	}
+	defer releaseEquality()
+
+	go func() {
+		actual, err := instance.ContainsCustom(log.EventEqualityFunc(func(left, right log.Event) (bool, error) {
+			close(entered)
+			<-release
+			return true, nil
+		}), expected)
+		result <- struct {
+			matches bool
+			err     error
+		}{actual, err}
+	}()
+	waitForSignal(t, entered, "event equality was not called")
+	go func() {
+		instance.Reset()
+		instance.Info("b")
+		close(updatesDone)
+	}()
+
+	blocked := false
+	select {
+	case <-updatesDone:
+	case <-time.After(time.Second):
+		blocked = true
+	}
+	releaseEquality()
+	var actual struct {
+		matches bool
+		err     error
+	}
+	select {
+	case actual = <-result:
+	case <-time.After(time.Second):
+		t.Fatal("event equality did not complete after being released")
+	}
+	if blocked {
+		waitForSignal(t, updatesDone, "recorder updates did not complete after event equality was released")
+		t.Fatal("recorder updates blocked while event equality was running")
+	}
+
+	assert.ToBeNoError(t, actual.err)
+	assert.ToBeEqual(t, true, actual.matches)
+	assert.ToBeEqual(t, 1, instance.Len())
+	assert.ToBeEqual(t, true, instance.MustContains(instance.NewEvent(level.Info, nil).With("message", "b")))
+}
+
 func Test_CoreLogger_Len(t *testing.T) {
 	instance := NewLogger()
 
@@ -155,6 +219,54 @@ func Test_CoreLogger_Log(t *testing.T) {
 	assert.ToBeEqualUsing(t, expectedEvent1, instance.recorded[0], instance.defaultEventEquality().AreEventsEqual)
 	assert.ToBeEqualUsing(t, expectedEvent2, instance.recorded[1], instance.defaultEventEquality().AreEventsEqual)
 }
+
+func Test_CoreLogger_Log_doesNotHoldLockDuringLazyEvaluation(t *testing.T) {
+	instance := NewLogger()
+	instance.Info("old")
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	logDone := make(chan struct{})
+	resetDone := make(chan struct{})
+	var releaseOnce sync.Once
+	releaseLazy := func() {
+		releaseOnce.Do(func() { close(release) })
+	}
+	defer releaseLazy()
+	timestampKey := instance.GetProvider().GetFieldKeysSpec().GetTimestamp()
+	event := instance.NewEvent(level.Info, map[string]interface{}{
+		timestampKey: fields.LazyFunc(func() interface{} {
+			close(entered)
+			<-release
+			return time.Now()
+		}),
+	})
+
+	go func() {
+		instance.Log(event, 0)
+		close(logDone)
+	}()
+	waitForSignal(t, entered, "lazy event value was not evaluated")
+	go func() {
+		instance.Reset()
+		close(resetDone)
+	}()
+
+	blocked := false
+	select {
+	case <-resetDone:
+	case <-time.After(time.Second):
+		blocked = true
+	}
+	releaseLazy()
+	waitForSignal(t, logDone, "logging did not complete after lazy evaluation was released")
+	if blocked {
+		waitForSignal(t, resetDone, "recorder reset did not complete after lazy evaluation was released")
+		t.Fatal("recorder reset blocked while a lazy event value was evaluated")
+	}
+
+	assert.ToBeEqual(t, 1, instance.Len())
+}
+
 func Test_CoreLogger_GetAll(t *testing.T) {
 	instance := NewLogger()
 
@@ -346,6 +458,15 @@ func Test_CoreLogger_NewEventWithFields_panicsOnError(t *testing.T) {
 			return errors.New("expected")
 		}))
 	}).WillPanicWith("^expected$")
+}
+
+func waitForSignal(t *testing.T, signal <-chan struct{}, failure string) {
+	t.Helper()
+	select {
+	case <-signal:
+	case <-time.After(time.Second):
+		t.Fatal(failure)
+	}
 }
 
 func Test_CoreLogger_Accepts(t *testing.T) {
