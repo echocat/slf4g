@@ -27,24 +27,23 @@ func GetProvider() Provider {
 }
 
 func getProvider() Provider {
-	for {
-		v := (*Provider)(atomic.LoadPointer(&providerPointer))
-		if v != nil && *v != nil {
-			return *v
-		}
-
-		p := exactOneProvider()
-
-		if atomic.CompareAndSwapPointer(&providerPointer, unsafe.Pointer(v), unsafe.Pointer(&p)) {
-			return p
-		}
+	if p := loadProvider(); p != nil {
+		return p
 	}
+
+	knownProvidersMutex.Lock()
+	defer knownProvidersMutex.Unlock()
+
+	if p := loadProvider(); p != nil {
+		return p
+	}
+
+	p := exactOneProvider()
+	storeProvider(p)
+	return p
 }
 
 func exactOneProvider() Provider {
-	knownProvidersMutex.RLock()
-	defer knownProvidersMutex.RUnlock()
-
 	if len(knownProviders) > 1 {
 		asStrings := make([]string, len(knownProviders))
 		var i int
@@ -72,15 +71,14 @@ func exactOneProvider() Provider {
 //
 // This methods always returns the previous set value (which can be <nil>, too).
 func SetProvider(p Provider) Provider {
-	for {
-		oldP := (*Provider)(atomic.LoadPointer(&providerPointer))
-		if atomic.CompareAndSwapPointer(&providerPointer, unsafe.Pointer(oldP), unsafe.Pointer(&p)) {
-			if oldP != nil {
-				return *oldP
-			}
-			return nil
-		}
+	knownProvidersMutex.Lock()
+	defer knownProvidersMutex.Unlock()
+
+	oldP := (*Provider)(atomic.SwapPointer(&providerPointer, unsafe.Pointer(&p)))
+	if oldP != nil {
+		return *oldP
 	}
+	return nil
 }
 
 // RegisterProvider registers the given provider as a usable one. If
@@ -93,19 +91,20 @@ func RegisterProvider(p Provider) Provider {
 	if p == nil {
 		panic("Provided Provider is nil")
 	}
+	name := p.GetName()
 
 	knownProvidersMutex.Lock()
-	defer SetProvider(nil)
 	defer knownProvidersMutex.Unlock()
+	defer storeProvider(nil)
 
-	if existing := knownProviders[p.GetName()]; existing == p {
+	if existing := knownProviders[name]; existing == p {
 		return p
 	} else if existing != nil {
 		panic(fmt.Sprintf("Multiple try of registering of Provider with the same name: %s\n"+
-			"\tAlready existing type: %v; new type: %v", p.GetName(), reflect.TypeOf(existing), reflect.TypeOf(p)))
+			"\tAlready existing type: %v; new type: %v", name, reflect.TypeOf(existing), reflect.TypeOf(p)))
 	}
 
-	knownProviders[p.GetName()] = p
+	knownProviders[name] = p
 
 	return p
 }
@@ -113,8 +112,8 @@ func RegisterProvider(p Provider) Provider {
 // UnregisterProvider is doing the exact opposite of RegisterProvider().
 func UnregisterProvider(name string) Provider {
 	knownProvidersMutex.Lock()
-	defer SetProvider(nil)
 	defer knownProvidersMutex.Unlock()
+	defer storeProvider(nil)
 
 	existing := knownProviders[name]
 
@@ -139,4 +138,15 @@ func GetAllProviders() []Provider {
 	result[i] = defaultProviderV
 
 	return result
+}
+
+func loadProvider() Provider {
+	if v := (*Provider)(atomic.LoadPointer(&providerPointer)); v != nil {
+		return *v
+	}
+	return nil
+}
+
+func storeProvider(p Provider) {
+	atomic.StorePointer(&providerPointer, unsafe.Pointer(&p))
 }

@@ -3,6 +3,7 @@ package level
 import (
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/echocat/slf4g/internal/test/assert"
 )
@@ -59,6 +60,60 @@ func Test_getProvider_returnsCachedRegistered(t *testing.T) {
 
 	// Cached
 	assert.ToBeSame(t, instance, getCurrentProvider())
+}
+
+func Test_getProvider_cachedDoesNotWaitForRegistryUpdates(t *testing.T) {
+	defer resetGlobal()
+	instance := &defaultProvider{"instance"}
+	SetProvider(instance)
+
+	done := make(chan Provider, 1)
+	knownProvidersMutex.Lock()
+	go func() {
+		done <- getProvider()
+	}()
+
+	var actual Provider
+	select {
+	case actual = <-done:
+	case <-time.After(time.Second):
+		knownProvidersMutex.Unlock()
+		t.Fatal("cached provider lookup waited for the registry lock")
+	}
+	knownProvidersMutex.Unlock()
+
+	assert.ToBeSame(t, instance, actual)
+}
+
+func Test_SetProvider_waitsForRegistryUpdates(t *testing.T) {
+	defer resetGlobal()
+	instance := &defaultProvider{"instance"}
+	started := make(chan struct{})
+	done := make(chan Provider, 1)
+
+	knownProvidersMutex.Lock()
+	go func() {
+		close(started)
+		done <- SetProvider(instance)
+	}()
+	<-started
+
+	select {
+	case <-done:
+		knownProvidersMutex.Unlock()
+		t.Fatal("provider update completed while the registry lock was held")
+	case <-time.After(10 * time.Millisecond):
+	}
+	knownProvidersMutex.Unlock()
+
+	var previous Provider
+	select {
+	case previous = <-done:
+	case <-time.After(time.Second):
+		t.Fatal("provider update did not complete after releasing the registry lock")
+	}
+	assert.ToBeNil(t, previous)
+	assert.ToBeSame(t, instance, getProvider())
 }
 
 func Test_getProvider_failsIfMoreThenOneAreRegistered(t *testing.T) {
@@ -171,10 +226,10 @@ func Test_GetAllProviders_afterOneRegistered(t *testing.T) {
 }
 
 func resetGlobal() {
-	SetProvider(nil)
 	knownProvidersMutex.Lock()
 	defer knownProvidersMutex.Unlock()
 	knownProviders = map[string]Provider{}
+	storeProvider(nil)
 }
 
 func getCurrentProvider() Provider {
