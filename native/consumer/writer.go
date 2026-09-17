@@ -19,7 +19,8 @@ const formatErrorFallback = "{\"error\":\"LOG_EVENT_FORMAT_ERROR\"}\n"
 // NewWriter() is used to create a new instance.
 type Writer struct {
 	// Formatter to format the consumed log.Event with. If nothing was provided
-	// formatter.Default will be used.
+	// formatter.Default will be used. Set this field only before the Writer is
+	// first used; use SetFormatter for runtime changes.
 	Formatter formatter.Formatter
 
 	// Interceptor can be used to intercept the consumption of an event shortly
@@ -209,7 +210,10 @@ func (instance *Writer) getInterceptor() interceptor.Interceptor {
 
 // GetFormatter implements formatter.Aware
 func (instance *Writer) GetFormatter() formatter.Formatter {
-	if v := instance.Formatter; v != nil {
+	instance.mutex.Lock()
+	v := instance.Formatter
+	instance.mutex.Unlock()
+	if v != nil {
 		return v
 	}
 	if v := formatter.Default; v != nil {
@@ -220,6 +224,8 @@ func (instance *Writer) GetFormatter() formatter.Formatter {
 
 // SetFormatter implements formatter.MutableAware
 func (instance *Writer) SetFormatter(v formatter.Formatter) {
+	instance.mutex.Lock()
+	defer instance.mutex.Unlock()
 	instance.Formatter = v
 }
 
