@@ -24,7 +24,7 @@ func Test_mustAsMap_withPMapped(t *testing.T) {
 }
 
 func Test_mustAsMap_copies(t *testing.T) {
-	given := &lineage{With("a", 1), With("b", 2)}
+	given := &lineage{target: With("a", 1), parent: With("b", 2)}
 
 	actual := mustAsMap(given)
 

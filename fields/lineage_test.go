@@ -72,7 +72,7 @@ func Test_newLineage_withEmptyMapTargetAndParent(t *testing.T) {
 }
 
 func Test_lineage_ForEach(t *testing.T) {
-	instance := &lineage{With("foo", 1), With("bar", 2)}
+	instance := &lineage{target: With("foo", 1), parent: With("bar", 2)}
 
 	actualConsumed := map[string]interface{}{}
 	actualErr := instance.ForEach(func(k string, v interface{}) error {
@@ -88,7 +88,7 @@ func Test_lineage_ForEach(t *testing.T) {
 }
 
 func Test_lineage_ForEach_targetBeforeParent(t *testing.T) {
-	instance := &lineage{With("target", 1), With("parent", 2)}
+	instance := &lineage{target: With("target", 1), parent: With("parent", 2)}
 
 	var actualKeys []string
 	actualErr := instance.ForEach(func(key string, _ interface{}) error {
@@ -137,7 +137,7 @@ func Test_lineage_deepMixedTraversal(t *testing.T) {
 
 func Test_lineage_ForEach_isForwardingTargetErrors(t *testing.T) {
 	expectedErr := errors.New("foo")
-	instance := &lineage{With("foo", 1), With("bar", 2)}
+	instance := &lineage{target: With("foo", 1), parent: With("bar", 2)}
 
 	actualErr := instance.ForEach(func(string, interface{}) error {
 		return expectedErr
@@ -148,7 +148,7 @@ func Test_lineage_ForEach_isForwardingTargetErrors(t *testing.T) {
 
 func Test_lineage_ForEach_isForwardingParentErrors(t *testing.T) {
 	expectedErr := errors.New("foo")
-	instance := &lineage{With("foo", 1), With("bar", 2)}
+	instance := &lineage{target: With("foo", 1), parent: With("bar", 2)}
 
 	actualErr := instance.ForEach(func(k string, _ interface{}) error {
 		if k == "bar" {
@@ -181,7 +181,7 @@ func Test_lineage_ForEach_withNilConsumer(t *testing.T) {
 }
 
 func Test_lineage_Get(t *testing.T) {
-	instance := &lineage{With("foo", 1), With("bar", 2)}
+	instance := &lineage{target: With("foo", 1), parent: With("bar", 2)}
 
 	actual1, actual1Exists := instance.Get("foo")
 	assert.ToBeEqual(t, 1, actual1)
@@ -210,14 +210,14 @@ func Test_lineage_Get_withNilInstance(t *testing.T) {
 }
 
 func Test_lineage_With(t *testing.T) {
-	instance := &lineage{With("foo", 1), With("bar", 2)}
+	instance := &lineage{target: With("foo", 1), parent: With("bar", 2)}
 
 	actual := instance.With("xyz", 3)
 	assert.ToBeEqual(t, mapped{"foo": 1, "bar": 2, "xyz": 3}, mustAsMap(actual))
 }
 
 func Test_lineage_With_overwrites(t *testing.T) {
-	instance := &lineage{With("foo", 1), With("bar", 2)}
+	instance := &lineage{target: With("foo", 1), parent: With("bar", 2)}
 
 	actual := instance.With("foo", 2)
 	assert.ToBeEqual(t, mapped{"foo": 2, "bar": 2}, mustAsMap(actual))
@@ -232,14 +232,14 @@ func Test_lineage_With_withNilInstance(t *testing.T) {
 }
 
 func Test_lineage_Withf(t *testing.T) {
-	instance := &lineage{With("foo", 1), With("bar", 2)}
+	instance := &lineage{target: With("foo", 1), parent: With("bar", 2)}
 
 	actual := instance.Withf("xyz", "hello %d", 3)
 	assert.ToBeEqual(t, mapped{"foo": 1, "bar": 2, "xyz": LazyFormat("hello %d", 3)}, mustAsMap(actual))
 }
 
 func Test_lineage_Withf_overwrites(t *testing.T) {
-	instance := &lineage{With("foo", 1), With("bar", 2)}
+	instance := &lineage{target: With("foo", 1), parent: With("bar", 2)}
 
 	actual := instance.Withf("foo", "hello %d", 2)
 	assert.ToBeEqual(t, mapped{"foo": LazyFormat("hello %d", 2), "bar": 2}, mustAsMap(actual))
@@ -254,7 +254,7 @@ func Test_lineage_Withf_withNilInstance(t *testing.T) {
 }
 
 func Test_lineage_WithAll(t *testing.T) {
-	instance := &lineage{With("foo", 1), With("bar", 2)}
+	instance := &lineage{target: With("foo", 1), parent: With("bar", 2)}
 
 	actual := instance.WithAll(map[string]interface{}{"bar": 66, "xyz": 3})
 	assert.ToBeEqual(t, mapped{"foo": 1, "bar": 66, "xyz": 3}, mustAsMap(actual))
@@ -269,7 +269,7 @@ func Test_lineage_WithAll_withNilInstance(t *testing.T) {
 }
 
 func Test_lineage_Without(t *testing.T) {
-	instance := &lineage{With("foo", 1), With("bar", 2)}
+	instance := &lineage{target: With("foo", 1), parent: With("bar", 2)}
 
 	actual1 := instance.Without("bar", "notExisting")
 	assert.ToBeEqual(t, mapped{"foo": 1}, mustAsMap(actual1))
@@ -286,7 +286,7 @@ func Test_lineage_Without_withNilInstance(t *testing.T) {
 }
 
 func Test_lineage_Len(t *testing.T) {
-	instance := &lineage{With("a", 1).With("b", 2), With("a", 1).With("c", 3)}
+	instance := &lineage{target: With("a", 1).With("b", 2), parent: With("a", 1).With("c", 3)}
 
 	actual := instance.Len()
 
@@ -294,7 +294,7 @@ func Test_lineage_Len(t *testing.T) {
 }
 
 func Test_lineage_Len_withNilTarget(t *testing.T) {
-	instance := &lineage{nil, With("a", 1)}
+	instance := &lineage{parent: With("a", 1)}
 
 	actual := instance.Len()
 
@@ -302,7 +302,7 @@ func Test_lineage_Len_withNilTarget(t *testing.T) {
 }
 
 func Test_lineage_Len_withNilParent(t *testing.T) {
-	instance := &lineage{With("a", 1), nil}
+	instance := &lineage{target: With("a", 1)}
 
 	actual := instance.Len()
 
@@ -310,7 +310,7 @@ func Test_lineage_Len_withNilParent(t *testing.T) {
 }
 
 func Test_lineage_Len_withNilTargetAndParent(t *testing.T) {
-	instance := &lineage{nil, nil}
+	instance := &lineage{}
 
 	actual := instance.Len()
 
