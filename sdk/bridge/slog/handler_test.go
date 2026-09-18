@@ -444,6 +444,14 @@ func TestHandler_WithGroup(t *testing.T) {
 	assert.ToBeEqual(t, attrs(nil), actualC.attrs)
 }
 
+func TestHandler_WithGroup_empty(t *testing.T) {
+	instance := &Handler{fieldKeyPrefix: "foo."}
+
+	actual := instance.WithGroup("")
+
+	assert.ToBeSame(t, instance, actual)
+}
+
 func TestHandler_getDelegate(t *testing.T) {
 	aLogger := recording.NewCoreLogger()
 	cases := []struct {

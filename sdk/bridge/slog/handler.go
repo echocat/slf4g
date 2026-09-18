@@ -179,6 +179,9 @@ func (instance *Handler) WithAttrs(vs []sdk.Attr) sdk.Handler {
 
 // WithGroup implements [sdk.Handler.WithGroup]
 func (instance *Handler) WithGroup(key string) sdk.Handler {
+	if key == "" {
+		return instance
+	}
 	return &Handler{
 		instance.Delegate,
 		instance.LevelMapper,
