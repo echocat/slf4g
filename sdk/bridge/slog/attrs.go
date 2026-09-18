@@ -10,6 +10,8 @@ import (
 
 type attrs []sdk.Attr
 
+const indexedAttrsThreshold = 64
+
 func (instance attrs) ForEach(consumer func(key string, value interface{}) error) error {
 	if consumer == nil {
 		return nil
@@ -99,10 +101,28 @@ func (instance attrs) Len() (result int) {
 }
 
 func (instance *attrs) add(keyPrefix string, vs ...sdk.Attr) {
+	var indexes map[string]int
+	if len(vs) >= indexedAttrsThreshold {
+		indexes = make(map[string]int, len(*instance)+len(vs))
+		for i, existing := range *instance {
+			if _, exists := indexes[existing.Key]; !exists {
+				indexes[existing.Key] = i
+			}
+		}
+	}
 	for _, v := range vs {
 		nv := sdk.Attr{
 			Key:   keyPrefix + v.Key,
 			Value: v.Value,
+		}
+		if indexes != nil {
+			if i, exists := indexes[nv.Key]; exists {
+				(*instance)[i] = nv
+			} else {
+				indexes[nv.Key] = len(*instance)
+				*instance = append(*instance, nv)
+			}
+			continue
 		}
 
 		replaced := false
