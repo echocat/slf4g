@@ -66,6 +66,36 @@ func TestProvider_SetLevel(t *testing.T) {
 
 	instance.SetLevel(given)
 	assert.ToBeEqual(t, given, instance.GetLevel())
+	instance.SetLevel(0)
+	assert.ToBeEqual(t, DefaultLevel, instance.GetLevel())
+}
+
+func TestProvider_SetLevel_concurrentlyWithLogging(t *testing.T) {
+	instance := NewProvider(t)
+	logger := log.UnwrapCoreLogger(instance.GetRootLogger())
+	start := make(chan struct{})
+	var wait sync.WaitGroup
+	wait.Add(2)
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < 10_000; i++ {
+			instance.SetLevel(level.Debug)
+			instance.SetLevel(level.Info)
+		}
+	}()
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < 10_000; i++ {
+			_ = logger.IsLevelEnabled(level.Debug)
+		}
+	}()
+
+	close(start)
+	wait.Wait()
+	instance.SetLevel(level.Warn)
+	assert.ToBeEqual(t, level.Warn, logger.(*coreLogger).GetLevel())
 }
 
 func TestProvider_getFailAtLevel_default(t *testing.T) {
