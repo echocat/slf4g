@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	sdk "log/slog"
+	"strconv"
 	"testing"
 
 	"github.com/echocat/slf4g/fields"
@@ -277,4 +278,27 @@ func TestAttrs_add(t *testing.T) {
 		"xyz":         int64(5),
 		"abc":         int64(6),
 	}, actual)
+}
+
+func TestAttrs_addManyPreservesOrderAndLastValue(t *testing.T) {
+	instance := attrs{
+		sdk.Int("first", 1),
+		sdk.Int("prefix.replaced", 2),
+		sdk.Int("prefix.replaced", 99),
+	}
+	values := make([]sdk.Attr, indexedAttrsThreshold)
+	for i := range values {
+		values[i] = sdk.Int(strconv.Itoa(i), i)
+	}
+	values[1] = sdk.Int("replaced", 3)
+	values[len(values)-1] = sdk.Int("0", 4)
+
+	instance.add("prefix.", values...)
+
+	assert.ToBeEqual(t, sdk.Int("first", 1), instance[0])
+	assert.ToBeEqual(t, sdk.Int("prefix.replaced", 3), instance[1])
+	assert.ToBeEqual(t, sdk.Int("prefix.replaced", 99), instance[2])
+	assert.ToBeEqual(t, sdk.Int("prefix.0", 4), instance[3])
+	assert.ToBeEqual(t, sdk.Int("prefix.2", 2), instance[4])
+	assert.ToBeEqual(t, indexedAttrsThreshold+1, len(instance))
 }
