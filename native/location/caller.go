@@ -71,12 +71,21 @@ func NewCallerDiscovery(customizer ...func(*CallerDiscovery)) *CallerDiscovery {
 }
 
 // DiscoverLocation implements Discovery.DiscoverLocation().
-func (instance *CallerDiscovery) DiscoverLocation(_ log.Event, skipFrames uint16) Location {
-	pcs := make([]uintptr, 2)
-	depth := runtime.Callers(int(skipFrames)+2, pcs)
-	frames := runtime.CallersFrames(pcs[:depth])
-
-	frame, _ := frames.Next()
+func (instance *CallerDiscovery) DiscoverLocation(event log.Event, skipFrames uint16) Location {
+	var frame runtime.Frame
+	var programCounter uintptr
+	if source, ok := event.(interface{ GetProgramCounter() uintptr }); ok {
+		programCounter = source.GetProgramCounter()
+	}
+	if programCounter != 0 {
+		frames := runtime.CallersFrames([]uintptr{programCounter})
+		frame, _ = frames.Next()
+	} else {
+		pcs := make([]uintptr, 2)
+		depth := runtime.Callers(int(skipFrames)+2, pcs)
+		frames := runtime.CallersFrames(pcs[:depth])
+		frame, _ = frames.Next()
+	}
 
 	if frame.Function == "" {
 		frame.Function = "???"

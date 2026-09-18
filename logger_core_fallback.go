@@ -67,7 +67,7 @@ func (instance *fallbackCoreLogger) format(event Event, skipFrames uint16) []byt
 	_ = buf.WriteByte(' ')
 	_, _ = buf.WriteString(instance.formatPid())
 	_ = buf.WriteByte(' ')
-	_, _ = buf.WriteString(instance.formatLocation(skipFrames + 1))
+	_, _ = buf.WriteString(instance.formatLocation(event, skipFrames+1))
 	_ = buf.WriteByte(']')
 	_, _ = buf.WriteString(instance.formatMessage(event))
 	messageKey := instance.GetFieldKeysSpec().GetMessage()
@@ -143,8 +143,20 @@ func (instance *fallbackCoreLogger) formatPid() string {
 	return strconv.Itoa(pid)
 }
 
-func (instance *fallbackCoreLogger) formatLocation(skipFrames uint16) string {
-	_, file, line, ok := runtime.Caller(int(skipFrames + 1))
+func (instance *fallbackCoreLogger) formatLocation(event Event, skipFrames uint16) string {
+	var file string
+	var line int
+	var ok bool
+	var programCounter uintptr
+	if source, exists := event.(interface{ GetProgramCounter() uintptr }); exists {
+		programCounter = source.GetProgramCounter()
+	}
+	if programCounter != 0 {
+		frame, _ := runtime.CallersFrames([]uintptr{programCounter}).Next()
+		file, line, ok = frame.File, frame.Line, frame.File != ""
+	} else {
+		_, file, line, ok = runtime.Caller(int(skipFrames + 1))
+	}
 	if !ok {
 		file = "???"
 	} else {

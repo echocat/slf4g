@@ -4,6 +4,7 @@ import (
 	"runtime"
 	"testing"
 
+	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/internal/test/assert"
 )
 
@@ -20,16 +21,37 @@ func Test_CallerDiscovery_Discover(t *testing.T) {
 	assert.ToBeOfType(t, &callerImpl{}, actual1)
 	assert.ToBeSame(t, instance, actual1.(*callerImpl).discovery)
 	assert.ToBeEqual(t, "github.com/echocat/slf4g/native/location.someFuncForCallerDiscoveryDiscoverTest", actual1.(*callerImpl).frame.Function)
-	assert.ToBeEqual(t, 12, actual1.(*callerImpl).frame.Line)
+	assert.ToBeEqual(t, 13, actual1.(*callerImpl).frame.Line)
 
 	actual2 := someFuncForCallerDiscoveryDiscoverTest(instance, 1)
 	assert.ToBeEqual(t, "github.com/echocat/slf4g/native/location.Test_CallerDiscovery_Discover", actual2.(*callerImpl).frame.Function)
-	assert.ToBeEqual(t, 25, actual2.(*callerImpl).frame.Line)
+	assert.ToBeEqual(t, 26, actual2.(*callerImpl).frame.Line)
 
 	actual3 := someFuncForCallerDiscoveryDiscoverTest(instance, 255)
 	assert.ToBeEqual(t, "???", actual3.(*callerImpl).frame.Function)
 	assert.ToBeEqual(t, "???", actual3.(*callerImpl).frame.File)
 	assert.ToBeEqual(t, 0, actual3.(*callerImpl).frame.Line)
+}
+
+func Test_CallerDiscovery_Discover_fromProgramCounter(t *testing.T) {
+	instance := NewCallerDiscovery()
+	pcs := make([]uintptr, 1)
+	runtime.Callers(1, pcs)
+	expected, _ := runtime.CallersFrames(pcs).Next()
+	event := eventWithProgramCounter{programCounter: pcs[0]}
+
+	actual := instance.DiscoverLocation(event, 666)
+
+	assert.ToBeEqual(t, expected, actual.(Caller).GetFrame())
+}
+
+type eventWithProgramCounter struct {
+	log.Event
+	programCounter uintptr
+}
+
+func (instance eventWithProgramCounter) GetProgramCounter() uintptr {
+	return instance.programCounter
 }
 
 func Test_NewCallerDiscovery(t *testing.T) {

@@ -1,6 +1,8 @@
 package native
 
 import (
+	"context"
+	stdslog "log/slog"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -17,6 +19,7 @@ import (
 	"github.com/echocat/slf4g/internal/test/assert"
 	"github.com/echocat/slf4g/level"
 	"github.com/echocat/slf4g/native/consumer"
+	slogbridge "github.com/echocat/slf4g/sdk/bridge/slog"
 )
 
 type strictCoreLogger struct {
@@ -646,6 +649,26 @@ func Test_Provider_GetRootLogger_preservesCallerLocation(t *testing.T) {
 	actual, exists := recorder.Get(0).Get(instance.getFieldKeysSpec().GetLocation())
 	assert.ToBeEqual(t, true, exists)
 	assert.ToBeEqual(t, "github.com/echocat/slf4g/native.logThroughCustomizedRoot", actual.(location.Caller).GetFrame().Function)
+}
+
+func programCounterForSlogRecord() uintptr {
+	pcs := make([]uintptr, 1)
+	runtime.Callers(1, pcs)
+	return pcs[0]
+}
+
+func Test_Provider_slogHandlerUsesRecordProgramCounter(t *testing.T) {
+	instance, recorder := newProvider()
+	instance.LocationDiscovery = location.NewCallerDiscovery()
+	handler := slogbridge.NewHandler(instance.GetRootLogger())
+	record := stdslog.NewRecord(time.Now(), stdslog.LevelInfo, "message", programCounterForSlogRecord())
+
+	actualErr := handler.Handle(context.Background(), record)
+
+	assert.ToBeNoError(t, actualErr)
+	actual, exists := recorder.Get(0).Get(instance.getFieldKeysSpec().GetLocation())
+	assert.ToBeEqual(t, true, exists)
+	assert.ToBeEqual(t, "github.com/echocat/slf4g/native.programCounterForSlogRecord", actual.(location.Caller).GetFrame().Function)
 }
 
 func Test_Provider_levelAware(t *testing.T) {

@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"path"
+	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -43,8 +46,8 @@ func Test_fallbackCoreLogger_Log(t *testing.T) {
 		With("timestamp", t2), 0)
 
 	assert.ToBeEqual(t, fmt.Sprintf(strings.TrimLeft(`
-I%s %d logger_core_fallback_test.go:32] a=11 b=12
-E%s %d logger_core_fallback_test.go:37]   hello a=21 c=23 error="expected" logger="foo"
+I%s %d logger_core_fallback_test.go:35] a=11 b=12
+E%s %d logger_core_fallback_test.go:40]   hello a=21 c=23 error="expected" logger="foo"
 `, "\n"),
 		t1.Format(simpleTimeLayout), pid,
 		t2.Format(simpleTimeLayout), pid,
@@ -56,8 +59,29 @@ func Test_fallbackCoreLogger_formatLocation(t *testing.T) {
 
 	// WARNING! Do not move these lines, because the test relies on it.
 	// I know this could be better... ;-)
-	assert.ToBeEqual(t, "logger_core_fallback_test.go:59", instance.formatLocation(0))
-	assert.ToBeEqual(t, "???:?", instance.formatLocation(1000))
+	assert.ToBeEqual(t, "logger_core_fallback_test.go:62", instance.formatLocation(nil, 0))
+	assert.ToBeEqual(t, "???:?", instance.formatLocation(nil, 1000))
+}
+
+func Test_fallbackCoreLogger_formatLocation_fromProgramCounter(t *testing.T) {
+	instance := &fallbackCoreLogger{}
+	pcs := make([]uintptr, 1)
+	runtime.Callers(1, pcs)
+	frame, _ := runtime.CallersFrames(pcs).Next()
+	event := fallbackEventWithProgramCounter{programCounter: pcs[0]}
+
+	actual := instance.formatLocation(event, 666)
+
+	assert.ToBeEqual(t, path.Base(frame.File)+":"+strconv.Itoa(frame.Line), actual)
+}
+
+type fallbackEventWithProgramCounter struct {
+	Event
+	programCounter uintptr
+}
+
+func (instance fallbackEventWithProgramCounter) GetProgramCounter() uintptr {
+	return instance.programCounter
 }
 
 func Test_fallbackCoreLogger_Log_withoutTimestamp(t *testing.T) {
