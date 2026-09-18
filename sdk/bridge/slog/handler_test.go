@@ -7,6 +7,8 @@ import (
 	"fmt"
 	sdk "log/slog"
 	"strconv"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -24,12 +26,12 @@ func TestNewHandler(t *testing.T) {
 	actual := NewHandler(aLogger, func(v *Handler) {
 		v.parent = anotherHandler
 	}, func(v *Handler) {
-		v.fieldKeyPrefix = "foo"
+		v.fieldKeyPath = newFieldKeyPath(nil, "foo")
 	})
 
 	assert.ToBeNotNil(t, actual)
 	assert.ToBeSame(t, aLogger, actual.Delegate)
-	assert.ToBeEqual(t, "foo", actual.fieldKeyPrefix)
+	assert.ToBeEqual(t, "foo.", actual.fieldKeyPath.prefix())
 	assert.ToBeSame(t, anotherHandler, actual.parent)
 }
 
@@ -180,6 +182,17 @@ func TestHandler_eventOfRecord(t *testing.T) {
 				"message":   "aMessage",
 				"foo":       int64(1),
 				"bar":       int64(2),
+			},
+		},
+		{
+			"groupedRecordAttrs",
+			(&Handler{}).WithGroup("outer").WithGroup("inner").(*Handler),
+			attrs{sdk.Int("foo", 1)},
+			level.Fatal,
+			map[string]interface{}{
+				"timestamp":       aTime,
+				"message":         "aMessage",
+				"outer.inner.foo": int64(1),
 			},
 		},
 		{
@@ -382,7 +395,7 @@ func TestHandler_WithAttrs(t *testing.T) {
 		LevelMapper:      aLevelMapper,
 		DetectSkipFrames: aDetectSkipFrames,
 		parent:           nil,
-		fieldKeyPrefix:   "foo.",
+		fieldKeyPath:     newFieldKeyPath(nil, "foo"),
 		attrs:            someAttrs,
 	}
 
@@ -397,7 +410,8 @@ func TestHandler_WithAttrs(t *testing.T) {
 	assert.ToBeSame(t, instance.LevelMapper, actualC.LevelMapper)
 	assert.ToBeSame(t, instance.DetectSkipFrames, actualC.DetectSkipFrames)
 	assert.ToBeSame(t, instance, actualC.parent)
-	assert.ToBeEqual(t, "foo.", actualC.fieldKeyPrefix)
+	assert.ToBeSame(t, instance.fieldKeyPath, actualC.fieldKeyPath)
+	assert.ToBeEqual(t, "foo.", actualC.fieldKeyPath.prefix())
 	assert.ToBeEqual(t, attrs{
 		sdk.Int("foo.bar", 2),
 		sdk.Int("foo.xyz", 666),
@@ -453,7 +467,7 @@ func TestHandler_WithGroup(t *testing.T) {
 		LevelMapper:      aLevelMapper,
 		DetectSkipFrames: aDetectSkipFrames,
 		parent:           nil,
-		fieldKeyPrefix:   "foo.",
+		fieldKeyPath:     newFieldKeyPath(nil, "foo"),
 		attrs:            someAttrs,
 	}
 
@@ -465,16 +479,96 @@ func TestHandler_WithGroup(t *testing.T) {
 	assert.ToBeSame(t, instance.LevelMapper, actualC.LevelMapper)
 	assert.ToBeSame(t, instance.DetectSkipFrames, actualC.DetectSkipFrames)
 	assert.ToBeSame(t, instance, actualC.parent)
-	assert.ToBeEqual(t, "foo.bar.", actualC.fieldKeyPrefix)
+	assert.ToBeEqual(t, "foo.bar.", actualC.fieldKeyPath.prefix())
+	assert.ToBeSame(t, instance.fieldKeyPath, actualC.fieldKeyPath.parent)
+	assert.ToBeEqual(t, "bar", actualC.fieldKeyPath.key)
 	assert.ToBeEqual(t, attrs(nil), actualC.attrs)
 }
 
 func TestHandler_WithGroup_empty(t *testing.T) {
-	instance := &Handler{fieldKeyPrefix: "foo."}
+	instance := &Handler{fieldKeyPath: newFieldKeyPath(nil, "foo")}
 
 	actual := instance.WithGroup("")
 
 	assert.ToBeSame(t, instance, actual)
+}
+
+func TestHandler_WithGroup_deepPath(t *testing.T) {
+	const depth = 20_000
+	var instance sdk.Handler = &Handler{}
+	for i := 0; i < depth; i++ {
+		instance = instance.WithGroup("g")
+	}
+
+	grouped := instance.(*Handler)
+	expectedPrefix := strings.Repeat("g.", depth)
+	assert.ToBeEqual(t, expectedPrefix, grouped.fieldKeyPath.prefix())
+	assert.ToBeEqual(t, depth*2, grouped.fieldKeyPath.length)
+	assert.ToBeEqual(t, "g", grouped.fieldKeyPath.key)
+
+	withAttr := grouped.WithAttrs([]sdk.Attr{sdk.Int("value", 1)}).(*Handler)
+	actualValue, actualExists := withAttr.fields().Get(expectedPrefix + "value")
+	assert.ToBeEqual(t, int64(1), actualValue)
+	assert.ToBeEqual(t, true, actualExists)
+}
+
+func TestHandler_WithGroup_preservesPathsAndBranches(t *testing.T) {
+	base := (&Handler{}).WithAttrs([]sdk.Attr{sdk.Int("root", 1)})
+	outer := base.WithGroup("outer")
+	assert.ToBeSame(t, outer, outer.WithGroup(""))
+	deep := outer.
+		WithAttrs([]sdk.Attr{sdk.Int("middle", 2)}).
+		WithGroup("inner").
+		WithAttrs([]sdk.Attr{sdk.Int("deep", 3)}).(*Handler)
+	sibling := outer.
+		WithGroup("sibling").
+		WithAttrs([]sdk.Attr{sdk.Int("value", 4)}).(*Handler)
+
+	var actualDeepKeys []string
+	actualDeepErr := deep.fields().ForEach(func(key string, _ interface{}) error {
+		actualDeepKeys = append(actualDeepKeys, key)
+		return nil
+	})
+	assert.ToBeNoError(t, actualDeepErr)
+	assert.ToBeEqual(t, []string{"outer.inner.deep", "outer.middle", "root"}, actualDeepKeys)
+	actualSibling, actualSiblingErr := fields.AsMap(sibling.fields())
+	assert.ToBeNoError(t, actualSiblingErr)
+	assert.ToBeEqual(t, map[string]interface{}{"outer.sibling.value": int64(4), "root": int64(1)}, actualSibling)
+}
+
+func TestHandler_WithGroup_preservesDotsInNames(t *testing.T) {
+	dotted := (&Handler{}).
+		WithGroup("a.b").
+		WithAttrs([]sdk.Attr{sdk.Int("value", 1)}).(*Handler)
+	nested := (&Handler{}).
+		WithGroup("a").
+		WithGroup("b").
+		WithAttrs([]sdk.Attr{sdk.Int("value", 1)}).(*Handler)
+
+	actualDotted, actualDottedErr := fields.AsMap(dotted.fields())
+	actualNested, actualNestedErr := fields.AsMap(nested.fields())
+	assert.ToBeNoError(t, actualDottedErr)
+	assert.ToBeNoError(t, actualNestedErr)
+	assert.ToBeEqual(t, actualDotted, actualNested)
+}
+
+func TestFieldKeyPath_prefix_concurrent(t *testing.T) {
+	path := newFieldKeyPath(newFieldKeyPath(nil, "outer"), "inner")
+	results := make(chan string, 32)
+	var waitGroup sync.WaitGroup
+	for i := 0; i < cap(results); i++ {
+		waitGroup.Add(1)
+		go func() {
+			defer waitGroup.Done()
+			results <- path.prefix()
+		}()
+	}
+	waitGroup.Wait()
+	close(results)
+
+	for actual := range results {
+		assert.ToBeEqual(t, "outer.inner.", actual)
+	}
 }
 
 func TestHandler_getDelegate(t *testing.T) {
