@@ -92,7 +92,7 @@ func Test_LoggerImpl_Print_with3Arg(t *testing.T) {
 	assert.ToBeEqual(t, 1, logger.Len())
 	assert.ToBeEqual(t, true, logger.MustContains(
 		logger.NewEvent(level.Warn, nil).
-			With("message", []interface{}{"a", 1, "c"}),
+			With("message", "a1c"),
 	))
 }
 
@@ -127,7 +127,7 @@ func Test_LoggerImpl_Println(t *testing.T) {
 func Test_LoggerImpl_Fatal(t *testing.T) {
 	instance, logger, horror := prepareLoggerImpl()
 	expected := logger.NewEvent(level.Fatal, nil).
-		With("message", []interface{}{"a", 1, "c"})
+		With("message", "a1c")
 
 	instance.Fatal("a", 1, "c")
 
@@ -166,7 +166,7 @@ func Test_LoggerImpl_Fatalln(t *testing.T) {
 func Test_LoggerImpl_Panic(t *testing.T) {
 	instance, logger, horror := prepareLoggerImpl()
 	expected := logger.NewEvent(level.Fatal, nil).
-		With("message", []interface{}{"a", 1, "c"})
+		With("message", "a1c")
 
 	instance.Panic("a", 1, "c")
 
