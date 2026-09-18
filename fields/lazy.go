@@ -35,7 +35,7 @@ func (instance lazyFunc) Get() interface{} {
 // LazyFormat returns a value which will be executed the fmt.Sprintf action at
 // the moment when it will be consumed or in other words: Lazy.Get() is called.
 func LazyFormat(format string, args ...interface{}) Lazy {
-	return &lazyFormat{format, args}
+	return &lazyFormat{format, append([]interface{}(nil), args...)}
 }
 
 type lazyFormat struct {
