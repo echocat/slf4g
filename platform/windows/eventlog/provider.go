@@ -13,15 +13,17 @@ import (
 	"github.com/echocat/slf4g/native/location"
 )
 
+// DefaultProvider is retained for source compatibility. It is not registered
+// automatically and does not write events to the Windows Event Log.
+//
+// Deprecated: Package eventlog is not functional.
 var DefaultProvider = &Provider{}
 
-// Provider implements log.Provider of the slf4g framework for the "native"
-// implementation.
+// Provider is an unfinished placeholder that currently delegates event
+// consumption to components from the native implementation. It does not write
+// events to the Windows Event Log.
 //
-// Usually you should not be required to create by your self. Either use simply
-// log.GetProvider() (which will return this provider once you imported this
-// package at least one time somewhere) or if you want to customize its behavior
-// simply modify DefaultProvider.
+// Deprecated: Package eventlog is not functional.
 type Provider struct {
 	// Name represents the name of this Provider. If empty it will be "native"
 	// by default.
@@ -192,7 +194,3 @@ func (instance *Provider) getCache() log.LoggerCache {
 // CoreLoggerCustomizer can be used by the Provider to customize created
 // instances of CoreLogger. See Provider.CoreLoggerCustomizer
 type CoreLoggerCustomizer func(*Provider, *CoreLogger) log.CoreLogger
-
-func init() {
-	log.RegisterProvider(DefaultProvider)
-}

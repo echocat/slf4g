@@ -18,12 +18,14 @@ const (
 	rootLoggerName = "ROOT"
 )
 
-// CoreLogger implements log.CoreLogger of the slf4g framework for the "native"
-// implementation.
+// CoreLogger is the logger implementation used by the unfinished Provider. It
+// currently delegates event consumption to components from the native
+// implementation and does not write events to the Windows Event Log.
 //
-// You cannot create a working instance of this by yourself. It can only be done
-// by the Provider instance. If you want to customize it you can use
-// Provider.CoreLoggerCustomizer to done this.
+// Provider creates configured instances. Use Provider.CoreLoggerCustomizer to
+// customize them.
+//
+// Deprecated: Package eventlog is not functional.
 type CoreLogger struct {
 	Level             level.Level
 	Consumer          consumer.Consumer
