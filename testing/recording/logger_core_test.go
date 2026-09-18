@@ -420,6 +420,7 @@ func Test_CoreLogger_SetLevel(t *testing.T) {
 
 func Test_CoreLogger_NewEvent(t *testing.T) {
 	instance := NewCoreLogger()
+	instance.Provider = NewProvider()
 
 	assert.ToBeEqual(t, &event{
 		provider: instance.Provider,
@@ -434,8 +435,22 @@ func Test_CoreLogger_NewEvent(t *testing.T) {
 	}, instance.NewEvent(level.Fatal, map[string]interface{}{"foo": "bar"}))
 }
 
+func Test_CoreLogger_NewEvent_withErrorWithoutConfiguredProvider(t *testing.T) {
+	instance := NewCoreLogger()
+	givenError := errors.New("expected")
+
+	actual := instance.NewEvent(level.Error, nil).WithError(givenError)
+
+	provider := instance.GetProvider()
+	actualError, exists := actual.Get(provider.GetFieldKeysSpec().GetError())
+	assert.ToBeEqual(t, true, exists)
+	assert.ToBeSame(t, givenError, actualError)
+	assert.ToBeSame(t, provider, actual.(*event).provider)
+}
+
 func Test_CoreLogger_NewEventWithFields(t *testing.T) {
 	instance := NewCoreLogger()
+	instance.Provider = NewProvider()
 
 	assert.ToBeEqual(t, &event{
 		provider: instance.Provider,
