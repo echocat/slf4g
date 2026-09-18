@@ -2,26 +2,29 @@
 
 package log
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 func formatStrSlice(in []string) string {
-	var result string
+	var result strings.Builder
 	for i, v := range in {
 		if i > 0 {
-			result += " "
+			result.WriteByte(' ')
 		}
-		result += fmt.Sprint(v)
+		result.WriteString(v)
 	}
-	return result
+	return result.String()
 }
 
 func formatAnySlice(in []interface{}) string {
-	var result string
+	var result strings.Builder
 	for i, v := range in {
 		if i > 0 {
-			result += " "
+			result.WriteByte(' ')
 		}
-		result += fmt.Sprint(v)
+		result.WriteString(fmt.Sprint(v))
 	}
-	return result
+	return result.String()
 }
