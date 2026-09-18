@@ -201,7 +201,7 @@ func (instance *CoreLogger) NewEventWithFields(l level.Level, f fields.ForEachEn
 		panic(err)
 	}
 	return &event{
-		provider: instance.Provider,
+		provider: instance.GetProvider(),
 		fields:   asFields,
 		level:    l,
 	}
