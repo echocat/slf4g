@@ -412,10 +412,53 @@ func Test_CoreLogger_SetLevel(t *testing.T) {
 	for _, l := range level.GetProvider().GetLevels() {
 		instance.SetLevel(l)
 		assert.ToBeEqual(t, l, instance.Level)
+		assert.ToBeEqual(t, l, instance.GetLevel())
 	}
 
 	instance.SetLevel(0)
 	assert.ToBeEqual(t, level.Level(0), instance.Level)
+	assert.ToBeEqual(t, DefaultLevel, instance.GetLevel())
+}
+
+func Test_CoreLogger_SetLevel_resetsToProvider(t *testing.T) {
+	provider := NewProvider()
+	provider.SetLevel(level.Warn)
+	instance := NewCoreLogger()
+	instance.Provider = provider
+	instance.SetLevel(level.Debug)
+	assert.ToBeEqual(t, level.Debug, instance.GetLevel())
+
+	instance.SetLevel(0)
+
+	assert.ToBeEqual(t, level.Warn, instance.GetLevel())
+}
+
+func Test_CoreLogger_SetLevel_concurrentlyWithLogging(t *testing.T) {
+	instance := NewCoreLogger()
+	instance.SetLevel(level.Debug)
+	start := make(chan struct{})
+	var wait sync.WaitGroup
+	wait.Add(2)
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < 10_000; i++ {
+			instance.SetLevel(level.Debug)
+			instance.SetLevel(level.Info)
+		}
+	}()
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < 10_000; i++ {
+			_ = instance.IsLevelEnabled(level.Debug)
+		}
+	}()
+
+	close(start)
+	wait.Wait()
+	instance.SetLevel(level.Warn)
+	assert.ToBeEqual(t, level.Warn, instance.GetLevel())
 }
 
 func Test_CoreLogger_NewEvent(t *testing.T) {
