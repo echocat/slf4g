@@ -120,6 +120,31 @@ func TestHandler_Handle(t *testing.T) {
 	}
 }
 
+func TestHandler_Handle_preservesProgramCounter(t *testing.T) {
+	baseLogger := recording.NewCoreLogger()
+	instance := &Handler{Delegate: baseLogger}
+
+	actualErr := instance.Handle(context.Background(), sdk.Record{Level: LevelInfo, PC: 666})
+
+	assert.ToBeNoError(t, actualErr)
+	actual := baseLogger.Get(0)
+	actualPC, ok := actual.(interface{ GetProgramCounter() uintptr })
+	assert.ToBeEqual(t, true, ok)
+	assert.ToBeEqual(t, uintptr(666), actualPC.GetProgramCounter())
+}
+
+func TestHandler_Handle_respectsRejectedProgramCounterEvent(t *testing.T) {
+	baseLogger := recording.NewCoreLogger()
+	instance := &Handler{Delegate: &programCounterRejectingCoreLogger{baseLogger}}
+
+	actualErr := instance.Handle(context.Background(), sdk.Record{Level: LevelInfo, PC: 666})
+
+	assert.ToBeNoError(t, actualErr)
+	actual := baseLogger.Get(0)
+	_, ok := actual.(interface{ GetProgramCounter() uintptr })
+	assert.ToBeEqual(t, false, ok)
+}
+
 func TestHandler_eventOfRecord(t *testing.T) {
 	logger := recording.NewCoreLogger()
 	aTime, err := time.Parse(time.RFC3339, "2025-10-01T15:30:15Z")
@@ -603,6 +628,15 @@ func (instance someCoreLoggerWithHelper) GetProvider() log.Provider {
 type delegateCoreLoggerWithHelper struct {
 	log.CoreLogger
 	helper func()
+}
+
+type programCounterRejectingCoreLogger struct {
+	*recording.CoreLogger
+}
+
+func (instance *programCounterRejectingCoreLogger) Accepts(event log.Event) bool {
+	_, withProgramCounter := event.(interface{ GetProgramCounter() uintptr })
+	return !withProgramCounter && instance.CoreLogger.Accepts(event)
 }
 
 func (instance delegateCoreLoggerWithHelper) Helper() func() {

@@ -66,6 +66,12 @@ func (instance *Handler) Handle(_ context.Context, record sdk.Record) error {
 	if err != nil {
 		return err
 	}
+	if record.PC != 0 && instance.DetectSkipFrames == nil {
+		candidate := eventWithProgramCounter{Event: e, programCounter: record.PC}
+		if delegate.Accepts(candidate) {
+			e = candidate
+		}
+	}
 
 	skipFrames := instance.getDetectSkipFrames()(1)
 	delegate.Log(e, skipFrames)
