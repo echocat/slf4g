@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	sdk "log/slog"
+	"sync"
 
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
@@ -43,9 +44,44 @@ type Handler struct {
 	// If empty [DefaultDetectSkipFrames] will be used.
 	DetectSkipFrames DetectSkipFrames
 
-	parent         *Handler
-	fieldKeyPrefix string
-	attrs          attrs
+	parent       *Handler
+	fieldKeyPath *fieldKeyPath
+	attrs        attrs
+}
+
+// fieldKeyPath keeps group construction linear and resolves only paths used by attributes.
+type fieldKeyPath struct {
+	parent   *fieldKeyPath
+	key      string
+	length   int
+	once     sync.Once
+	resolved string
+}
+
+func newFieldKeyPath(parent *fieldKeyPath, key string) *fieldKeyPath {
+	length := len(key) + 1
+	if parent != nil {
+		length += parent.length
+	}
+	return &fieldKeyPath{parent: parent, key: key, length: length}
+}
+
+func (instance *fieldKeyPath) prefix() string {
+	if instance == nil {
+		return ""
+	}
+	instance.once.Do(func() {
+		result := make([]byte, instance.length)
+		offset := len(result)
+		for current := instance; current != nil; current = current.parent {
+			offset--
+			result[offset] = '.'
+			offset -= len(current.key)
+			copy(result[offset:], current.key)
+		}
+		instance.resolved = string(result)
+	})
+	return instance.resolved
 }
 
 // Enabled implements [sdk.Handler.Enabled]
@@ -91,8 +127,13 @@ func (instance *Handler) eventOfRecord(logger log.CoreLogger, record sdk.Record)
 
 func (instance *Handler) fieldsOfRecord(logger log.CoreLogger, record sdk.Record) fields.Fields {
 	fdsSpec := logger.GetProvider().GetFieldKeysSpec()
+	numAttrs := record.NumAttrs()
+	keyPrefix := ""
+	if numAttrs > 0 {
+		keyPrefix = instance.fieldKeyPath.prefix()
+	}
 
-	vs := make(attrs, 2+record.NumAttrs())
+	vs := make(attrs, 2+numAttrs)
 	var i int
 	vs[i] = sdk.Attr{
 		Key:   fdsSpec.GetMessage(),
@@ -108,7 +149,7 @@ func (instance *Handler) fieldsOfRecord(logger log.CoreLogger, record sdk.Record
 
 	record.Attrs(func(v sdk.Attr) bool {
 		vs[i] = sdk.Attr{
-			Key:   instance.fieldKeyPrefix + v.Key,
+			Key:   keyPrefix + v.Key,
 			Value: v.Value,
 		}
 		i++
@@ -130,7 +171,7 @@ func (instance *Handler) fields() fields.Fields {
 	handledKeys := make(map[string]struct{}, totalAttrs)
 	for start := 0; start < len(lineage); {
 		end := start + 1
-		for end < len(lineage) && lineage[end].fieldKeyPrefix == lineage[start].fieldKeyPrefix {
+		for end < len(lineage) && lineage[end].fieldKeyPath == lineage[start].fieldKeyPath {
 			end++
 		}
 
@@ -172,14 +213,18 @@ func (instance *Handler) mapFromSdkLevel(sl sdk.Level) (level.Level, error) {
 // WithAttrs implements [sdk.Handler.WithAttrs]
 func (instance *Handler) WithAttrs(vs []sdk.Attr) sdk.Handler {
 	nvs := make(attrs, 0, len(vs))
-	nvs.add(instance.fieldKeyPrefix, vs...)
+	keyPrefix := ""
+	if len(vs) > 0 {
+		keyPrefix = instance.fieldKeyPath.prefix()
+	}
+	nvs.add(keyPrefix, vs...)
 	return &Handler{
-		instance.Delegate,
-		instance.LevelMapper,
-		instance.DetectSkipFrames,
-		instance,
-		instance.fieldKeyPrefix,
-		nvs,
+		Delegate:         instance.Delegate,
+		LevelMapper:      instance.LevelMapper,
+		DetectSkipFrames: instance.DetectSkipFrames,
+		parent:           instance,
+		fieldKeyPath:     instance.fieldKeyPath,
+		attrs:            nvs,
 	}
 }
 
@@ -189,12 +234,11 @@ func (instance *Handler) WithGroup(key string) sdk.Handler {
 		return instance
 	}
 	return &Handler{
-		instance.Delegate,
-		instance.LevelMapper,
-		instance.DetectSkipFrames,
-		instance,
-		instance.fieldKeyPrefix + key + ".",
-		nil,
+		Delegate:         instance.Delegate,
+		LevelMapper:      instance.LevelMapper,
+		DetectSkipFrames: instance.DetectSkipFrames,
+		parent:           instance,
+		fieldKeyPath:     newFieldKeyPath(instance.fieldKeyPath, key),
 	}
 }
 

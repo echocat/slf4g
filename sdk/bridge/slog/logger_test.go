@@ -18,7 +18,7 @@ func TestNew(t *testing.T) {
 	actual := New(aLogger, func(v *Handler) {
 		v.parent = anotherHandler
 	}, func(v *Handler) {
-		v.fieldKeyPrefix = "foo"
+		v.fieldKeyPath = newFieldKeyPath(nil, "foo")
 	})
 
 	assert.ToBeNotNil(t, actual)
@@ -27,7 +27,7 @@ func TestNew(t *testing.T) {
 	assert.ToBeOfType(t, (*Handler)(nil), actualHandler)
 	cActualHandler := actualHandler.(*Handler)
 	assert.ToBeSame(t, aLogger, cActualHandler.Delegate)
-	assert.ToBeEqual(t, "foo", cActualHandler.fieldKeyPrefix)
+	assert.ToBeEqual(t, "foo.", cActualHandler.fieldKeyPath.prefix())
 	assert.ToBeSame(t, anotherHandler, cActualHandler.parent)
 }
 
@@ -41,7 +41,7 @@ func TestConfigure(t *testing.T) {
 	Configure(func(v *Handler) {
 		v.parent = anotherHandler
 	}, func(v *Handler) {
-		v.fieldKeyPrefix = "foo"
+		v.fieldKeyPath = newFieldKeyPath(nil, "foo")
 	})
 
 	actual := slog.Default()
@@ -51,7 +51,7 @@ func TestConfigure(t *testing.T) {
 	assert.ToBeOfType(t, (*Handler)(nil), actualHandler)
 	cActualHandler := actualHandler.(*Handler)
 	assert.ToBeOfType(t, rootLogger, cActualHandler.Delegate)
-	assert.ToBeEqual(t, "foo", cActualHandler.fieldKeyPrefix)
+	assert.ToBeEqual(t, "foo.", cActualHandler.fieldKeyPath.prefix())
 	assert.ToBeSame(t, anotherHandler, cActualHandler.parent)
 }
 
@@ -65,7 +65,7 @@ func TestConfigureWith(t *testing.T) {
 	ConfigureWith(aLogger, func(v *Handler) {
 		v.parent = anotherHandler
 	}, func(v *Handler) {
-		v.fieldKeyPrefix = "foo"
+		v.fieldKeyPath = newFieldKeyPath(nil, "foo")
 	})
 
 	actual := slog.Default()
@@ -75,6 +75,6 @@ func TestConfigureWith(t *testing.T) {
 	assert.ToBeOfType(t, (*Handler)(nil), actualHandler)
 	cActualHandler := actualHandler.(*Handler)
 	assert.ToBeSame(t, aLogger, cActualHandler.Delegate)
-	assert.ToBeEqual(t, "foo", cActualHandler.fieldKeyPrefix)
+	assert.ToBeEqual(t, "foo.", cActualHandler.fieldKeyPath.prefix())
 	assert.ToBeSame(t, anotherHandler, cActualHandler.parent)
 }
