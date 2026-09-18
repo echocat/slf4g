@@ -232,7 +232,7 @@ func Test_without_Len_withNilInstance(t *testing.T) {
 }
 
 func Test_without_Len_withNilFields(t *testing.T) {
-	instance := &without{nil, keySet{}}
+	instance := &without{excludedKeys: keySet{}}
 
 	actual := instance.Len()
 
@@ -240,7 +240,7 @@ func Test_without_Len_withNilFields(t *testing.T) {
 }
 
 func Test_without_Len_withNilExcludedFields(t *testing.T) {
-	instance := &without{Empty(), nil}
+	instance := &without{fields: Empty()}
 
 	actual := instance.Len()
 

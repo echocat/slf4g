@@ -2,25 +2,14 @@ package fields
 
 // NewWithout creates a new instance of target where the given keys are no longer included.
 func NewWithout(target Fields, keys ...string) Fields {
-	if isEmpty(target) {
-		return Empty()
-	}
-	if len(keys) == 0 {
-		return target
-	}
-	result := &without{
-		fields: target,
-	}
-	result.excludedKeys = make(keySet, len(keys))
-	for _, key := range keys {
-		result.excludedKeys[key] = keyPresent
-	}
-	return result
+	return newDerivedWithout(target, keys...)
 }
 
 type without struct {
-	fields       Fields
-	excludedKeys keySet
+	fields                Fields
+	excludedKeys          keySet
+	pendingCompactionCost int
+	compactAt             int
 }
 
 var keyPresent = struct{}{}
@@ -46,11 +35,11 @@ func (instance *without) WithAll(of map[string]interface{}) Fields {
 }
 
 func (instance *without) Without(keys ...string) Fields {
-	return NewWithout(instance, keys...)
+	return newDerivedWithout(instance, keys...)
 }
 
 func (instance *without) asParentOf(fields Fields) Fields {
-	return NewLineage(fields, instance)
+	return newDerivedLineage(fields, instance)
 }
 
 func (instance *without) Len() (result int) {
