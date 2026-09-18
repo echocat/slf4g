@@ -1,6 +1,7 @@
 package testlog
 
 import (
+	"sync"
 	"testing"
 
 	log "github.com/echocat/slf4g"
@@ -133,13 +134,35 @@ func TestProvider_GetLogger(t *testing.T) {
 	assert.ToBeOfType(t, &coreLogger{}, actualRootCoreLogger)
 
 	actual := instance.GetLogger("foo")
-	assert.ToBeNotNil(t, actualRootLogger)
+	assert.ToBeNotNil(t, actual)
 
 	actualCoreLogger := log.UnwrapCoreLogger(actual)
 	assert.ToBeOfType(t, &coreLogger{}, actualCoreLogger)
 
 	assert.ToBeEqual(t, "foo", actualCoreLogger.GetName())
 	assert.ToBeSame(t, instance, actualCoreLogger.(*coreLogger).Provider)
+	assert.ToBeSame(t, actual, instance.GetLogger("foo"))
+}
+
+func TestProvider_GetLogger_concurrently(t *testing.T) {
+	instance := NewProvider(t)
+	actual := make([]log.Logger, 64)
+	start := make(chan struct{})
+	var wait sync.WaitGroup
+	for i := range actual {
+		wait.Add(1)
+		go func(index int) {
+			defer wait.Done()
+			<-start
+			actual[index] = instance.GetLogger("foo")
+		}(i)
+	}
+
+	close(start)
+	wait.Wait()
+	for i := 1; i < len(actual); i++ {
+		assert.ToBeSame(t, actual[0], actual[i])
+	}
 }
 
 func TestProvider_GetLogger_rootLogger(t *testing.T) {
