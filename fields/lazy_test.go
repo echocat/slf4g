@@ -59,6 +59,15 @@ func Test_LazyFormat_formats(t *testing.T) {
 	assert.ToBeEqual(t, "foobar", actual)
 }
 
+func Test_LazyFormat_copiesArguments(t *testing.T) {
+	args := []interface{}{"before"}
+	instance := LazyFormat("%s", args...)
+
+	args[0] = "after"
+
+	assert.ToBeEqual(t, "before", instance.Get())
+}
+
 func Test_LazyFormat_withTypedNilLazy(t *testing.T) {
 	var value *nilLazy
 
