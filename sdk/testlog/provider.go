@@ -2,6 +2,7 @@ package testlog
 
 import (
 	"sync"
+	"sync/atomic"
 	"testing"
 	_ "unsafe"
 
@@ -70,7 +71,7 @@ type Provider struct {
 	startedNs int64
 
 	name           string
-	level          level.Level
+	level          uint32
 	allLevels      level.Levels
 	fieldKeysSpec  fields.KeysSpec
 	failAtLevel    level.Level
@@ -155,7 +156,7 @@ func (instance *Provider) GetFieldKeysSpec() fields.KeysSpec {
 
 // GetLevel returns the current level.Level where this log.Provider is set to.
 func (instance *Provider) GetLevel() level.Level {
-	if v := instance.level; v != 0 {
+	if v := level.Level(atomic.LoadUint32(&instance.level)); v != 0 {
 		return v
 	}
 	return DefaultLevel
@@ -164,7 +165,7 @@ func (instance *Provider) GetLevel() level.Level {
 // SetLevel changes the current level.Level of this log.Provider. If set to
 // 0 it will force this Provider to use DefaultLevel.
 func (instance *Provider) SetLevel(v level.Level) {
-	instance.level = v
+	atomic.StoreUint32(&instance.level, uint32(v))
 }
 
 func (instance *Provider) getFailAtLevel() level.Level {
@@ -199,7 +200,7 @@ func (instance *Provider) getLevelFormatter() tlevel.Formatter {
 // by all of its loggers. By default, the Provider will use DefaultLevel.
 func Level(v level.Level) func(*Provider) {
 	return func(provider *Provider) {
-		provider.level = v
+		provider.SetLevel(v)
 	}
 }
 
