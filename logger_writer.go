@@ -44,6 +44,9 @@ func (instance *LoggingWriter) Write(p []byte) (int, error) {
 		if err != nil {
 			return 0, err
 		}
+		if !instance.Logger.IsLevelEnabled(lvl) {
+			return written, nil
+		}
 
 		event := instance.Logger.NewEvent(lvl, map[string]interface{}{
 			provider.GetFieldKeysSpec().GetMessage(): string(p),
