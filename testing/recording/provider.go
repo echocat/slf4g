@@ -27,7 +27,9 @@ type Provider struct {
 	Name string
 
 	// Level specifies the level of this Provider which will be also inherited
-	// by all of its loggers. If 0 this Provider will use DefaultLevel.
+	// by all of its loggers. If 0 this Provider will use DefaultLevel. Set this
+	// field only before the Provider is first used; use SetLevel for runtime
+	// changes.
 	Level level.Level
 
 	// AllLevels specifies the levels which are supported by this Provider and all
@@ -40,6 +42,7 @@ type Provider struct {
 	// default instance of fields.KeysSpecImpl.
 	FieldKeysSpec fields.KeysSpec
 
+	levelState   synchronizedLevel
 	cachePointer unsafe.Pointer
 }
 
@@ -219,7 +222,7 @@ func (instance *Provider) GetFieldKeysSpec() fields.KeysSpec {
 
 // GetLevel returns the current level.Level where this log.Provider is set to.
 func (instance *Provider) GetLevel() level.Level {
-	if v := instance.Level; v != 0 {
+	if v := instance.levelState.load(&instance.Level); v != 0 {
 		return v
 	}
 	return DefaultLevel
@@ -228,7 +231,7 @@ func (instance *Provider) GetLevel() level.Level {
 // SetLevel changes the current level.Level of this log.Provider. If set to
 // 0 it will force this Provider to use DefaultLevel.
 func (instance *Provider) SetLevel(v level.Level) {
-	instance.Level = v
+	instance.levelState.store(&instance.Level, v)
 }
 
 func (instance *Provider) getCache() log.LoggerCache {

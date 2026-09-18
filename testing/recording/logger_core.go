@@ -40,10 +40,13 @@ type CoreLogger struct {
 	// Level represents the level of this instance of CoreLogger. If this value
 	// is empty the level of its Provider will be used. If it is not possible
 	// to receive the level of its Provider it will use DefaultLevel instead.
+	// Set this field only before the logger is first used; use SetLevel for
+	// runtime changes.
 	Level level.Level
 
-	recorded []log.Event
-	mutex    sync.RWMutex
+	levelState synchronizedLevel
+	recorded   []log.Event
+	mutex      sync.RWMutex
 }
 
 // NewCoreLogger creates a new instance of CoreLogger which is ready to use.
@@ -155,7 +158,7 @@ func (instance *CoreLogger) Log(event log.Event, _ uint16) {
 
 // GetLevel returns the current level.Level where this log.CoreLogger is set to.
 func (instance *CoreLogger) GetLevel() level.Level {
-	if v := instance.Level; v != 0 {
+	if v := instance.levelState.load(&instance.Level); v != 0 {
 		return v
 	}
 	if la, ok := instance.GetProvider().(level.Aware); ok {
@@ -165,9 +168,9 @@ func (instance *CoreLogger) GetLevel() level.Level {
 }
 
 // SetLevel changes the current level.Level of this log.CoreLogger. If set to
-// 0 it will force this CoreLogger to use DefaultLevel.
+// 0 it will use the level of its Provider or DefaultLevel as fallback.
 func (instance *CoreLogger) SetLevel(v level.Level) {
-	instance.Level = v
+	instance.levelState.store(&instance.Level, v)
 }
 
 // IsLevelEnabled implements log.CoreLogger#IsLevelEnabled()

@@ -2,6 +2,7 @@ package recording
 
 import (
 	"errors"
+	"sync"
 	"testing"
 
 	"github.com/echocat/slf4g/fields"
@@ -497,8 +498,50 @@ func Test_Provider_SetLevel(t *testing.T) {
 	for _, l := range instance.GetAllLevels() {
 		instance.SetLevel(l)
 		assert.ToBeEqual(t, l, instance.Level)
+		assert.ToBeEqual(t, l, instance.GetLevel())
 	}
 
 	instance.SetLevel(0)
 	assert.ToBeEqual(t, level.Level(0), instance.Level)
+	assert.ToBeEqual(t, DefaultLevel, instance.GetLevel())
+}
+
+func Test_Provider_SetLevel_concurrentlyWithLogging(t *testing.T) {
+	instance := NewProvider()
+	logger := instance.getRootLogger().CoreLogger
+	start := make(chan struct{})
+	var wait sync.WaitGroup
+	wait.Add(2)
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < 10_000; i++ {
+			instance.SetLevel(level.Debug)
+			instance.SetLevel(level.Info)
+		}
+	}()
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < 10_000; i++ {
+			_ = logger.IsLevelEnabled(level.Debug)
+		}
+	}()
+
+	close(start)
+	wait.Wait()
+	instance.SetLevel(level.Warn)
+	assert.ToBeEqual(t, level.Warn, logger.GetLevel())
+}
+
+func Test_Provider_GetLevel_fromCopy(t *testing.T) {
+	instance := NewProvider()
+	instance.Level = level.Debug
+	assert.ToBeEqual(t, level.Debug, instance.GetLevel())
+
+	copied := *instance
+	copied.Level = level.Warn
+
+	assert.ToBeEqual(t, level.Warn, copied.GetLevel())
+	assert.ToBeEqual(t, level.Debug, instance.GetLevel())
 }
