@@ -1,0 +1,287 @@
+#:schema https://mise.jdx.dev/schema/mise.json
+
+[settings]
+lockfile = true
+
+[tool_config]
+locked = true
+
+[env]
+GOTOOLCHAIN = "local"
+
+[vars]
+go_stable = "1.27.1"
+go_1_23 = "1.23.12"
+go_1_22 = "1.22.12"
+go_1_18 = "1.18.10"
+
+[tools]
+go = "{{vars.go_stable}}"
+golangci-lint = "2.13.2"
+actionlint = "1.7.12"
+shellcheck = "0.11.0"
+"go:golang.org/x/vuln/cmd/govulncheck" = "1.8.0"
+
+[tasks.build]
+description = "Build all modules"
+alias = "b"
+depends = ["build:root", "build:native", "build:eventlog"]
+
+[tasks."build:root"]
+description = "Build the root module"
+run = "go build ./..."
+
+[tasks."build:native"]
+description = "Build the native module"
+dir = "{{config_root}}/native"
+run = "go build ./..."
+
+[tasks."build:eventlog"]
+description = "Build the Windows eventlog module"
+dir = "{{config_root}}/platform/windows/eventlog"
+run = "go build ./..."
+
+[tasks.format]
+description = "Format all modules"
+alias = "fmt"
+depends = ["format:root", "format:native", "format:eventlog"]
+
+[tasks."format:root"]
+description = "Format the root module"
+run = "go fmt ./..."
+
+[tasks."format:native"]
+description = "Format the native module"
+dir = "{{config_root}}/native"
+run = "go fmt ./..."
+
+[tasks."format:eventlog"]
+description = "Format the Windows eventlog module"
+dir = "{{config_root}}/platform/windows/eventlog"
+run = "go fmt ./..."
+
+[tasks."format:check"]
+description = "Check formatting in all modules"
+depends = ["format:check:root", "format:check:native", "format:check:eventlog"]
+
+[tasks."format:check:root"]
+description = "Check formatting in the root module"
+run = "golangci-lint fmt --diff"
+
+[tasks."format:check:native"]
+description = "Check formatting in the native module"
+dir = "{{config_root}}/native"
+run = "golangci-lint fmt --diff"
+
+[tasks."format:check:eventlog"]
+description = "Check formatting in the Windows eventlog module"
+dir = "{{config_root}}/platform/windows/eventlog"
+run = "golangci-lint fmt --diff"
+
+[tasks.test]
+description = "Test all modules"
+alias = "t"
+depends = ["test:root", "test:native", "test:eventlog"]
+
+[tasks."test:root"]
+description = "Test the root module"
+run = "go test --tags=mock ./..."
+
+[tasks."test:native"]
+description = "Test the native module"
+dir = "{{config_root}}/native"
+run = "go test --tags=mock ./..."
+
+[tasks."test:eventlog"]
+description = "Test the Windows eventlog module"
+dir = "{{config_root}}/platform/windows/eventlog"
+run = "go test --tags=mock ./..."
+
+[tasks."test:race"]
+description = "Test all modules with the race detector"
+depends = ["test:race:root", "test:race:native", "test:race:eventlog"]
+
+[tasks."test:race:root"]
+description = "Test the root module with the race detector"
+run = "go test --tags=mock -race ./..."
+
+[tasks."test:race:native"]
+description = "Test the native module with the race detector"
+dir = "{{config_root}}/native"
+run = "go test --tags=mock -race ./..."
+
+[tasks."test:race:eventlog"]
+description = "Test the Windows eventlog module with the race detector"
+dir = "{{config_root}}/platform/windows/eventlog"
+run = "go test --tags=mock -race ./..."
+
+[tasks."test:matrix"]
+description = "Run the CI Go version matrix with the race detector"
+alias = "matrix"
+depends = [
+  "test:matrix:root:go118",
+  "test:matrix:root:go122",
+  "test:matrix:root:go123",
+  "test:race:root",
+  "test:matrix:native:go123",
+  "test:race:native",
+  "test:matrix:eventlog:go123",
+  "test:race:eventlog",
+]
+
+[tasks."test:matrix:root:go118"]
+description = "Test the root module with Go 1.18"
+tools.go = "{{vars.go_1_18}}"
+run = "go test --tags=mock -race ./..."
+
+[tasks."test:matrix:root:go122"]
+description = "Test the root module with Go 1.22"
+tools.go = "{{vars.go_1_22}}"
+run = "go test --tags=mock -race ./..."
+
+[tasks."test:matrix:root:go123"]
+description = "Test the root module with Go 1.23"
+tools.go = "{{vars.go_1_23}}"
+run = "go test --tags=mock -race ./..."
+
+[tasks."test:matrix:native:go123"]
+description = "Test the native module with Go 1.23"
+dir = "{{config_root}}/native"
+tools.go = "{{vars.go_1_23}}"
+run = "go test --tags=mock -race ./..."
+
+[tasks."test:matrix:eventlog:go123"]
+description = "Test the Windows eventlog module with Go 1.23"
+dir = "{{config_root}}/platform/windows/eventlog"
+tools.go = "{{vars.go_1_23}}"
+run = "go test --tags=mock -race ./..."
+
+[tasks.coverage]
+description = "Create coverage profiles for all modules"
+depends = ["coverage:root", "coverage:native", "coverage:eventlog"]
+
+[tasks."coverage:root"]
+description = "Create the root module coverage profile"
+run = "go test --tags=mock -race -covermode=atomic -coverprofile=profile.cov ./..."
+
+[tasks."coverage:native"]
+description = "Create the native module coverage profile"
+dir = "{{config_root}}/native"
+run = "go test --tags=mock -race -covermode=atomic -coverprofile=profile.cov ./..."
+
+[tasks."coverage:eventlog"]
+description = "Create the Windows eventlog module coverage profile"
+dir = "{{config_root}}/platform/windows/eventlog"
+run = "go test --tags=mock -race -covermode=atomic -coverprofile=profile.cov ./..."
+
+[tasks.lint]
+description = "Lint all modules"
+alias = "l"
+depends = ["lint:root", "lint:native", "lint:eventlog"]
+
+[tasks."lint:root"]
+description = "Lint the root module"
+run = 'golangci-lint run --config "{{config_root}}/.golangci.yaml"'
+
+[tasks."lint:native"]
+description = "Lint the native module"
+dir = "{{config_root}}/native"
+run = 'golangci-lint run --config "{{config_root}}/.golangci.yaml"'
+
+[tasks."lint:eventlog"]
+description = "Lint the Windows eventlog module"
+dir = "{{config_root}}/platform/windows/eventlog"
+run = 'golangci-lint run --config "{{config_root}}/.golangci.yaml"'
+
+[tasks.vet]
+description = "Vet all modules"
+depends = ["vet:root", "vet:native", "vet:eventlog"]
+
+[tasks."vet:root"]
+description = "Vet the root module"
+run = "go vet ./..."
+
+[tasks."vet:native"]
+description = "Vet the native module"
+dir = "{{config_root}}/native"
+run = "go vet ./..."
+
+[tasks."vet:eventlog"]
+description = "Vet the Windows eventlog module"
+dir = "{{config_root}}/platform/windows/eventlog"
+run = "go vet ./..."
+
+[tasks.tidy]
+description = "Tidy all Go modules"
+run = [
+  { task = "tidy:root" },
+  { task = "tidy:native" },
+  { task = "tidy:eventlog" },
+]
+
+[tasks."tidy:root"]
+description = "Tidy the root module"
+run = "go mod tidy"
+
+[tasks."tidy:native"]
+description = "Tidy the native module"
+dir = "{{config_root}}/native"
+run = "go mod tidy"
+
+[tasks."tidy:eventlog"]
+description = "Tidy the Windows eventlog module"
+dir = "{{config_root}}/platform/windows/eventlog"
+run = "go mod tidy"
+
+[tasks."tidy:check"]
+description = "Check that all Go modules are tidy"
+depends = ["tidy:check:root", "tidy:check:native", "tidy:check:eventlog"]
+
+[tasks."tidy:check:root"]
+description = "Check that the root module is tidy"
+run = "go mod tidy -diff"
+
+[tasks."tidy:check:native"]
+description = "Check that the native module is tidy"
+dir = "{{config_root}}/native"
+run = "go mod tidy -diff"
+
+[tasks."tidy:check:eventlog"]
+description = "Check that the Windows eventlog module is tidy"
+dir = "{{config_root}}/platform/windows/eventlog"
+run = "go mod tidy -diff"
+
+[tasks.actionlint]
+description = "Lint GitHub Actions workflows"
+run = 'actionlint -pyflakes=""'
+
+[tasks."tools:lock"]
+description = "Regenerate the tool lockfile for supported platforms"
+run = "mise lock --platform linux-x64,linux-arm64,macos-x64,macos-arm64,windows-x64"
+
+[tasks.vuln]
+description = "Scan all modules for known vulnerabilities"
+depends = ["vuln:root", "vuln:native", "vuln:eventlog"]
+
+[tasks."vuln:root"]
+description = "Scan the root module for known vulnerabilities"
+run = "govulncheck ./..."
+
+[tasks."vuln:native"]
+description = "Scan the native module for known vulnerabilities"
+dir = "{{config_root}}/native"
+run = "govulncheck ./..."
+
+[tasks."vuln:eventlog"]
+description = "Scan the Windows eventlog module for known vulnerabilities"
+dir = "{{config_root}}/platform/windows/eventlog"
+run = "govulncheck ./..."
+
+[tasks.check]
+description = "Run the standard local quality gate"
+alias = "ci"
+depends = ["build", "format:check", "tidy:check", "lint", "vet", "test:race", "actionlint"]
+
+[tasks."check:full"]
+description = "Run all checks, the Go version matrix, and vulnerability scans"
+depends = ["check", "test:matrix", "vuln"]
