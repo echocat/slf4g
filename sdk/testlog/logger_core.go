@@ -129,7 +129,7 @@ func (instance *coreLogger) GetProvider() log.Provider {
 	return instance.Provider
 }
 
-func (instance *coreLogger) NewEvent(l level.Level, values map[string]interface{}) log.Event {
+func (instance *coreLogger) NewEvent(l level.Level, values map[string]any) log.Event {
 	return instance.NewEventWithFields(l, fields.WithAll(values))
 }
 
@@ -158,7 +158,7 @@ func (instance *coreLogger) format(event log.Event) string {
 	messageKey := instance.GetFieldKeysSpec().GetMessage()
 	loggerKey := instance.GetFieldKeysSpec().GetLogger()
 	timestampKey := instance.GetFieldKeysSpec().GetTimestamp()
-	if err := fields.SortedForEach(event, nil, func(k string, vp interface{}) error {
+	if err := fields.SortedForEach(event, nil, func(k string, vp any) error {
 		if vl, ok := vp.(fields.Filtered); ok {
 			if support.IsNil(vl) {
 				vp = nil
@@ -246,7 +246,7 @@ func (instance *coreLogger) formatMessage(event log.Event) string {
 	return message
 }
 
-func (instance *coreLogger) formatValue(v interface{}) ([]byte, error) {
+func (instance *coreLogger) formatValue(v any) ([]byte, error) {
 	if ve, ok := v.(error); ok {
 		if support.IsNil(ve) {
 			v = nil

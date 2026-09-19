@@ -31,7 +31,7 @@ func NewSimpleTextValue(customizer ...func(*SimpleTextValue)) *SimpleTextValue {
 }
 
 // FormatTextValue implements TextValue.FormatTextValue().
-func (instance *SimpleTextValue) FormatTextValue(v interface{}, _ log.Provider) ([]byte, error) {
+func (instance *SimpleTextValue) FormatTextValue(v any, _ log.Provider) ([]byte, error) {
 	if lazy, ok := v.(fields.Lazy); ok {
 		if support.IsNil(lazy) {
 			v = nil
@@ -77,8 +77,8 @@ func (instance *SimpleTextValue) FormatTextValue(v interface{}, _ log.Provider) 
 		int, int8, int16, int32, int64,
 		uint, uint8, uint16, uint32, uint64, uintptr,
 		float32, float64, complex64, complex128,
-		[]byte, []string, []interface{},
-		map[string]string, map[string]interface{},
+		[]byte, []string, []any,
+		map[string]string, map[string]any,
 		level.Level:
 		// Common values do not require reflection.
 	default:

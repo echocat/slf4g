@@ -145,7 +145,7 @@ func Test_EqualityImpl_AreFieldsEqual_functionWithErr(t *testing.T) {
 	givenLeft := mapped{"a": 1, "b": 2, "c": nil}
 	givenRight := With("a", 1).With("b", 2).With("c", nil)
 	givenErr := errors.New("expected")
-	instance := &EqualityImpl{ValueEquality: ValueEqualityFunc(func(_ string, _, _ interface{}) (bool, error) {
+	instance := &EqualityImpl{ValueEquality: ValueEqualityFunc(func(_ string, _, _ any) (bool, error) {
 		return false, givenErr
 	})}
 
@@ -215,7 +215,7 @@ type getCountingFields struct {
 	getCalls int
 }
 
-func (instance *getCountingFields) Get(key string) (interface{}, bool) {
+func (instance *getCountingFields) Get(key string) (any, bool) {
 	instance.getCalls++
 	return instance.Fields.Get(key)
 }

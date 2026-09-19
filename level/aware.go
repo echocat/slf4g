@@ -17,7 +17,7 @@ type Aware interface {
 // wrapped objects implements [Aware]. It will call recursively `Unwrap` on each
 // object until it reaches a matching candidate or returns `0` along with `false` if
 // nothing can be found.
-func Get(of interface{}) (Level, bool) {
+func Get(of any) (Level, bool) {
 	ofVal := unwrap(of, awareType)
 	if ofVal.IsValid() {
 		return ofVal.Interface().(Aware).GetLevel(), true
@@ -40,7 +40,7 @@ type MutableAware interface {
 // [MutableAware] and it was possible to set the given [Level]. It will call
 // recursively `Unwrap` on each object until it reaches a matching candidate or
 // `false` if nothing can be found.
-func Set(of interface{}, target Level) bool {
+func Set(of any, target Level) bool {
 	ofVal := unwrap(of, mutableAwareType)
 	if ofVal.IsValid() {
 		ofVal.Interface().(MutableAware).SetLevel(target)
@@ -54,7 +54,7 @@ var (
 	mutableAwareType = reflect.TypeOf((*MutableAware)(nil)).Elem()
 )
 
-func unwrap(v interface{}, targetType reflect.Type) reflect.Value {
+func unwrap(v any, targetType reflect.Type) reflect.Value {
 	val := reflect.ValueOf(v)
 	for {
 		if !val.IsValid() {

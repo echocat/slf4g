@@ -59,7 +59,7 @@ func (instance Level) Set(plain string) error {
 }
 
 // Get implements flag.Getter.
-func (instance Level) Get() interface{} {
+func (instance Level) Get() any {
 	return instance.Target.GetLevel()
 }
 

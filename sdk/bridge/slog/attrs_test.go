@@ -21,7 +21,7 @@ func TestAttrs_ForEach_success(t *testing.T) {
 
 	actual, actualErr := fields.AsMap(instance)
 	assert.ToBeNoError(t, actualErr)
-	assert.ToBeEqual(t, map[string]interface{}{
+	assert.ToBeEqual(t, map[string]any{
 		"foo": int64(1),
 		"bar": int64(2),
 	}, actual)
@@ -35,7 +35,7 @@ func TestAttrs_ForEach_resolvesLogValuer(t *testing.T) {
 
 	actual, actualErr := fields.AsMap(instance)
 	assert.ToBeNoError(t, actualErr)
-	assert.ToBeEqual(t, map[string]interface{}{
+	assert.ToBeEqual(t, map[string]any{
 		"secret": "[REDACTED]",
 		"group": []sdk.Attr{
 			sdk.String("nested", "[REDACTED]"),
@@ -94,7 +94,7 @@ func TestResolvedValueOf_preservesNestedGroupOrder(t *testing.T) {
 func TestAttrs_ForEach_empty(t *testing.T) {
 	instance := attrs{}
 
-	actualErr := instance.ForEach(func(string, interface{}) error {
+	actualErr := instance.ForEach(func(string, any) error {
 		return fmt.Errorf("should never be called")
 	})
 	assert.ToBeNoError(t, actualErr)
@@ -113,7 +113,7 @@ func TestAttrs_ForEach_error(t *testing.T) {
 	}
 	anError := errors.New("just an error")
 
-	actualErr := instance.ForEach(func(string, interface{}) error {
+	actualErr := instance.ForEach(func(string, any) error {
 		return anError
 	})
 	assert.ToBeSame(t, anError, actualErr)
@@ -128,7 +128,7 @@ func TestAttrs_Get(t *testing.T) {
 
 	cases := []struct {
 		key      string
-		expected interface{}
+		expected any
 	}{
 		{"foo", int64(1)},
 		{"bar", int64(2)},
@@ -182,7 +182,7 @@ func TestAttrs_With(t *testing.T) {
 
 	actualAsMap, actualErr := fields.AsMap(actual)
 	assert.ToBeNoError(t, actualErr)
-	assert.ToBeEqual(t, map[string]interface{}{
+	assert.ToBeEqual(t, map[string]any{
 		"foo": int64(1),
 		"bar": int64(2),
 		"xyz": int64(3),
@@ -199,7 +199,7 @@ func TestAttrs_Withf(t *testing.T) {
 
 	actualAsMap, actualErr := fields.AsMap(actual)
 	assert.ToBeNoError(t, actualErr)
-	assert.ToBeEqual(t, map[string]interface{}{
+	assert.ToBeEqual(t, map[string]any{
 		"foo": int64(1),
 		"bar": int64(2),
 		"xyz": fields.LazyFormat("[%d]", 3),
@@ -212,14 +212,14 @@ func TestAttrs_WithAll(t *testing.T) {
 		{Key: "bar", Value: sdk.IntValue(2)},
 	}
 
-	actual := instance.WithAll(map[string]interface{}{
+	actual := instance.WithAll(map[string]any{
 		"xyz": int64(3),
 		"abc": int64(4),
 	})
 
 	actualAsMap, actualErr := fields.AsMap(actual)
 	assert.ToBeNoError(t, actualErr)
-	assert.ToBeEqual(t, map[string]interface{}{
+	assert.ToBeEqual(t, map[string]any{
 		"foo": int64(1),
 		"bar": int64(2),
 		"xyz": int64(3),
@@ -237,7 +237,7 @@ func TestAttrs_Without(t *testing.T) {
 
 	actualAsMap, actualErr := fields.AsMap(actual)
 	assert.ToBeNoError(t, actualErr)
-	assert.ToBeEqual(t, map[string]interface{}{
+	assert.ToBeEqual(t, map[string]any{
 		"bar": int64(2),
 	}, actualAsMap)
 }
@@ -270,7 +270,7 @@ func TestAttrs_add(t *testing.T) {
 
 	actual, actualErr := fields.AsMap(instance)
 	assert.ToBeNoError(t, actualErr)
-	assert.ToBeEqual(t, map[string]interface{}{
+	assert.ToBeEqual(t, map[string]any{
 		"foo":         int64(1),
 		"bar":         int64(123),
 		"aPrefix.xyz": int64(3),

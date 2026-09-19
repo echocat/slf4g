@@ -110,7 +110,7 @@ func TestHandler_Handle(t *testing.T) {
 				actualAsMap, err := fields.AsMap(actual)
 				assert.ToBeNoError(t, err)
 
-				assert.ToBeEqual(t, map[string]interface{}{
+				assert.ToBeEqual(t, map[string]any{
 					"logger":    baseLogger,
 					"timestamp": aTime,
 					"message":   "aMessage",
@@ -157,14 +157,14 @@ func TestHandler_eventOfRecord(t *testing.T) {
 		instance       *Handler
 		attrs          attrs
 		expectedLevel  level.Level
-		expectedFields map[string]interface{}
+		expectedFields map[string]any
 	}{
 		{
 			"simple",
 			&Handler{},
 			nil,
 			level.Fatal,
-			map[string]interface{}{
+			map[string]any{
 				"timestamp": aTime,
 				"message":   "aMessage",
 			},
@@ -177,7 +177,7 @@ func TestHandler_eventOfRecord(t *testing.T) {
 				sdk.Int("bar", 2),
 			},
 			level.Fatal,
-			map[string]interface{}{
+			map[string]any{
 				"timestamp": aTime,
 				"message":   "aMessage",
 				"foo":       int64(1),
@@ -189,7 +189,7 @@ func TestHandler_eventOfRecord(t *testing.T) {
 			(&Handler{}).WithGroup("outer").WithGroup("inner").(*Handler),
 			attrs{sdk.Int("foo", 1)},
 			level.Fatal,
-			map[string]interface{}{
+			map[string]any{
 				"timestamp":       aTime,
 				"message":         "aMessage",
 				"outer.inner.foo": int64(1),
@@ -202,7 +202,7 @@ func TestHandler_eventOfRecord(t *testing.T) {
 				sdk.Any("secret", redactingLogValuer{"not-for-the-log"}),
 			},
 			level.Fatal,
-			map[string]interface{}{
+			map[string]any{
 				"timestamp": aTime,
 				"message":   "aMessage",
 				"secret":    "[REDACTED]",
@@ -216,7 +216,7 @@ func TestHandler_eventOfRecord(t *testing.T) {
 			}},
 			nil,
 			level.Fatal,
-			map[string]interface{}{
+			map[string]any{
 				"timestamp": aTime,
 				"message":   "aMessage",
 				"foo":       int64(1),
@@ -230,7 +230,7 @@ func TestHandler_eventOfRecord(t *testing.T) {
 			}},
 			nil,
 			level.Fatal,
-			map[string]interface{}{
+			map[string]any{
 				"timestamp": aTime,
 				"message":   "aMessage",
 				"secret":    "[REDACTED]",
@@ -247,7 +247,7 @@ func TestHandler_eventOfRecord(t *testing.T) {
 				sdk.Int("xyz", 23),
 			},
 			level.Fatal,
-			map[string]interface{}{
+			map[string]any{
 				"timestamp": aTime,
 				"message":   "aMessage",
 				"foo":       int64(11),
@@ -269,7 +269,7 @@ func TestHandler_eventOfRecord(t *testing.T) {
 				sdk.Int("xyz", 23),
 			},
 			level.Fatal,
-			map[string]interface{}{
+			map[string]any{
 				"timestamp": aTime,
 				"message":   "aMessage",
 				"foo":       int64(11),
@@ -294,7 +294,7 @@ func TestHandler_eventOfRecord(t *testing.T) {
 				sdk.Int("xyz", 23),
 			},
 			level.Fatal,
-			map[string]interface{}{
+			map[string]any{
 				"timestamp": aTime,
 				"message":   "aMessage",
 				"foo":       int64(11),
@@ -444,7 +444,7 @@ func TestHandler_fields_preservesLineageOrder(t *testing.T) {
 		WithAttrs([]sdk.Attr{sdk.Int("child", 4)}).(*Handler)
 
 	var actualKeys []string
-	actualErr := instance.fields().ForEach(func(key string, _ interface{}) error {
+	actualErr := instance.fields().ForEach(func(key string, _ any) error {
 		actualKeys = append(actualKeys, key)
 		return nil
 	})
@@ -525,7 +525,7 @@ func TestHandler_WithGroup_preservesPathsAndBranches(t *testing.T) {
 		WithAttrs([]sdk.Attr{sdk.Int("value", 4)}).(*Handler)
 
 	var actualDeepKeys []string
-	actualDeepErr := deep.fields().ForEach(func(key string, _ interface{}) error {
+	actualDeepErr := deep.fields().ForEach(func(key string, _ any) error {
 		actualDeepKeys = append(actualDeepKeys, key)
 		return nil
 	})
@@ -533,7 +533,7 @@ func TestHandler_WithGroup_preservesPathsAndBranches(t *testing.T) {
 	assert.ToBeEqual(t, []string{"outer.inner.deep", "outer.middle", "root"}, actualDeepKeys)
 	actualSibling, actualSiblingErr := fields.AsMap(sibling.fields())
 	assert.ToBeNoError(t, actualSiblingErr)
-	assert.ToBeEqual(t, map[string]interface{}{"outer.sibling.value": int64(4), "root": int64(1)}, actualSibling)
+	assert.ToBeEqual(t, map[string]any{"outer.sibling.value": int64(4), "root": int64(1)}, actualSibling)
 }
 
 func TestHandler_WithGroup_preservesDotsInNames(t *testing.T) {
@@ -677,7 +677,7 @@ func (instance someCoreLogger) GetName() string {
 	panic("should never be called")
 }
 
-func (instance someCoreLogger) NewEvent(level.Level, map[string]interface{}) log.Event {
+func (instance someCoreLogger) NewEvent(level.Level, map[string]any) log.Event {
 	panic("should never be called")
 }
 
@@ -707,7 +707,7 @@ func (instance someCoreLoggerWithHelper) GetName() string {
 	panic("should never be called")
 }
 
-func (instance someCoreLoggerWithHelper) NewEvent(level.Level, map[string]interface{}) log.Event {
+func (instance someCoreLoggerWithHelper) NewEvent(level.Level, map[string]any) log.Event {
 	panic("should never be called")
 }
 

@@ -116,7 +116,7 @@ func (instance *Template) contextFor(event log.Event, using log.Provider, h hint
 }
 
 func (instance *Template) toFuncMap() template.FuncMap {
-	return map[string]interface{}{
+	return map[string]any{
 		"colorizeByLevel": functions.ColorizeByLevel,
 		"colorize":        functions.Colorize,
 		"shouldColorize":  functions.ShouldColorize,
@@ -213,9 +213,9 @@ func (instance TemplateRenderingContext) FieldKeysSpec() fields.KeysSpec {
 }
 
 // Fields returns all fields of the log.Event (except the default ones).
-func (instance TemplateRenderingContext) Fields() (result map[string]interface{}, err error) {
-	result = make(map[string]interface{})
-	err = instance.ForEach(func(key string, value interface{}) error {
+func (instance TemplateRenderingContext) Fields() (result map[string]any, err error) {
+	result = make(map[string]any)
+	err = instance.ForEach(func(key string, value any) error {
 		keysSpec := instance.FieldKeysSpec()
 		switch key {
 		case keysSpec.GetLogger(), keysSpec.GetMessage(), keysSpec.GetTimestamp(), keysSpec.GetError():

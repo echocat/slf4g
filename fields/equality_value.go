@@ -5,7 +5,7 @@ import "reflect"
 // DefaultValueEquality is the default instance of a ValueEquality. The initial
 // initialization of this global variable should be able to deal with
 // the majority of the cases.
-var DefaultValueEquality ValueEquality = ValueEqualityFunc(func(key string, leftValue, rightValue interface{}) (bool, error) {
+var DefaultValueEquality ValueEquality = ValueEqualityFunc(func(key string, leftValue, rightValue any) (bool, error) {
 	leftValue = resolveLazy(leftValue)
 	rightValue = resolveLazy(rightValue)
 
@@ -24,14 +24,14 @@ var DefaultValueEquality ValueEquality = ValueEqualityFunc(func(key string, left
 type ValueEquality interface {
 	// AreValuesEqual compares the two given values for their equality for
 	// the given key.
-	AreValuesEqual(key string, left, right interface{}) (bool, error)
+	AreValuesEqual(key string, left, right any) (bool, error)
 }
 
 // ValueEqualityFunc is wrapping a given func into ValueEquality.
-type ValueEqualityFunc func(key string, left, right interface{}) (bool, error)
+type ValueEqualityFunc func(key string, left, right any) (bool, error)
 
 // AreValuesEqual implements ValueEquality.AreValuesEqual().
-func (instance ValueEqualityFunc) AreValuesEqual(key string, left, right interface{}) (bool, error) {
+func (instance ValueEqualityFunc) AreValuesEqual(key string, left, right any) (bool, error) {
 	return instance(key, left, right)
 }
 
@@ -46,7 +46,7 @@ func NewValueEqualityFacade(provider func() ValueEquality) ValueEquality {
 
 type valueEqualityFacade func() ValueEquality
 
-func (instance valueEqualityFacade) AreValuesEqual(name string, left, right interface{}) (bool, error) {
+func (instance valueEqualityFacade) AreValuesEqual(name string, left, right any) (bool, error) {
 	return instance.Unwrap().AreValuesEqual(name, left, right)
 }
 
@@ -54,6 +54,6 @@ func (instance valueEqualityFacade) Unwrap() ValueEquality {
 	return instance()
 }
 
-func isFunction(arg interface{}) bool {
+func isFunction(arg any) bool {
 	return arg != nil && reflect.TypeOf(arg).Kind() == reflect.Func
 }

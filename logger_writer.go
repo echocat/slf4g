@@ -48,7 +48,7 @@ func (instance *LoggingWriter) Write(p []byte) (int, error) {
 			return written, nil
 		}
 
-		event := instance.Logger.NewEvent(lvl, map[string]interface{}{
+		event := instance.Logger.NewEvent(lvl, map[string]any{
 			provider.GetFieldKeysSpec().GetMessage(): string(p),
 		})
 

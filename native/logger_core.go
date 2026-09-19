@@ -85,7 +85,7 @@ func (instance *CoreLogger) GetName() string {
 	if v := instance.name; v != "" {
 		return v
 	}
-	panic(fmt.Sprintf("This %v was not initiated by a %v.", reflect.TypeOf(*instance), reflect.TypeOf(Provider{})))
+	panic(fmt.Sprintf("This %v was not initiated by a %v.", reflect.TypeOf(*instance), reflect.TypeFor[Provider]()))
 }
 
 // GetProvider implements log.CoreLogger#GetProvider()
@@ -94,7 +94,7 @@ func (instance *CoreLogger) GetProvider() log.Provider {
 }
 
 // NewEvent implements log.CoreLogger#NewEvent()
-func (instance *CoreLogger) NewEvent(l level.Level, values map[string]interface{}) log.Event {
+func (instance *CoreLogger) NewEvent(l level.Level, values map[string]any) log.Event {
 	return instance.NewEventWithFields(l, fields.WithAll(values))
 }
 
@@ -135,5 +135,5 @@ func (instance *CoreLogger) getProvider() *Provider {
 	if v := instance.provider; v != nil {
 		return v
 	}
-	panic(fmt.Sprintf("This %v was not initiated by a %v.", reflect.TypeOf(*instance), reflect.TypeOf(Provider{})))
+	panic(fmt.Sprintf("This %v was not initiated by a %v.", reflect.TypeOf(*instance), reflect.TypeFor[Provider]()))
 }

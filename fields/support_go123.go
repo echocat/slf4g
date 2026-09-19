@@ -5,6 +5,7 @@ package fields
 import (
 	"errors"
 	"iter"
+	"maps"
 )
 
 var errStopForEachNow = errors.New("stop forEach now")
@@ -16,7 +17,7 @@ func Iter(source ForEachEnabled) iter.Seq2[Field, error] {
 			return
 		}
 
-		err := source.ForEach(func(key string, value interface{}) error {
+		err := source.ForEach(func(key string, value any) error {
 			if !yield(NewField(key, value), nil) {
 				return errStopForEachNow
 			}
@@ -41,11 +42,9 @@ func Collect(i iter.Seq[Field]) Fields {
 }
 
 // CollectKeyValue collects a sequence of key and value into [Fields].
-func CollectKeyValue(i iter.Seq2[string, interface{}]) Fields {
+func CollectKeyValue(i iter.Seq2[string, any]) Fields {
 	result := mapped{}
-	for k, v := range i {
-		result[k] = v
-	}
+	maps.Insert(result, i)
 	return result
 }
 

@@ -96,7 +96,7 @@ func Test_loggerImpl_IsLevelEnabled(t *testing.T) {
 func Test_loggerImpl_log(t *testing.T) {
 	givenLogger := newMockLogger("foo")
 	cases := []struct {
-		logFunc func(args ...interface{})
+		logFunc func(args ...any)
 		level   level.Level
 	}{
 		{givenLogger.Trace, level.Trace},
@@ -134,7 +134,7 @@ func Test_loggerImpl_log(t *testing.T) {
 			)
 			assert.ToBeEqualUsing(t,
 				givenLogger.NewEvent(c.level, nil).
-					With(messageKey, []interface{}{1, 2, 3}),
+					With(messageKey, []any{1, 2, 3}),
 				givenLogger.loggedEvent(2),
 				AreEventsEqual,
 			)
@@ -145,7 +145,7 @@ func Test_loggerImpl_log(t *testing.T) {
 func Test_loggerImpl_logf(t *testing.T) {
 	givenLogger := newMockLogger("foo")
 	cases := []struct {
-		logFunc func(format string, args ...interface{})
+		logFunc func(format string, args ...any)
 		level   level.Level
 	}{
 		{givenLogger.Tracef, level.Trace},
@@ -287,7 +287,7 @@ func Test_loggerImpl_WithError(t *testing.T) {
 func Test_loggerImpl_WithAll(t *testing.T) {
 	givenLogger := newMockLogger("foo")
 
-	actual := givenLogger.WithAll(map[string]interface{}{"a": 1, "b": 2}).With("c", 3)
+	actual := givenLogger.WithAll(map[string]any{"a": 1, "b": 2}).With("c", 3)
 
 	assert.ToBeOfType(t, &loggerImpl{}, actual)
 	assert.ToBeEqualUsing(t, fields.
@@ -326,7 +326,7 @@ func Test_loggerImpl_Accepts(t *testing.T) {
 func Test_loggerImpl_NewEvent(t *testing.T) {
 	givenCoreLogger := newMockCoreLogger("foo")
 	instance := newLoggerImpl(givenCoreLogger)
-	givenValues := map[string]interface{}{"foo": "bar"}
+	givenValues := map[string]any{"foo": "bar"}
 
 	assert.ToBeEqual(t, givenCoreLogger.NewEvent(level.Fatal, givenValues), instance.NewEvent(level.Fatal, givenValues))
 }
@@ -334,7 +334,7 @@ func Test_loggerImpl_NewEvent(t *testing.T) {
 func Test_loggerImpl_NewEventWithFields_usingAsMap(t *testing.T) {
 	givenCoreLogger := newMockCoreLogger("foo")
 	instance := newLoggerImpl(givenCoreLogger)
-	giveValues := map[string]interface{}{"foo": "bar"}
+	giveValues := map[string]any{"foo": "bar"}
 	givenFields := fields.WithAll(giveValues)
 
 	assert.ToBeEqual(t, givenCoreLogger.NewEvent(level.Fatal, giveValues), instance.NewEventWithFields(level.Fatal, givenFields))
@@ -342,7 +342,7 @@ func Test_loggerImpl_NewEventWithFields_usingAsMap(t *testing.T) {
 func Test_loggerImpl_NewEventWithFields_usingFields(t *testing.T) {
 	givenCoreLogger := &mockCoreLoggerWithNewEventWithFields{newMockCoreLogger("foo")}
 	instance := newLoggerImpl(givenCoreLogger.mockCoreLogger)
-	givenFields := fields.WithAll(map[string]interface{}{"foo": "bar"})
+	givenFields := fields.WithAll(map[string]any{"foo": "bar"})
 
 	assert.ToBeEqual(t, givenCoreLogger.NewEventWithFields(level.Fatal, givenFields), instance.NewEventWithFields(level.Fatal, givenFields))
 }
@@ -352,7 +352,7 @@ func Test_loggerImpl_NewEventWithFields_panicsOnErrors(t *testing.T) {
 	instance := newLoggerImpl(givenCoreLogger)
 
 	assert.Execution(t, func() {
-		instance.NewEventWithFields(level.Fatal, fields.ForEachFunc(func(func(string, interface{}) error) error {
+		instance.NewEventWithFields(level.Fatal, fields.ForEachFunc(func(func(string, any) error) error {
 			return errors.New("expected")
 		}))
 	}).WillPanicWith("^cannot make .+: expected$")
@@ -395,7 +395,7 @@ func (instance someCoreLogger) GetName() string {
 	panic("should never be called")
 }
 
-func (instance someCoreLogger) NewEvent(level.Level, map[string]interface{}) Event {
+func (instance someCoreLogger) NewEvent(level.Level, map[string]any) Event {
 	panic("should never be called")
 }
 
@@ -425,7 +425,7 @@ func (instance someCoreLoggerWithHelper) GetName() string {
 	panic("should never be called")
 }
 
-func (instance someCoreLoggerWithHelper) NewEvent(level.Level, map[string]interface{}) Event {
+func (instance someCoreLoggerWithHelper) NewEvent(level.Level, map[string]any) Event {
 	panic("should never be called")
 }
 

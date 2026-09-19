@@ -18,7 +18,7 @@ func formatStrSlice(in []string) string {
 	return result.String()
 }
 
-func formatAnySlice(in []interface{}) string {
+func formatAnySlice(in []any) string {
 	var result strings.Builder
 	for i, v := range in {
 		if i > 0 {

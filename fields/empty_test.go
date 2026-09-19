@@ -22,7 +22,7 @@ func Test_Empty_alwaysTheSame(t *testing.T) {
 func Test_empty_ForEach_isNeverConsumingSomething(t *testing.T) {
 	instance := Empty()
 
-	actualErr := instance.ForEach(func(key string, value interface{}) error {
+	actualErr := instance.ForEach(func(key string, value any) error {
 		assert.Failf(t, "Expected to be never call; but was called with <%+v>=<%+v>", key, value)
 		return nil
 	})
@@ -60,7 +60,7 @@ func Test_empty_Withf_isAlwaysWithfResult(t *testing.T) {
 
 func Test_empty_WithAll_isAlwaysTheWrappedInput(t *testing.T) {
 	instance := Empty()
-	given := map[string]interface{}{
+	given := map[string]any{
 		"foo": 1,
 		"bar": 2,
 	}

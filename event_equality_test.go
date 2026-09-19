@@ -306,7 +306,7 @@ func Test_EventEqualityImpl_AreEventsEqual_functionWithErr(t *testing.T) {
 	givenErr := errors.New("expected")
 	instance := EventEqualityImpl{
 		CompareLevel: true,
-		CompareValuesUsing: fields.ValueEqualityFunc(func(key string, left, right interface{}) (bool, error) {
+		CompareValuesUsing: fields.ValueEqualityFunc(func(key string, left, right any) (bool, error) {
 			return false, givenErr
 		}),
 	}
@@ -587,7 +587,7 @@ type getCountingEvent struct {
 	getCalls int
 }
 
-func (instance *getCountingEvent) Get(key string) (interface{}, bool) {
+func (instance *getCountingEvent) Get(key string) (any, bool) {
 	instance.getCalls++
 	return instance.Event.Get(key)
 }

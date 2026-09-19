@@ -33,7 +33,7 @@ func ExampleRequireMaximalLevel() {
 
 func Test_RequireMaximalLevelLazy_Get(t *testing.T) {
 	expected := struct{ foo string }{foo: "bar"}
-	givenLazy := LazyFunc(func() interface{} { return expected })
+	givenLazy := LazyFunc(func() any { return expected })
 
 	actualInstance := RequireMaximalLevelLazy(level.Info, givenLazy)
 	actual := actualInstance.Get()
@@ -51,7 +51,7 @@ func Test_RequireMaximalLevelLazy_Get_withTypedNil(t *testing.T) {
 
 func Test_RequireMaximalLevelLazy_Filter_respected(t *testing.T) {
 	expected := struct{ foo string }{foo: "bar"}
-	givenLazy := LazyFunc(func() interface{} { return expected })
+	givenLazy := LazyFunc(func() any { return expected })
 
 	actualInstance := RequireMaximalLevelLazy(level.Debug, givenLazy)
 	actual, actualRespected := actualInstance.Filter(filterContextWithLeveDebug)
@@ -61,7 +61,7 @@ func Test_RequireMaximalLevelLazy_Filter_respected(t *testing.T) {
 }
 
 func Test_RequireMaximalLevelLazy_Filter_ignored(t *testing.T) {
-	givenLazy := LazyFunc(func() interface{} { return struct{ foo string }{foo: "bar"} })
+	givenLazy := LazyFunc(func() any { return struct{ foo string }{foo: "bar"} })
 
 	actualInstance := RequireMaximalLevelLazy(level.Debug, givenLazy)
 	actual, actualRespected := actualInstance.Filter(filterContextWithLeveInfo)
@@ -90,7 +90,7 @@ func Test_RequireMaximalLevel_Filter_ignored(t *testing.T) {
 
 func Test_IgnoreLevelsLazy_Get(t *testing.T) {
 	expected := struct{ foo string }{foo: "bar"}
-	givenLazy := LazyFunc(func() interface{} { return expected })
+	givenLazy := LazyFunc(func() any { return expected })
 
 	actualInstance := IgnoreLevelsLazy(level.Info, level.Warn, givenLazy)
 	actual := actualInstance.Get()
@@ -108,7 +108,7 @@ func Test_IgnoreLevelsLazy_Get_withTypedNil(t *testing.T) {
 
 func Test_IgnoreLevelsLazy_Filter_respectedBelow(t *testing.T) {
 	expected := struct{ foo string }{foo: "bar"}
-	givenLazy := LazyFunc(func() interface{} { return expected })
+	givenLazy := LazyFunc(func() any { return expected })
 
 	actualInstance := IgnoreLevelsLazy(level.Info, level.Warn, givenLazy)
 	actual, actualRespected := actualInstance.Filter(filterContext{level: level.Info - 1})
@@ -119,7 +119,7 @@ func Test_IgnoreLevelsLazy_Filter_respectedBelow(t *testing.T) {
 
 func Test_IgnoreLevelsLazy_Filter_respectedAbove(t *testing.T) {
 	expected := struct{ foo string }{foo: "bar"}
-	givenLazy := LazyFunc(func() interface{} { return expected })
+	givenLazy := LazyFunc(func() any { return expected })
 
 	actualInstance := IgnoreLevelsLazy(level.Info, level.Warn, givenLazy)
 	actual, actualRespected := actualInstance.Filter(filterContext{level: level.Warn})
@@ -129,7 +129,7 @@ func Test_IgnoreLevelsLazy_Filter_respectedAbove(t *testing.T) {
 }
 
 func Test_IgnoreLevelsLazy_Filter_ignored(t *testing.T) {
-	givenLazy := LazyFunc(func() interface{} { return struct{ foo string }{foo: "bar"} })
+	givenLazy := LazyFunc(func() any { return struct{ foo string }{foo: "bar"} })
 
 	actualInstance := IgnoreLevelsLazy(level.Info, level.Warn, givenLazy)
 	actual, actualRespected := actualInstance.Filter(filterContextWithLeveInfo)
@@ -168,14 +168,14 @@ func Test_IgnoreLevels_Filter_ignored(t *testing.T) {
 
 type filterContext struct {
 	level  level.Level
-	fields map[string]interface{}
+	fields map[string]any
 }
 
 func (instance filterContext) GetLevel() level.Level {
 	return instance.level
 }
 
-func (instance filterContext) Get(key string) (value interface{}, exists bool) {
+func (instance filterContext) Get(key string) (value any, exists bool) {
 	if instance.fields == nil {
 		return nil, false
 	}

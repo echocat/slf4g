@@ -17,56 +17,56 @@ type Logger interface {
 	CoreLogger
 
 	// Trace logs the provided arguments on LevelTrace with this Logger.
-	Trace(...interface{})
+	Trace(...any)
 
 	// Tracef is like Trace but wraps the message itself in a fmt.Sprintf action.
 	// By contract the actual format action will not be executed before the value
 	// will be really consumed.
-	Tracef(string, ...interface{})
+	Tracef(string, ...any)
 
 	// IsTraceEnabled checks if LevelTrace is enabled at this Logger.
 	IsTraceEnabled() bool
 
 	// Debug logs the provided arguments on LevelDebug with this Logger.
-	Debug(...interface{})
+	Debug(...any)
 
 	// Debugf is like Debug but wraps the message itself in a fmt.Sprintf action.
 	// By contract the actual format action will not be executed before the value
 	// will be really consumed.
-	Debugf(string, ...interface{})
+	Debugf(string, ...any)
 
 	// IsDebugEnabled checks if LevelDebug is enabled at this Logger.
 	IsDebugEnabled() bool
 
 	// Info logs the provided arguments on LevelInfo with this Logger.
-	Info(...interface{})
+	Info(...any)
 
 	// Infof is like Info but wraps the message itself in a fmt.Sprintf action.
 	// By contract the actual format action will not be executed before the value
 	// will be really consumed.
-	Infof(string, ...interface{})
+	Infof(string, ...any)
 
 	// IsInfoEnabled checks if LevelInfo is enabled at this Logger.
 	IsInfoEnabled() bool
 
 	// Warn logs the provided arguments on LevelWarn with this Logger.
-	Warn(...interface{})
+	Warn(...any)
 
 	// Warnf is like Warn but wraps the message itself in a fmt.Sprintf action.
 	// By contract the actual format action will not be executed before the value
 	// will be really consumed.
-	Warnf(string, ...interface{})
+	Warnf(string, ...any)
 
 	// IsWarnEnabled checks if LevelWarn is enabled at this Logger.
 	IsWarnEnabled() bool
 
 	// Error logs the provided arguments on LevelError with this Logger.
-	Error(...interface{})
+	Error(...any)
 
 	// Errorf is like Error but wraps the message itself in a fmt.Sprintf action.
 	// By contract the actual format action will not be executed before the value
 	// will be really consumed.
-	Errorf(string, ...interface{})
+	Errorf(string, ...any)
 
 	// IsErrorEnabled checks if LevelError is enabled at this Logger.
 	IsErrorEnabled() bool
@@ -77,7 +77,7 @@ type Logger interface {
 	// with slf4g does not lead to an os.Exit() by default. By contract the
 	// application can do that but it is doing that always GRACEFUL. All processes
 	// should be always able to do shutdown operations if needed AND possible.
-	Fatal(...interface{})
+	Fatal(...any)
 
 	// Fatalf is like Fatal but wraps the message itself in a fmt.Sprintf action.
 	// By contract the actual format action will not be executed before the value
@@ -87,7 +87,7 @@ type Logger interface {
 	// with slf4g does not lead to an os.Exit() by default. By contract the
 	// application can do that but it is doing that always GRACEFUL. All processes
 	// should be always able to do shutdown operations if needed AND possible.
-	Fatalf(string, ...interface{})
+	Fatalf(string, ...any)
 
 	// IsFatalEnabled checks if LevelFatal is enabled at this Logger.
 	IsFatalEnabled() bool
@@ -95,12 +95,12 @@ type Logger interface {
 	// With returns an variant of this Logger with the given key
 	// value pair contained inside. If the given key already exists in the
 	// current instance this means it will be overwritten.
-	With(name string, value interface{}) Logger
+	With(name string, value any) Logger
 
 	// Withf is similar to With but it adds classic fmt.Printf functions to it.
 	// It is defined that the format itself will not be executed before the
 	// consumption of the value.
-	Withf(name string, format string, args ...interface{}) Logger
+	Withf(name string, format string, args ...any) Logger
 
 	// WithError is similar to With but it adds an error as field.
 	WithError(error) Logger
@@ -108,7 +108,7 @@ type Logger interface {
 	// WithAll is similar to With but it can consume more than one field at
 	// once. Be aware: There is neither a guarantee that this instance will be
 	// copied or not.
-	WithAll(map[string]interface{}) Logger
+	WithAll(map[string]any) Logger
 
 	// Without returns a variant of this Logger without the given
 	// key contained inside. In other words: If someone afterwards tries to
@@ -132,10 +132,10 @@ type LoggerFacade interface {
 	Logger
 
 	// DoLog is acting as a simple log for the given level.
-	DoLog(level level.Level, skipFrames uint16, args ...interface{})
+	DoLog(level level.Level, skipFrames uint16, args ...any)
 
 	// DoLogf is acting as a formatted log for the given level.
-	DoLogf(level level.Level, skipFrames uint16, format string, args ...interface{})
+	DoLogf(level level.Level, skipFrames uint16, format string, args ...any)
 }
 
 // NewLoggerFacade is like NewLogger but takes a provider function that can

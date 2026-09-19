@@ -27,7 +27,7 @@ type strictCoreLogger struct {
 	token *int
 }
 
-func (instance *strictCoreLogger) NewEvent(v level.Level, values map[string]interface{}) log.Event {
+func (instance *strictCoreLogger) NewEvent(v level.Level, values map[string]any) log.Event {
 	return instance.CoreLogger.NewEvent(v, values).With("strict-owner", instance.token)
 }
 
@@ -148,7 +148,7 @@ func Test_Provider_SetLevel_concurrentlyWithGetLevel(t *testing.T) {
 	go func() {
 		defer wait.Done()
 		<-start
-		for i := 0; i < 1000; i++ {
+		for range 1000 {
 			instance.SetLevel(level.Debug)
 			instance.SetLevel(level.Info)
 		}
@@ -156,7 +156,7 @@ func Test_Provider_SetLevel_concurrentlyWithGetLevel(t *testing.T) {
 	go func() {
 		defer wait.Done()
 		<-start
-		for i := 0; i < 1000; i++ {
+		for range 1000 {
 			_ = instance.GetLevel()
 		}
 	}()
@@ -266,9 +266,9 @@ func Test_Provider_SetConsumer_specified(t *testing.T) {
 
 func Test_Provider_SetConsumer_concurrentlyWithLogging(t *testing.T) {
 	first := consumer.NewRecorder()
-	var secondCount int32
+	var secondCount atomic.Int32
 	second := consumer.Func(func(log.Event, log.CoreLogger) {
-		atomic.AddInt32(&secondCount, 1)
+		secondCount.Add(1)
 	})
 	instance, _ := newProvider()
 	instance.Consumer = first
@@ -280,7 +280,7 @@ func Test_Provider_SetConsumer_concurrentlyWithLogging(t *testing.T) {
 	go func() {
 		defer wait.Done()
 		<-start
-		for i := 0; i < 1000; i++ {
+		for range 1000 {
 			instance.SetConsumer(first)
 			instance.SetConsumer(second)
 			runtime.Gosched()
@@ -289,7 +289,7 @@ func Test_Provider_SetConsumer_concurrentlyWithLogging(t *testing.T) {
 	go func() {
 		defer wait.Done()
 		<-start
-		for i := 0; i < 1000; i++ {
+		for range 1000 {
 			logger.Info("message")
 			runtime.Gosched()
 		}
@@ -297,7 +297,7 @@ func Test_Provider_SetConsumer_concurrentlyWithLogging(t *testing.T) {
 
 	close(start)
 	wait.Wait()
-	assert.ToBeEqual(t, 1000, first.Len()+int(atomic.LoadInt32(&secondCount)))
+	assert.ToBeEqual(t, 1000, first.Len()+int(secondCount.Load()))
 }
 
 func Test_Provider_GetConsumer_fromCopy(t *testing.T) {
@@ -410,9 +410,9 @@ func Test_Provider_factory_usingCustomizer(t *testing.T) {
 
 func Test_Provider_GetRootLogger_supportsReentrantCustomizer(t *testing.T) {
 	instance, recorder := newProvider()
-	var customizerCalls int32
+	var customizerCalls atomic.Int32
 	instance.CoreLoggerCustomizer = func(actualProvider *Provider, actualLogger *CoreLogger) log.CoreLogger {
-		atomic.AddInt32(&customizerCalls, 1)
+		customizerCalls.Add(1)
 		actualProvider.GetRootLogger().Info("during customization")
 		return actualLogger
 	}
@@ -428,7 +428,7 @@ func Test_Provider_GetRootLogger_supportsReentrantCustomizer(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("reentrant root logger customizer did not complete")
 	}
-	assert.ToBeEqual(t, int32(1), atomic.LoadInt32(&customizerCalls))
+	assert.ToBeEqual(t, int32(1), customizerCalls.Load())
 	assert.ToBeEqual(t, 1, recorder.Len())
 }
 
@@ -436,9 +436,9 @@ func Test_Provider_GetRootLogger_customizesOnceDuringConcurrentInitialization(t 
 	instance, _ := newProvider()
 	customizerEntered := make(chan struct{})
 	releaseCustomizer := make(chan struct{})
-	var customizerCalls int32
+	var customizerCalls atomic.Int32
 	instance.CoreLoggerCustomizer = func(_ *Provider, logger *CoreLogger) log.CoreLogger {
-		if atomic.AddInt32(&customizerCalls, 1) == 1 {
+		if customizerCalls.Add(1) == 1 {
 			close(customizerEntered)
 		}
 		<-releaseCustomizer
@@ -453,7 +453,7 @@ func Test_Provider_GetRootLogger_customizesOnceDuringConcurrentInitialization(t 
 
 	results := make(chan log.Logger, 31)
 	var wait sync.WaitGroup
-	for i := 0; i < cap(results); i++ {
+	for range cap(results) {
 		wait.Add(1)
 		go func() {
 			defer wait.Done()
@@ -468,7 +468,7 @@ func Test_Provider_GetRootLogger_customizesOnceDuringConcurrentInitialization(t 
 	for actual := range results {
 		assert.ToBeSame(t, expected, actual)
 	}
-	assert.ToBeEqual(t, int32(1), atomic.LoadInt32(&customizerCalls))
+	assert.ToBeEqual(t, int32(1), customizerCalls.Load())
 }
 
 func Test_Provider_GetRootLogger_preservesCustomizedLogger(t *testing.T) {

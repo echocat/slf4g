@@ -29,7 +29,7 @@ type CoreLogger interface {
 
 	// NewEvent creates a new instance of an Event which can be modified before
 	// provided back to this CoreLogger using Log().
-	NewEvent(level level.Level, values map[string]interface{}) Event
+	NewEvent(level level.Level, values map[string]any) Event
 
 	// Accepts is used to determine of this instance of a (Core)[Logger] might
 	// accept also Events created by foreigners. Events creates by NewEvent()

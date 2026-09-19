@@ -107,7 +107,7 @@ func Test_Provider_MustContains(t *testing.T) {
 func Test_Provider_MustContains_panicsOnErrorsForRoot(t *testing.T) {
 	previous := fields.DefaultValueEquality
 	defer func() { fields.DefaultValueEquality = previous }()
-	fields.DefaultValueEquality = fields.ValueEqualityFunc(func(name string, left, right interface{}) (bool, error) {
+	fields.DefaultValueEquality = fields.ValueEqualityFunc(func(name string, left, right any) (bool, error) {
 		if name == "message" && (left == "root" || right == "root") {
 			return false, errors.New("expected")
 		}
@@ -129,7 +129,7 @@ func Test_Provider_MustContains_panicsOnErrorsForRoot(t *testing.T) {
 func Test_Provider_MustContains_panicsOnErrors(t *testing.T) {
 	previous := fields.DefaultValueEquality
 	defer func() { fields.DefaultValueEquality = previous }()
-	fields.DefaultValueEquality = fields.ValueEqualityFunc(func(name string, left, right interface{}) (bool, error) {
+	fields.DefaultValueEquality = fields.ValueEqualityFunc(func(name string, left, right any) (bool, error) {
 		if name == "message" && (left == "fromOther" || right == "fromOther") {
 			return false, errors.New("expected")
 		}

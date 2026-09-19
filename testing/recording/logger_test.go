@@ -100,9 +100,9 @@ func Test_Logger_NewEvent(t *testing.T) {
 
 	assert.ToBeEqual(t, &event{
 		provider: instance.Provider,
-		fields:   fields.WithAll(map[string]interface{}{"foo": "bar"}),
+		fields:   fields.WithAll(map[string]any{"foo": "bar"}),
 		level:    level.Fatal,
-	}, instance.NewEvent(level.Fatal, map[string]interface{}{"foo": "bar"}))
+	}, instance.NewEvent(level.Fatal, map[string]any{"foo": "bar"}))
 }
 
 func Test_Logger_NewEventWithFields(t *testing.T) {

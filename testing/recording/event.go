@@ -14,11 +14,11 @@ type event struct {
 	level    level.Level
 }
 
-func (instance *event) ForEach(consumer func(key string, value interface{}) error) error {
+func (instance *event) ForEach(consumer func(key string, value any) error) error {
 	return instance.fields.ForEach(consumer)
 }
 
-func (instance *event) Get(key string) (interface{}, bool) {
+func (instance *event) Get(key string) (any, bool) {
 	return instance.fields.Get(key)
 }
 
@@ -30,13 +30,13 @@ func (instance *event) GetLevel() level.Level {
 	return instance.level
 }
 
-func (instance *event) With(key string, value interface{}) log.Event {
+func (instance *event) With(key string, value any) log.Event {
 	return instance.with(func(s fields.Fields) fields.Fields {
 		return s.With(key, value)
 	})
 }
 
-func (instance *event) Withf(key string, format string, args ...interface{}) log.Event {
+func (instance *event) Withf(key string, format string, args ...any) log.Event {
 	return instance.with(func(s fields.Fields) fields.Fields {
 		return s.Withf(key, format, args...)
 	})
@@ -48,7 +48,7 @@ func (instance *event) WithError(err error) log.Event {
 	})
 }
 
-func (instance *event) WithAll(of map[string]interface{}) log.Event {
+func (instance *event) WithAll(of map[string]any) log.Event {
 	return instance.with(func(s fields.Fields) fields.Fields {
 		return s.WithAll(of)
 	})
@@ -69,7 +69,7 @@ func (instance *event) with(mod func(fields.Fields) fields.Fields) log.Event {
 }
 
 func (instance *event) Format(f fmt.State, verb rune) {
-	printf := func(format string, args ...interface{}) {
+	printf := func(format string, args ...any) {
 		_, _ = fmt.Fprintf(f, format, args...)
 	}
 
@@ -78,7 +78,7 @@ func (instance *event) Format(f fmt.State, verb rune) {
 		fds := instance.fields
 		if f.Flag('+') && fds != nil && fds.Len() > 0 {
 			printf("[%d] {", instance.level)
-			_ = fds.ForEach(func(key string, value interface{}) error {
+			_ = fds.ForEach(func(key string, value any) error {
 				if key == "logger" || key == "timestamp" {
 					return nil
 				}
@@ -89,7 +89,7 @@ func (instance *event) Format(f fmt.State, verb rune) {
 		} else {
 			printf("[%d] {", instance.level)
 			first := true
-			_ = fds.ForEach(func(key string, value interface{}) error {
+			_ = fds.ForEach(func(key string, value any) error {
 				if key == "logger" || key == "timestamp" {
 					return nil
 				}

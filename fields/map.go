@@ -8,16 +8,16 @@ package fields
 // initial creator of this mapped instance, too. Both cases might result in
 // breaking the basic contracts of Fields: Be immutable. So it is only recommend
 // to use this when it really makes sense out of readability or performance.
-func WithAll(of map[string]interface{}) Fields {
+func WithAll(of map[string]any) Fields {
 	if len(of) == 0 {
 		return Empty()
 	}
 	return mapped(of)
 }
 
-type mapped map[string]interface{}
+type mapped map[string]any
 
-func (instance mapped) ForEach(consumer func(key string, value interface{}) error) error {
+func (instance mapped) ForEach(consumer func(key string, value any) error) error {
 	if instance == nil || consumer == nil {
 		return nil
 	}
@@ -29,7 +29,7 @@ func (instance mapped) ForEach(consumer func(key string, value interface{}) erro
 	return nil
 }
 
-func (instance mapped) Get(key string) (interface{}, bool) {
+func (instance mapped) Get(key string) (any, bool) {
 	if instance == nil {
 		return nil, false
 	}
@@ -37,15 +37,15 @@ func (instance mapped) Get(key string) (interface{}, bool) {
 	return v, exists
 }
 
-func (instance mapped) With(key string, value interface{}) Fields {
+func (instance mapped) With(key string, value any) Fields {
 	return instance.asParentOf(With(key, value))
 }
 
-func (instance mapped) Withf(key string, format string, args ...interface{}) Fields {
+func (instance mapped) Withf(key string, format string, args ...any) Fields {
 	return instance.asParentOf(Withf(key, format, args...))
 }
 
-func (instance mapped) WithAll(of map[string]interface{}) Fields {
+func (instance mapped) WithAll(of map[string]any) Fields {
 	return instance.asParentOf(WithAll(of))
 }
 

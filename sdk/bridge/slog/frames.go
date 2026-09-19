@@ -47,13 +47,8 @@ func packageOf(funcName string) string {
 	if lastSlash >= 0 {
 		start = lastSlash + 1
 	}
-	rest := funcName[start:]
-
-	if i := strings.Index(rest, "."); i >= 0 {
-		return funcName[:start+i]
-	}
-
-	return funcName
+	packagePart, _, _ := strings.Cut(funcName[start:], ".")
+	return funcName[:start+len(packagePart)]
 }
 
 var ignoredPackages = map[string]struct{}{

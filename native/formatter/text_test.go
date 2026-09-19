@@ -42,7 +42,7 @@ func Test_NewText_customized(t *testing.T) {
 	givenMultiLineMessageAfterFields := true
 	givenAllowMultiLineMessage := true
 	givenPrintRootLogger := true
-	givenValueFormatter := TextValueFunc(func(interface{}, log.Provider) ([]byte, error) {
+	givenValueFormatter := TextValueFunc(func(any, log.Provider) ([]byte, error) {
 		panic("should never be called")
 	})
 	givenKeySorter := fields.KeySorter(func(keys []string) {
@@ -83,29 +83,29 @@ func Test_Text_Format(t *testing.T) {
 	givenSpec := givenProvider.GetFieldKeysSpec()
 
 	cases := []struct {
-		event          map[string]interface{}
+		event          map[string]any
 		allowMultiline bool
 		expected       string
 	}{{
-		event: map[string]interface{}{
+		event: map[string]any{
 			givenSpec.GetMessage(): "hello, world",
 		},
 		expected: "[ INFO] hello, world                                      \n",
 	}, {
-		event: map[string]interface{}{
+		event: map[string]any{
 			givenSpec.GetMessage():   "hello, world",
 			givenSpec.GetTimestamp(): mustParseTime("2021-01-02T13:14:15.1234"),
 		},
 		expected: "13:14:15.123[ INFO] hello, world                                      \n",
 	}, {
-		event: map[string]interface{}{
+		event: map[string]any{
 			givenSpec.GetMessage():   "hello, world",
 			givenSpec.GetTimestamp(): mustParseTime("2021-01-02T13:14:15.1234"),
 			"foo1":                   "bar1",
 		},
 		expected: "13:14:15.123[ INFO] hello, world                                       foo1=bar1\n",
 	}, {
-		event: map[string]interface{}{
+		event: map[string]any{
 			givenSpec.GetMessage():   "hello, world",
 			givenSpec.GetTimestamp(): mustParseTime("2021-01-02T13:14:15.1234"),
 			"foo1":                   "bar1",
@@ -113,7 +113,7 @@ func Test_Text_Format(t *testing.T) {
 		},
 		expected: "13:14:15.123[ INFO] hello, world                                       foo1=bar1 foo2=2\n",
 	}, {
-		event: map[string]interface{}{
+		event: map[string]any{
 			givenSpec.GetMessage():   "hello,\nworld",
 			givenSpec.GetTimestamp(): mustParseTime("2021-01-02T13:14:15.1234"),
 			"foo1":                   "bar1",
@@ -121,7 +121,7 @@ func Test_Text_Format(t *testing.T) {
 		},
 		expected: "13:14:15.123[ INFO] hello,⏎world                                       foo1=bar1 foo2=2\n",
 	}, {
-		event: map[string]interface{}{
+		event: map[string]any{
 			givenSpec.GetMessage():   "hello,\nworld",
 			givenSpec.GetTimestamp(): mustParseTime("2021-01-02T13:14:15.1234"),
 			"foo1":                   "bar1",
@@ -150,9 +150,9 @@ func Test_Text_getMessage(t *testing.T) {
 	givenLogger := givenProvider.GetRootLogger()
 
 	cases := []struct {
-		given          interface{}
+		given          any
 		allowMultiline bool
-		expected       interface{}
+		expected       any
 	}{{
 		given:          nil,
 		allowMultiline: false,
@@ -331,7 +331,7 @@ func Test_Text_printFieldsChecked(t *testing.T) {
 	givenLogger := givenProvider.GetRootLogger()
 	givenHints := mockColorizingHints{}
 
-	eventOf := func(fields map[string]interface{}) log.Event {
+	eventOf := func(fields map[string]any) log.Event {
 		return givenLogger.NewEvent(level.Info, fields)
 	}
 
@@ -339,27 +339,27 @@ func Test_Text_printFieldsChecked(t *testing.T) {
 		given    log.Event
 		expected string
 	}{{
-		given:    eventOf(map[string]interface{}{}),
+		given:    eventOf(map[string]any{}),
 		expected: "",
 	}, {
-		given: eventOf(map[string]interface{}{
+		given: eventOf(map[string]any{
 			"foo1": "bar1",
 		}),
 		expected: " 3(foo1)=bar1",
 	}, {
-		given: eventOf(map[string]interface{}{
+		given: eventOf(map[string]any{
 			"foo1":  "bar1",
 			"foo2":  2,
 			"foo3a": fields.Exclude,
-			"foo3b": fields.LazyFunc(func() interface{} {
+			"foo3b": fields.LazyFunc(func() any {
 				return fields.Exclude
 			}),
 			"foo4a": nil,
-			"foo4b": fields.LazyFunc(func() interface{} {
+			"foo4b": fields.LazyFunc(func() any {
 				return nil
 			}),
 			"foo5a": "",
-			"foo5b": fields.LazyFunc(func() interface{} {
+			"foo5b": fields.LazyFunc(func() any {
 				return ""
 			}),
 			"foo6a": fields.RequireMaximalLevel(level.Info, "bar6a"),
@@ -396,7 +396,7 @@ func (instance simpleFilterContext) GetLevel() level.Level {
 	return instance.Level
 }
 
-func (instance simpleFilterContext) Get(string) (interface{}, bool) {
+func (instance simpleFilterContext) Get(string) (any, bool) {
 	return nil, false
 }
 
@@ -409,7 +409,7 @@ func Test_Text_printField(t *testing.T) {
 	cases := []struct {
 		givenLevel                 level.Level
 		givenKey                   string
-		givenValue                 interface{}
+		givenValue                 any
 		givenHints                 hints.Hints
 		givenShouldPrintRootLogger bool
 		expected                   string
@@ -510,7 +510,7 @@ func Test_Text_printField_failsWithValueFormatter(t *testing.T) {
 	expectedErr := errors.New("expected")
 	instance := NewText(func(text *Text) {
 		text.ColorMode = color.ModeNever
-		text.ValueFormatter = TextValueFunc(func(i interface{}, provider log.Provider) ([]byte, error) {
+		text.ValueFormatter = TextValueFunc(func(i any, provider log.Provider) ([]byte, error) {
 			return nil, expectedErr
 		})
 	})
@@ -931,7 +931,7 @@ func Test_Text_getPrintRootLogger_default(t *testing.T) {
 }
 
 func Test_Text_getValueFormatter_explicit(t *testing.T) {
-	givenValueFormatter := TextValueFunc(func(interface{}, log.Provider) ([]byte, error) {
+	givenValueFormatter := TextValueFunc(func(any, log.Provider) ([]byte, error) {
 		panic("should never be called")
 	})
 	instance := NewText(func(text *Text) {

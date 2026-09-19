@@ -10,7 +10,7 @@ import (
 func Test_GetLevel(t *testing.T) {
 	cases := []struct {
 		name          string
-		given         interface{}
+		given         any
 		expectedLevel Level
 		expectedOk    bool
 	}{{
@@ -107,9 +107,9 @@ func Test_GetLevel(t *testing.T) {
 func Test_SetLevel(t *testing.T) {
 	cases := []struct {
 		name       string
-		given      interface{}
+		given      any
 		givenLevel Level
-		extractor  func(interface{}) Level
+		extractor  func(any) Level
 		expectedOk bool
 	}{{
 		name:       "nil",
@@ -169,25 +169,25 @@ func Test_SetLevel(t *testing.T) {
 	}, {
 		name:       "awarePointer",
 		given:      &testAware{0},
-		extractor:  func(v interface{}) Level { return v.(*testAware).level },
+		extractor:  func(v any) Level { return v.(*testAware).level },
 		givenLevel: 1001,
 		expectedOk: true,
 	}, {
 		name:       "awarePointerWrapped",
 		given:      genericWrapper{&testAware{}},
-		extractor:  func(v interface{}) Level { return v.(genericWrapper).inner.(*testAware).level },
+		extractor:  func(v any) Level { return v.(genericWrapper).inner.(*testAware).level },
 		givenLevel: 1002,
 		expectedOk: true,
 	}, {
 		name:       "awarePointerWrappedPointer",
 		given:      &genericWrapper{&testAware{}},
-		extractor:  func(v interface{}) Level { return v.(*genericWrapper).inner.(*testAware).level },
+		extractor:  func(v any) Level { return v.(*genericWrapper).inner.(*testAware).level },
 		givenLevel: 1003,
 		expectedOk: true,
 	}, {
 		name:       "awarePointerWrappedWrapped",
 		given:      genericWrapper{genericWrapper{&testAware{1005}}},
-		extractor:  func(v interface{}) Level { return v.(genericWrapper).inner.(genericWrapper).inner.(*testAware).level },
+		extractor:  func(v any) Level { return v.(genericWrapper).inner.(genericWrapper).inner.(*testAware).level },
 		givenLevel: 1005,
 		expectedOk: true,
 	}}
@@ -206,10 +206,10 @@ func Test_SetLevel(t *testing.T) {
 type testNotAware struct{}
 
 type genericWrapper struct {
-	inner interface{}
+	inner any
 }
 
-func (instance genericWrapper) Unwrap() interface{} {
+func (instance genericWrapper) Unwrap() any {
 	return instance.inner
 }
 

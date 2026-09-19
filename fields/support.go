@@ -3,14 +3,14 @@ package fields
 // ForEachEnabled defines a type that handles iterates over all its key value
 // pairs and providing it to the given consumer.
 type ForEachEnabled interface {
-	ForEach(consumer func(key string, value interface{}) error) error
+	ForEach(consumer func(key string, value any) error) error
 }
 
 // ForEachFunc is a utility type to wrapping simple functions into
 // ForEachEnabled.
-type ForEachFunc func(consumer func(key string, value interface{}) error) error
+type ForEachFunc func(consumer func(key string, value any) error) error
 
-func (instance ForEachFunc) ForEach(consumer func(key string, value interface{}) error) error {
+func (instance ForEachFunc) ForEach(consumer func(key string, value any) error) error {
 	return instance(consumer)
 }
 
@@ -27,7 +27,7 @@ func asMap(f ForEachEnabled) (mapped, error) {
 	}
 
 	result := mapped{}
-	if err := f.ForEach(func(key string, value interface{}) error {
+	if err := f.ForEach(func(key string, value any) error {
 		result[key] = value
 		return nil
 	}); err != nil {
@@ -38,8 +38,8 @@ func asMap(f ForEachEnabled) (mapped, error) {
 }
 
 // AsMap converts a given object which contains is ForEachEnabled and converts
-// it to a map[string]interface{}
-func AsMap(f ForEachEnabled) (map[string]interface{}, error) {
+// it to a map[string]any
+func AsMap(f ForEachEnabled) (map[string]any, error) {
 	return asMap(f)
 }
 

@@ -8,7 +8,7 @@ import (
 
 // IsNil detects nil values wrapped in an interface. Callers should prefer a
 // direct nil check and only use this as a fallback before calling a method.
-func IsNil(v interface{}) bool {
+func IsNil(v any) bool {
 	if v == nil {
 		return true
 	}

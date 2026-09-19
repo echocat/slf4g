@@ -43,7 +43,7 @@ func Test_LevelFunc_FormatLevel(t *testing.T) {
 	given := level.Level(666)
 
 	wasCalled := false
-	instance := LevelFunc(func(actual level.Level, actualProvider log.Provider) (interface{}, error) {
+	instance := LevelFunc(func(actual level.Level, actualProvider log.Provider) (any, error) {
 		assert.ToBeEqual(t, given, actual)
 		assert.ToBeSame(t, givenProvider, actualProvider)
 		wasCalled = true
@@ -63,7 +63,7 @@ func Test_LevelFunc_FormatLevel_errors(t *testing.T) {
 	givenError := errors.New("expected")
 
 	wasCalled := false
-	instance := LevelFunc(func(actual level.Level, actualProvider log.Provider) (interface{}, error) {
+	instance := LevelFunc(func(actual level.Level, actualProvider log.Provider) (any, error) {
 		assert.ToBeEqual(t, given, actual)
 		assert.ToBeSame(t, givenProvider, actualProvider)
 		wasCalled = true
@@ -78,7 +78,7 @@ func Test_LevelFunc_FormatLevel_errors(t *testing.T) {
 }
 
 func Test_NewLevelFacade(t *testing.T) {
-	givenDelegate := LevelFunc(func(actual level.Level, actualProvider log.Provider) (interface{}, error) {
+	givenDelegate := LevelFunc(func(actual level.Level, actualProvider log.Provider) (any, error) {
 		assert.Fail(t, "should never be called.")
 		return nil, nil
 	})
@@ -96,7 +96,7 @@ func Test_levelFacade_FormatLevel(t *testing.T) {
 
 	wasCalled := false
 	instance := NewLevelFacade(func() Level {
-		return LevelFunc(func(actual level.Level, actualProvider log.Provider) (interface{}, error) {
+		return LevelFunc(func(actual level.Level, actualProvider log.Provider) (any, error) {
 			assert.ToBeEqual(t, given, actual)
 			assert.ToBeSame(t, givenProvider, actualProvider)
 			wasCalled = true
@@ -118,7 +118,7 @@ func Test_textValueFacade_FormatLevel_errors(t *testing.T) {
 
 	wasCalled := false
 	instance := NewLevelFacade(func() Level {
-		return LevelFunc(func(actual level.Level, actualProvider log.Provider) (interface{}, error) {
+		return LevelFunc(func(actual level.Level, actualProvider log.Provider) (any, error) {
 			assert.ToBeEqual(t, given, actual)
 			assert.ToBeSame(t, givenProvider, actualProvider)
 			wasCalled = true

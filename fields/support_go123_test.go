@@ -37,7 +37,7 @@ func ExampleIter_withErrors() {
 }
 
 func TestIter_regular(t *testing.T) {
-	fe := ForEachFunc(func(consumer func(key string, value interface{}) error) error {
+	fe := ForEachFunc(func(consumer func(key string, value any) error) error {
 		if err := consumer("foo", 1); err != nil {
 			return err
 		}
@@ -59,7 +59,7 @@ func TestIter_regular(t *testing.T) {
 
 func TestIter_err(t *testing.T) {
 	testError := errors.New("expected")
-	fe := ForEachFunc(func(consumer func(key string, value interface{}) error) error {
+	fe := ForEachFunc(func(consumer func(key string, value any) error) error {
 		assert.ToBeNoError(t, consumer("foo", 1))
 		assert.ToBeNoError(t, consumer("bar", 2))
 		return testError
@@ -96,7 +96,7 @@ func TestCollect(t *testing.T) {
 	}))
 
 	i := 0
-	assert.ToBeNoError(t, actual.ForEach(func(key string, value interface{}) error {
+	assert.ToBeNoError(t, actual.ForEach(func(key string, value any) error {
 		i++
 		if i > 2 {
 			assert.Failf(t, "expected to be called with maximal of 2 elements; but was %d times", i)
@@ -114,13 +114,13 @@ func TestCollect(t *testing.T) {
 }
 
 func TestCollectKeyValue(t *testing.T) {
-	actual := CollectKeyValue(maps.All(map[string]interface{}{
+	actual := CollectKeyValue(maps.All(map[string]any{
 		"foo": 1,
 		"bar": 2,
 	}))
 
 	i := 0
-	assert.ToBeNoError(t, actual.ForEach(func(key string, value interface{}) error {
+	assert.ToBeNoError(t, actual.ForEach(func(key string, value any) error {
 		i++
 		if i > 2 {
 			assert.Failf(t, "expected to be called with maximal of 2 elements; but was %d times", i)

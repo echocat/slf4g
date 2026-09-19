@@ -37,7 +37,7 @@ func (instance FormatterColorMode) get() color.Mode {
 }
 
 // Get implements flag.Getter.
-func (instance FormatterColorMode) Get() interface{} {
+func (instance FormatterColorMode) Get() any {
 	return instance.get()
 }
 

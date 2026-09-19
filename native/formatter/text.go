@@ -205,7 +205,7 @@ func (instance *Text) printLevelChecked(l level.Level, using log.Provider, h hin
 
 func (instance *Text) printFieldsChecked(using log.Provider, h hints.Hints, event log.Event, to encoding.TextEncoder, atLeastOneFieldPrinted *bool) execution.Execution {
 	return func() error {
-		return fields.SortedForEach(event, instance.getFieldSorter(), func(k string, v interface{}) error {
+		return fields.SortedForEach(event, instance.getFieldSorter(), func(k string, v any) error {
 			printed, err := instance.printField(event, k, v, h, using, to)
 			if printed {
 				*atLeastOneFieldPrinted = printed
@@ -215,7 +215,7 @@ func (instance *Text) printFieldsChecked(using log.Provider, h hints.Hints, even
 	}
 }
 
-func (instance *Text) printField(ctx fields.FilterContext, k string, v interface{}, h hints.Hints, using log.Provider, to encoding.TextEncoder) (bool, error) {
+func (instance *Text) printField(ctx fields.FilterContext, k string, v any, h hints.Hints, using log.Provider, to encoding.TextEncoder) (bool, error) {
 	if vl, ok := v.(fields.Filtered); ok {
 		if support.IsNil(vl) {
 			v = nil

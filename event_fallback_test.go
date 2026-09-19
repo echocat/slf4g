@@ -89,7 +89,7 @@ func Test_eventImpl_WithError(t *testing.T) {
 }
 
 func Test_eventImpl_WithAll(t *testing.T) {
-	givenMap := map[string]interface{}{
+	givenMap := map[string]any{
 		"b": 2,
 		"c": 3,
 	}

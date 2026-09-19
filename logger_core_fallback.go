@@ -73,7 +73,7 @@ func (instance *fallbackCoreLogger) format(event Event, skipFrames uint16) []byt
 	messageKey := instance.GetFieldKeysSpec().GetMessage()
 	loggerKey := instance.GetFieldKeysSpec().GetLogger()
 	timestampKey := instance.GetFieldKeysSpec().GetTimestamp()
-	if err := fields.SortedForEach(event, nil, func(k string, vp interface{}) error {
+	if err := fields.SortedForEach(event, nil, func(k string, vp any) error {
 		if vl, ok := vp.(fields.Filtered); ok {
 			if support.IsNil(vl) {
 				vp = nil
@@ -199,7 +199,7 @@ func (instance *fallbackCoreLogger) formatMessage(event Event) string {
 	return message
 }
 
-func (instance *fallbackCoreLogger) formatValue(v interface{}) ([]byte, error) {
+func (instance *fallbackCoreLogger) formatValue(v any) ([]byte, error) {
 	if ve, ok := v.(error); ok {
 		if support.IsNil(ve) {
 			v = nil
@@ -233,7 +233,7 @@ func (instance *fallbackCoreLogger) SetLevel(in level.Level) {
 	atomic.StoreUint32(&instance.level, uint32(in))
 }
 
-func (instance *fallbackCoreLogger) NewEvent(l level.Level, values map[string]interface{}) Event {
+func (instance *fallbackCoreLogger) NewEvent(l level.Level, values map[string]any) Event {
 	return instance.NewEventWithFields(l, fields.WithAll(values))
 }
 

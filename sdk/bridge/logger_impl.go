@@ -48,14 +48,14 @@ type LoggerImpl struct {
 	OnFatal func(log.Event)
 }
 
-func (instance *LoggerImpl) log(l level.Level, separateArguments bool, args ...interface{}) (doLog func() log.Event, helper func()) {
+func (instance *LoggerImpl) log(l level.Level, separateArguments bool, args ...any) (doLog func() log.Event, helper func()) {
 	logger := instance.Delegate
 	helper = helperOf(logger)
 	helper()
 
-	var values map[string]interface{}
+	var values map[string]any
 	if len(args) > 0 {
-		values = make(map[string]interface{}, 1)
+		values = make(map[string]any, 1)
 
 		if !separateArguments {
 			values[logger.GetProvider().GetFieldKeysSpec().GetMessage()] = fmt.Sprint(args...)
@@ -75,12 +75,12 @@ func (instance *LoggerImpl) log(l level.Level, separateArguments bool, args ...i
 	}, helper
 }
 
-func (instance *LoggerImpl) logf(l level.Level, format string, args ...interface{}) (doLog func() log.Event, helper func()) {
+func (instance *LoggerImpl) logf(l level.Level, format string, args ...any) (doLog func() log.Event, helper func()) {
 	logger := instance.Delegate
 	helper = helperOf(logger)
 	helper()
 
-	e := logger.NewEvent(l, map[string]interface{}{
+	e := logger.NewEvent(l, map[string]any{
 		logger.GetProvider().GetFieldKeysSpec().GetMessage(): fields.LazyFormat(format, args...),
 	})
 
@@ -99,63 +99,63 @@ func (instance *LoggerImpl) printLevel() level.Level {
 }
 
 // Print implements Logger.Print
-func (instance *LoggerImpl) Print(args ...interface{}) {
+func (instance *LoggerImpl) Print(args ...any) {
 	l, helper := instance.log(instance.printLevel(), false, args...)
 	helper()
 	l()
 }
 
 // Printf implements Logger.Printf
-func (instance *LoggerImpl) Printf(s string, args ...interface{}) {
+func (instance *LoggerImpl) Printf(s string, args ...any) {
 	l, helper := instance.logf(instance.printLevel(), s, args...)
 	helper()
 	l()
 }
 
 // Println implements Logger.Println
-func (instance *LoggerImpl) Println(args ...interface{}) {
+func (instance *LoggerImpl) Println(args ...any) {
 	l, helper := instance.log(instance.printLevel(), true, args...)
 	helper()
 	l()
 }
 
 // Fatal implements Logger.Fatal
-func (instance *LoggerImpl) Fatal(args ...interface{}) {
+func (instance *LoggerImpl) Fatal(args ...any) {
 	l, helper := instance.log(level.Fatal, false, args...)
 	helper()
 	instance.onFatal(l())
 }
 
 // Fatalf implements Logger.Fatalf
-func (instance *LoggerImpl) Fatalf(s string, args ...interface{}) {
+func (instance *LoggerImpl) Fatalf(s string, args ...any) {
 	l, helper := instance.logf(level.Fatal, s, args...)
 	helper()
 	instance.onFatal(l())
 }
 
 // Fatalln implements Logger.Fatalln
-func (instance *LoggerImpl) Fatalln(args ...interface{}) {
+func (instance *LoggerImpl) Fatalln(args ...any) {
 	l, helper := instance.log(level.Fatal, true, args...)
 	helper()
 	instance.onFatal(l())
 }
 
 // Panic implements Logger.Panic
-func (instance *LoggerImpl) Panic(args ...interface{}) {
+func (instance *LoggerImpl) Panic(args ...any) {
 	l, helper := instance.log(level.Fatal, false, args...)
 	helper()
 	instance.onPanic(l())
 }
 
 // Panicf implements Logger.Panicf
-func (instance *LoggerImpl) Panicf(s string, args ...interface{}) {
+func (instance *LoggerImpl) Panicf(s string, args ...any) {
 	l, helper := instance.logf(level.Fatal, s, args...)
 	helper()
 	instance.onPanic(l())
 }
 
 // Panicln implements Logger.Panicln
-func (instance *LoggerImpl) Panicln(args ...interface{}) {
+func (instance *LoggerImpl) Panicln(args ...any) {
 	l, helper := instance.log(level.Fatal, true, args...)
 	helper()
 	instance.onPanic(l())

@@ -1,6 +1,7 @@
 package native
 
 import (
+	"maps"
 	"sync"
 	"sync/atomic"
 
@@ -135,7 +136,7 @@ func (instance *rootLoggerFacade) GetName() string {
 	return instance.current().GetName()
 }
 
-func (instance *rootLoggerFacade) NewEvent(v level.Level, values map[string]interface{}) log.Event {
+func (instance *rootLoggerFacade) NewEvent(v level.Level, values map[string]any) log.Event {
 	current := instance.current()
 	return &rootLoggerEvent{state: instance.state, logger: current, delegate: current.NewEvent(v, values)}
 }
@@ -157,7 +158,7 @@ func (instance *rootLoggerFacade) GetProvider() log.Provider {
 	return instance.current().GetProvider()
 }
 
-func (instance *rootLoggerFacade) DoLog(v level.Level, skipFrames uint16, args ...interface{}) {
+func (instance *rootLoggerFacade) DoLog(v level.Level, skipFrames uint16, args ...any) {
 	delegate := instance.current()
 	if delegate, ok := delegate.(log.LoggerFacade); ok {
 		delegate.DoLog(v, skipFrames+1, args...)
@@ -166,7 +167,7 @@ func (instance *rootLoggerFacade) DoLog(v level.Level, skipFrames uint16, args .
 	log.NewLoggerFacade(func() log.CoreLogger { return delegate }).DoLog(v, skipFrames+1, args...)
 }
 
-func (instance *rootLoggerFacade) DoLogf(v level.Level, skipFrames uint16, format string, args ...interface{}) {
+func (instance *rootLoggerFacade) DoLogf(v level.Level, skipFrames uint16, format string, args ...any) {
 	delegate := instance.current()
 	if delegate, ok := delegate.(log.LoggerFacade); ok {
 		delegate.DoLogf(v, skipFrames+1, format, args...)
@@ -175,11 +176,11 @@ func (instance *rootLoggerFacade) DoLogf(v level.Level, skipFrames uint16, forma
 	log.NewLoggerFacade(func() log.CoreLogger { return delegate }).DoLogf(v, skipFrames+1, format, args...)
 }
 
-func (instance *rootLoggerFacade) Trace(args ...interface{}) {
+func (instance *rootLoggerFacade) Trace(args ...any) {
 	instance.current().Trace(args...)
 }
 
-func (instance *rootLoggerFacade) Tracef(format string, args ...interface{}) {
+func (instance *rootLoggerFacade) Tracef(format string, args ...any) {
 	instance.current().Tracef(format, args...)
 }
 
@@ -187,11 +188,11 @@ func (instance *rootLoggerFacade) IsTraceEnabled() bool {
 	return instance.current().IsTraceEnabled()
 }
 
-func (instance *rootLoggerFacade) Debug(args ...interface{}) {
+func (instance *rootLoggerFacade) Debug(args ...any) {
 	instance.current().Debug(args...)
 }
 
-func (instance *rootLoggerFacade) Debugf(format string, args ...interface{}) {
+func (instance *rootLoggerFacade) Debugf(format string, args ...any) {
 	instance.current().Debugf(format, args...)
 }
 
@@ -199,11 +200,11 @@ func (instance *rootLoggerFacade) IsDebugEnabled() bool {
 	return instance.current().IsDebugEnabled()
 }
 
-func (instance *rootLoggerFacade) Info(args ...interface{}) {
+func (instance *rootLoggerFacade) Info(args ...any) {
 	instance.current().Info(args...)
 }
 
-func (instance *rootLoggerFacade) Infof(format string, args ...interface{}) {
+func (instance *rootLoggerFacade) Infof(format string, args ...any) {
 	instance.current().Infof(format, args...)
 }
 
@@ -211,11 +212,11 @@ func (instance *rootLoggerFacade) IsInfoEnabled() bool {
 	return instance.current().IsInfoEnabled()
 }
 
-func (instance *rootLoggerFacade) Warn(args ...interface{}) {
+func (instance *rootLoggerFacade) Warn(args ...any) {
 	instance.current().Warn(args...)
 }
 
-func (instance *rootLoggerFacade) Warnf(format string, args ...interface{}) {
+func (instance *rootLoggerFacade) Warnf(format string, args ...any) {
 	instance.current().Warnf(format, args...)
 }
 
@@ -223,11 +224,11 @@ func (instance *rootLoggerFacade) IsWarnEnabled() bool {
 	return instance.current().IsWarnEnabled()
 }
 
-func (instance *rootLoggerFacade) Error(args ...interface{}) {
+func (instance *rootLoggerFacade) Error(args ...any) {
 	instance.current().Error(args...)
 }
 
-func (instance *rootLoggerFacade) Errorf(format string, args ...interface{}) {
+func (instance *rootLoggerFacade) Errorf(format string, args ...any) {
 	instance.current().Errorf(format, args...)
 }
 
@@ -235,11 +236,11 @@ func (instance *rootLoggerFacade) IsErrorEnabled() bool {
 	return instance.current().IsErrorEnabled()
 }
 
-func (instance *rootLoggerFacade) Fatal(args ...interface{}) {
+func (instance *rootLoggerFacade) Fatal(args ...any) {
 	instance.current().Fatal(args...)
 }
 
-func (instance *rootLoggerFacade) Fatalf(format string, args ...interface{}) {
+func (instance *rootLoggerFacade) Fatalf(format string, args ...any) {
 	instance.current().Fatalf(format, args...)
 }
 
@@ -247,12 +248,12 @@ func (instance *rootLoggerFacade) IsFatalEnabled() bool {
 	return instance.current().IsFatalEnabled()
 }
 
-func (instance *rootLoggerFacade) With(name string, value interface{}) log.Logger {
+func (instance *rootLoggerFacade) With(name string, value any) log.Logger {
 	return instance.derive(func(current log.Logger) log.Logger { return current.With(name, value) })
 }
 
-func (instance *rootLoggerFacade) Withf(name string, format string, args ...interface{}) log.Logger {
-	argsCopy := append([]interface{}(nil), args...)
+func (instance *rootLoggerFacade) Withf(name string, format string, args ...any) log.Logger {
+	argsCopy := append([]any(nil), args...)
 	return instance.derive(func(current log.Logger) log.Logger { return current.Withf(name, format, argsCopy...) })
 }
 
@@ -260,11 +261,9 @@ func (instance *rootLoggerFacade) WithError(err error) log.Logger {
 	return instance.derive(func(current log.Logger) log.Logger { return current.WithError(err) })
 }
 
-func (instance *rootLoggerFacade) WithAll(values map[string]interface{}) log.Logger {
-	valuesCopy := make(map[string]interface{}, len(values))
-	for key, value := range values {
-		valuesCopy[key] = value
-	}
+func (instance *rootLoggerFacade) WithAll(values map[string]any) log.Logger {
+	valuesCopy := make(map[string]any, len(values))
+	maps.Copy(valuesCopy, values)
 	return instance.derive(func(current log.Logger) log.Logger { return current.WithAll(valuesCopy) })
 }
 
@@ -284,11 +283,11 @@ func (instance *rootLoggerEvent) GetLevel() level.Level {
 	return instance.delegate.GetLevel()
 }
 
-func (instance *rootLoggerEvent) ForEach(consumer func(key string, value interface{}) error) error {
+func (instance *rootLoggerEvent) ForEach(consumer func(key string, value any) error) error {
 	return instance.delegate.ForEach(consumer)
 }
 
-func (instance *rootLoggerEvent) Get(key string) (interface{}, bool) {
+func (instance *rootLoggerEvent) Get(key string) (any, bool) {
 	return instance.delegate.Get(key)
 }
 
@@ -296,11 +295,11 @@ func (instance *rootLoggerEvent) Len() int {
 	return instance.delegate.Len()
 }
 
-func (instance *rootLoggerEvent) With(key string, value interface{}) log.Event {
+func (instance *rootLoggerEvent) With(key string, value any) log.Event {
 	return instance.wrap(instance.delegate.With(key, value))
 }
 
-func (instance *rootLoggerEvent) Withf(key string, format string, args ...interface{}) log.Event {
+func (instance *rootLoggerEvent) Withf(key string, format string, args ...any) log.Event {
 	return instance.wrap(instance.delegate.Withf(key, format, args...))
 }
 
@@ -308,7 +307,7 @@ func (instance *rootLoggerEvent) WithError(err error) log.Event {
 	return instance.wrap(instance.delegate.WithError(err))
 }
 
-func (instance *rootLoggerEvent) WithAll(values map[string]interface{}) log.Event {
+func (instance *rootLoggerEvent) WithAll(values map[string]any) log.Event {
 	return instance.wrap(instance.delegate.WithAll(values))
 }
 

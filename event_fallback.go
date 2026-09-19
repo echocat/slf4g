@@ -11,11 +11,11 @@ type fallbackEvent struct {
 	level    level.Level
 }
 
-func (instance *fallbackEvent) ForEach(consumer func(key string, value interface{}) error) error {
+func (instance *fallbackEvent) ForEach(consumer func(key string, value any) error) error {
 	return instance.fields.ForEach(consumer)
 }
 
-func (instance *fallbackEvent) Get(key string) (interface{}, bool) {
+func (instance *fallbackEvent) Get(key string) (any, bool) {
 	return instance.fields.Get(key)
 }
 
@@ -27,13 +27,13 @@ func (instance *fallbackEvent) GetLevel() level.Level {
 	return instance.level
 }
 
-func (instance *fallbackEvent) With(key string, value interface{}) Event {
+func (instance *fallbackEvent) With(key string, value any) Event {
 	return instance.with(func(s fields.Fields) fields.Fields {
 		return s.With(key, value)
 	})
 }
 
-func (instance *fallbackEvent) Withf(key string, format string, args ...interface{}) Event {
+func (instance *fallbackEvent) Withf(key string, format string, args ...any) Event {
 	return instance.with(func(s fields.Fields) fields.Fields {
 		return s.Withf(key, format, args...)
 	})
@@ -45,7 +45,7 @@ func (instance *fallbackEvent) WithError(err error) Event {
 	})
 }
 
-func (instance *fallbackEvent) WithAll(of map[string]interface{}) Event {
+func (instance *fallbackEvent) WithAll(of map[string]any) Event {
 	return instance.with(func(s fields.Fields) fields.Fields {
 		return s.WithAll(of)
 	})

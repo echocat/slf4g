@@ -12,7 +12,7 @@ type attrs []sdk.Attr
 
 const indexedAttrsThreshold = 64
 
-func (instance attrs) ForEach(consumer func(key string, value interface{}) error) error {
+func (instance attrs) ForEach(consumer func(key string, value any) error) error {
 	if consumer == nil {
 		return nil
 	}
@@ -24,7 +24,7 @@ func (instance attrs) ForEach(consumer func(key string, value interface{}) error
 	return nil
 }
 
-func (instance attrs) Get(key string) (interface{}, bool) {
+func (instance attrs) Get(key string) (any, bool) {
 	for _, a := range instance {
 		if a.Key == key {
 			return resolvedValueOf(a.Value).Any(), true
@@ -76,15 +76,15 @@ func resolvedValueOf(value sdk.Value) sdk.Value {
 	}
 }
 
-func (instance attrs) With(key string, value interface{}) fields.Fields {
+func (instance attrs) With(key string, value any) fields.Fields {
 	return instance.asParentOf(fields.With(key, value))
 }
 
-func (instance attrs) Withf(key string, format string, args ...interface{}) fields.Fields {
+func (instance attrs) Withf(key string, format string, args ...any) fields.Fields {
 	return instance.asParentOf(fields.Withf(key, format, args...))
 }
 
-func (instance attrs) WithAll(of map[string]interface{}) fields.Fields {
+func (instance attrs) WithAll(of map[string]any) fields.Fields {
 	return instance.asParentOf(fields.WithAll(of))
 }
 

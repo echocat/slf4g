@@ -6,7 +6,7 @@ func ExampleFields_forEach() {
 	someFields := With("bar", 2).
 		With("foo", 1)
 
-	err := someFields.ForEach(func(k string, v interface{}) error {
+	err := someFields.ForEach(func(k string, v any) error {
 		fmt.Printf("%s=%+v\n", k, v)
 		return nil
 	})
@@ -37,7 +37,7 @@ func Example() {
 		With("foo", "1").
 		Withf("message", "something happened in module %s", "abc")
 
-	err := f.ForEach(func(k string, v interface{}) error {
+	err := f.ForEach(func(k string, v any) error {
 		fmt.Printf("%s=%+v\n", k, v)
 		return nil
 	})

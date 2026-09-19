@@ -31,7 +31,7 @@ func Test_coreLogger_Log_regular(t *testing.T) {
 		WithError(errors.New("testError")).
 		With("stringField", "bar").
 		With("intField", 123).
-		With("lazyField", fields.LazyFunc(func() interface{} { return "lazy" })).
+		With("lazyField", fields.LazyFunc(func() any { return "lazy" })).
 		With("nilField", nil).
 		With("excludedField", fields.Exclude).
 		With("ignoredByLevelField", fields.IgnoreLevels(level.Debug, level.Info+1, "ignored")).
@@ -83,14 +83,14 @@ func Test_coreLogger_NewEvent(t *testing.T) {
 	provider.initIfRequired()
 	instance := provider.coreRootLogger
 
-	actual := instance.NewEvent(level.Level(666), map[string]interface{}{
+	actual := instance.NewEvent(level.Level(666), map[string]any{
 		"foo": 123,
 		"bar": "str",
 	})
 
 	assert.ToBeEqual(t, &event{
 		provider,
-		fields.WithAll(map[string]interface{}{
+		fields.WithAll(map[string]any{
 			"foo": 123,
 			"bar": "str",
 		}),
@@ -103,7 +103,7 @@ func Test_coreLogger_Accepts(t *testing.T) {
 	provider.initIfRequired()
 	instance := provider.coreRootLogger
 
-	givenAcceptable := instance.NewEvent(level.Level(666), map[string]interface{}{})
+	givenAcceptable := instance.NewEvent(level.Level(666), map[string]any{})
 
 	assert.ToBeEqual(t, true, instance.Accepts(givenAcceptable))
 }
@@ -188,7 +188,7 @@ func Test_coreLogger_formatTime_sinceTestStartedMcs(t *testing.T) {
 	instance := provider.coreRootLogger
 
 	givenTs, _ := time.Parse(dateTimeFormat, "2024-07-25 18:56:13")
-	givenEvent := instance.NewEvent(level.Info, map[string]interface{}{
+	givenEvent := instance.NewEvent(level.Info, map[string]any{
 		"timestamp": givenTs,
 	})
 
@@ -201,7 +201,7 @@ func Test_coreLogger_formatTime_noop(t *testing.T) {
 	instance := provider.coreRootLogger
 
 	givenTs, _ := time.Parse(dateTimeFormat, "2024-07-25 18:56:13")
-	givenEvent := instance.NewEvent(level.Info, map[string]interface{}{
+	givenEvent := instance.NewEvent(level.Info, map[string]any{
 		"timestamp": givenTs,
 	})
 
@@ -214,7 +214,7 @@ func Test_coreLogger_formatTime_ts(t *testing.T) {
 	instance := provider.coreRootLogger
 
 	givenTs, _ := time.Parse(dateTimeFormat, "2024-07-25 18:56:13")
-	givenEvent := instance.NewEvent(level.Info, map[string]interface{}{
+	givenEvent := instance.NewEvent(level.Info, map[string]any{
 		"timestamp": givenTs,
 	})
 
@@ -226,7 +226,7 @@ func Test_coreLogger_formatTime_ts_defaultNow(t *testing.T) {
 	provider.initIfRequired()
 	instance := provider.coreRootLogger
 
-	givenEvent := instance.NewEvent(level.Info, map[string]interface{}{})
+	givenEvent := instance.NewEvent(level.Info, map[string]any{})
 
 	now := time.Now()
 	actualTs, actualErr := time.Parse(time.RFC3339+" ", instance.formatTime(givenEvent))
@@ -334,16 +334,16 @@ func (*typedNilError) Error() string {
 
 type typedNilFiltered struct{}
 
-func (*typedNilFiltered) Get() interface{} {
+func (*typedNilFiltered) Get() any {
 	panic("must not be called")
 }
 
-func (*typedNilFiltered) Filter(fields.FilterContext) (interface{}, bool) {
+func (*typedNilFiltered) Filter(fields.FilterContext) (any, bool) {
 	panic("must not be called")
 }
 
 type typedNilLazy struct{}
 
-func (*typedNilLazy) Get() interface{} {
+func (*typedNilLazy) Get() any {
 	panic("must not be called")
 }

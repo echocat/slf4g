@@ -120,7 +120,7 @@ func Test_LoggerImpl_Println(t *testing.T) {
 	assert.ToBeEqual(t, 1, logger.Len())
 	assert.ToBeEqual(t, true, logger.MustContains(
 		logger.NewEvent(level.Info, nil).
-			With("message", []interface{}{"a", 1, "c"}),
+			With("message", []any{"a", 1, "c"}),
 	))
 }
 
@@ -153,7 +153,7 @@ func Test_LoggerImpl_Fatalf(t *testing.T) {
 func Test_LoggerImpl_Fatalln(t *testing.T) {
 	instance, logger, horror := prepareLoggerImpl()
 	expected := logger.NewEvent(level.Fatal, nil).
-		With("message", []interface{}{"a", 1, "c"})
+		With("message", []any{"a", 1, "c"})
 
 	instance.Fatalln("a", 1, "c")
 
@@ -192,7 +192,7 @@ func Test_LoggerImpl_Panicf(t *testing.T) {
 func Test_LoggerImpl_Panicln(t *testing.T) {
 	instance, logger, horror := prepareLoggerImpl()
 	expected := logger.NewEvent(level.Fatal, nil).
-		With("message", []interface{}{"a", 1, "c"})
+		With("message", []any{"a", 1, "c"})
 
 	instance.Panicln("a", 1, "c")
 
@@ -323,7 +323,7 @@ func (instance someCoreLogger) GetName() string {
 	panic("should never be called")
 }
 
-func (instance someCoreLogger) NewEvent(level.Level, map[string]interface{}) log.Event {
+func (instance someCoreLogger) NewEvent(level.Level, map[string]any) log.Event {
 	panic("should never be called")
 }
 
@@ -353,7 +353,7 @@ func (instance someCoreLoggerWithHelper) GetName() string {
 	panic("should never be called")
 }
 
-func (instance someCoreLoggerWithHelper) NewEvent(level.Level, map[string]interface{}) log.Event {
+func (instance someCoreLoggerWithHelper) NewEvent(level.Level, map[string]any) log.Event {
 	panic("should never be called")
 }
 

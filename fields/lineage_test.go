@@ -74,14 +74,14 @@ func Test_newLineage_withEmptyMapTargetAndParent(t *testing.T) {
 func Test_lineage_ForEach(t *testing.T) {
 	instance := &lineage{target: With("foo", 1), parent: With("bar", 2)}
 
-	actualConsumed := map[string]interface{}{}
-	actualErr := instance.ForEach(func(k string, v interface{}) error {
+	actualConsumed := map[string]any{}
+	actualErr := instance.ForEach(func(k string, v any) error {
 		actualConsumed[k] = v
 		return nil
 	})
 
 	assert.ToBeNoError(t, actualErr)
-	assert.ToBeEqual(t, map[string]interface{}{
+	assert.ToBeEqual(t, map[string]any{
 		"foo": 1,
 		"bar": 2,
 	}, actualConsumed)
@@ -91,7 +91,7 @@ func Test_lineage_ForEach_targetBeforeParent(t *testing.T) {
 	instance := &lineage{target: With("target", 1), parent: With("parent", 2)}
 
 	var actualKeys []string
-	actualErr := instance.ForEach(func(key string, _ interface{}) error {
+	actualErr := instance.ForEach(func(key string, _ any) error {
 		actualKeys = append(actualKeys, key)
 		return nil
 	})
@@ -127,7 +127,7 @@ func Test_lineage_deepMixedTraversal(t *testing.T) {
 	assert.ToBeEqual(t, depth+2, instance.Len())
 
 	actualCount := 0
-	actualErr := instance.ForEach(func(string, interface{}) error {
+	actualErr := instance.ForEach(func(string, any) error {
 		actualCount++
 		return nil
 	})
@@ -139,7 +139,7 @@ func Test_lineage_ForEach_isForwardingTargetErrors(t *testing.T) {
 	expectedErr := errors.New("foo")
 	instance := &lineage{target: With("foo", 1), parent: With("bar", 2)}
 
-	actualErr := instance.ForEach(func(string, interface{}) error {
+	actualErr := instance.ForEach(func(string, any) error {
 		return expectedErr
 	})
 
@@ -150,7 +150,7 @@ func Test_lineage_ForEach_isForwardingParentErrors(t *testing.T) {
 	expectedErr := errors.New("foo")
 	instance := &lineage{target: With("foo", 1), parent: With("bar", 2)}
 
-	actualErr := instance.ForEach(func(k string, _ interface{}) error {
+	actualErr := instance.ForEach(func(k string, _ any) error {
 		if k == "bar" {
 			return expectedErr
 		}
@@ -164,7 +164,7 @@ func Test_lineage_ForEach_isForwardingParentErrors(t *testing.T) {
 func Test_lineage_ForEach_withNilInstance(t *testing.T) {
 	var instance *lineage
 
-	actualErr := instance.ForEach(func(k string, v interface{}) error {
+	actualErr := instance.ForEach(func(k string, v any) error {
 		assert.Fail(t, "should never be called")
 		return nil
 	})
@@ -256,7 +256,7 @@ func Test_lineage_Withf_withNilInstance(t *testing.T) {
 func Test_lineage_WithAll(t *testing.T) {
 	instance := &lineage{target: With("foo", 1), parent: With("bar", 2)}
 
-	actual := instance.WithAll(map[string]interface{}{"bar": 66, "xyz": 3})
+	actual := instance.WithAll(map[string]any{"bar": 66, "xyz": 3})
 	assert.ToBeEqual(t, mapped{"foo": 1, "bar": 66, "xyz": 3}, mustAsMap(actual))
 }
 
@@ -264,7 +264,7 @@ func Test_lineage_WithAll(t *testing.T) {
 func Test_lineage_WithAll_withNilInstance(t *testing.T) {
 	var instance *lineage
 
-	actual := instance.WithAll(map[string]interface{}{"bar": 66, "xyz": 3})
+	actual := instance.WithAll(map[string]any{"bar": 66, "xyz": 3})
 	assert.ToBeEqual(t, mapped{"bar": 66, "xyz": 3}, mustAsMap(actual))
 }
 

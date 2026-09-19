@@ -16,7 +16,7 @@ func Test_FullLoggerNameGenerator_usesCustomizer(t *testing.T) {
 
 	givenSomething := struct{ foo string }{"bar"}
 	called := false
-	FullLoggerNameCustomizer = func(something interface{}) string {
+	FullLoggerNameCustomizer = func(something any) string {
 		assert.ToBeEqual(t, givenSomething, something)
 		called = true
 		return "xyz"

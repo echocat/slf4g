@@ -12,11 +12,11 @@ type event struct {
 	level    level.Level
 }
 
-func (instance *event) ForEach(consumer func(key string, value interface{}) error) error {
+func (instance *event) ForEach(consumer func(key string, value any) error) error {
 	return instance.fields.ForEach(consumer)
 }
 
-func (instance *event) Get(key string) (interface{}, bool) {
+func (instance *event) Get(key string) (any, bool) {
 	return instance.fields.Get(key)
 }
 
@@ -28,13 +28,13 @@ func (instance *event) GetLevel() level.Level {
 	return instance.level
 }
 
-func (instance *event) With(key string, value interface{}) log.Event {
+func (instance *event) With(key string, value any) log.Event {
 	return instance.with(func(s fields.Fields) fields.Fields {
 		return s.With(key, value)
 	})
 }
 
-func (instance *event) Withf(key string, format string, args ...interface{}) log.Event {
+func (instance *event) Withf(key string, format string, args ...any) log.Event {
 	return instance.with(func(s fields.Fields) fields.Fields {
 		return s.Withf(key, format, args...)
 	})
@@ -46,7 +46,7 @@ func (instance *event) WithError(err error) log.Event {
 	})
 }
 
-func (instance *event) WithAll(of map[string]interface{}) log.Event {
+func (instance *event) WithAll(of map[string]any) log.Event {
 	return instance.with(func(s fields.Fields) fields.Fields {
 		return s.WithAll(of)
 	})

@@ -8,7 +8,7 @@ import (
 )
 
 type entry struct {
-	value    interface{}
+	value    any
 	previous *entry
 	scoped   bool
 	active   bool
@@ -23,11 +23,11 @@ func init() {
 	current.Store(&entry{})
 }
 
-func Get() interface{} {
+func Get() any {
 	return load().value
 }
 
-func Set(value interface{}) interface{} {
+func Set(value any) any {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -36,7 +36,7 @@ func Set(value interface{}) interface{} {
 	return previous
 }
 
-func Resolve(resolver func() interface{}) interface{} {
+func Resolve(resolver func() any) any {
 	if value := Get(); value != nil {
 		return value
 	}
@@ -68,7 +68,7 @@ func Read(reader func()) {
 	reader()
 }
 
-func Push(value interface{}) func() {
+func Push(value any) func() {
 	mutex.Lock()
 	installed := &entry{
 		value:    value,
