@@ -134,73 +134,60 @@ depends = [
 
 [tasks."test:matrix:root:go118"]
 description = "Test the root module with Go 1.18"
-tools.go = "{{vars.go_minimum}}"
-run = "go test --tags=mock -race ./..."
+run = "mise -E ci-go118 exec -- go test --tags=mock -race ./..."
 
 [tasks."test:matrix:root:go122"]
 description = "Test the root module with Go 1.22"
-tools.go = "{{vars.go_1_22}}"
-run = "go test --tags=mock -race ./..."
+run = "mise -E ci-go122 exec -- go test --tags=mock -race ./..."
 
 [tasks."test:matrix:root:go123"]
 description = "Test the root module with Go 1.23"
-tools.go = "{{vars.go_1_23}}"
-run = "go test --tags=mock -race ./..."
+run = "mise -E ci-go123 exec -- go test --tags=mock -race ./..."
 
 [tasks."test:matrix:native:go123"]
 description = "Test the native module with Go 1.23"
 dir = "{{config_root}}/native"
-tools.go = "{{vars.go_1_23}}"
-run = "go test --tags=mock -race ./..."
+run = "mise -E ci-go123 exec -- go test --tags=mock -race ./..."
 
 [tasks."test:matrix:eventlog:go123"]
 description = "Test the Windows eventlog module with Go 1.23"
 dir = "{{config_root}}/platform/windows/eventlog"
-tools.go = "{{vars.go_1_23}}"
-run = "go test --tags=mock -race ./..."
+run = "mise -E ci-go123 exec -- go test --tags=mock -race ./..."
 
 [tasks."ci:test:root:go118"]
 description = "Test the root module with coverage using the minimum Go version"
-tools.go = "{{vars.go_minimum}}"
-run = "go test --tags=mock -v -race -covermode=atomic -coverprofile=profile.cov.full ./..."
+run = "mise -E ci-go118 exec -- go test --tags=mock -v -race -covermode=atomic -coverprofile=profile.cov.full ./..."
 
 [tasks."ci:test:root:go122"]
 description = "Test the root module with coverage using Go 1.22"
-tools.go = "{{vars.go_1_22}}"
-run = "go test --tags=mock -v -race -covermode=atomic -coverprofile=profile.cov.full ./..."
+run = "mise -E ci-go122 exec -- go test --tags=mock -v -race -covermode=atomic -coverprofile=profile.cov.full ./..."
 
 [tasks."ci:test:root:go123"]
 description = "Test the root module with coverage using Go 1.23"
-tools.go = "{{vars.go_1_23}}"
-run = "go test --tags=mock -v -race -covermode=atomic -coverprofile=profile.cov.full ./..."
+run = "mise -E ci-go123 exec -- go test --tags=mock -v -race -covermode=atomic -coverprofile=profile.cov.full ./..."
 
 [tasks."ci:test:root:stable"]
 description = "Test the root module with coverage using stable Go"
-tools.go = "{{vars.go_stable}}"
 run = "go test --tags=mock -v -race -covermode=atomic -coverprofile=profile.cov.full ./..."
 
 [tasks."ci:test:native:go123"]
 description = "Test the native module with coverage using Go 1.23"
 dir = "{{config_root}}/native"
-tools.go = "{{vars.go_1_23}}"
-run = "go test --tags=mock -v -race -covermode=atomic -coverprofile=profile.cov.full ./..."
+run = "mise -E ci-go123 exec -- go test --tags=mock -v -race -covermode=atomic -coverprofile=profile.cov.full ./..."
 
 [tasks."ci:test:native:stable"]
 description = "Test the native module with coverage using stable Go"
 dir = "{{config_root}}/native"
-tools.go = "{{vars.go_stable}}"
 run = "go test --tags=mock -v -race -covermode=atomic -coverprofile=profile.cov.full ./..."
 
 [tasks."ci:test:eventlog:go123"]
 description = "Test the Windows eventlog module using Go 1.23"
 dir = "{{config_root}}/platform/windows/eventlog"
-tools.go = "{{vars.go_1_23}}"
-run = "go test --tags=mock -v -race ./..."
+run = "mise -E ci-go123 exec -- go test --tags=mock -v -race ./..."
 
 [tasks."ci:test:eventlog:stable"]
 description = "Test the Windows eventlog module using stable Go"
 dir = "{{config_root}}/platform/windows/eventlog"
-tools.go = "{{vars.go_stable}}"
 run = "go test --tags=mock -v -race ./..."
 
 [tasks.coverage]
