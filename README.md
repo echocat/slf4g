@@ -231,6 +231,9 @@ the exact versions and checksums used locally and in CI.
 The GitHub Actions workflows use the same pinned tools and tasks, including Go
 1.18 as the minimum supported version of the root module.
 
+Release preparation and the automated native-module tagging process are
+documented in [RELEASING.md](RELEASING.md).
+
 ## Contributing
 
 **slf4g** is an open source project by [echocat](https://echocat.org). So if you want to make this project even better, you can contribute to this project on [Github](https://github.com/echocat/slf4g) by [fork us](https://github.com/echocat/slf4g/fork).

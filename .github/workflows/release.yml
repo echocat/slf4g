@@ -13,61 +13,104 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo (mit Tags)
+      - name: Checkout release tag
         uses: actions/checkout@v7
         with:
+          ref: ${{ github.event.release.tag_name }}
           fetch-depth: 0
 
-      - name: Validate tag format
-        id: validate
-        run: |
-          TAG="${{ github.event.release.tag_name }}"
-          if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "tag_ok=true" >> "$GITHUB_OUTPUT"
-            echo "${TAG} is valid."
-          else
-            echo "${TAG} does not comply with required format ^v[0-9]+\\.[0-9]+\\.[0-9]+$; Skipping."
-            echo "tag_ok=false" >> "$GITHUB_OUTPUT"
-          fi
+      - name: Install mise
+        uses: jdx/mise-action@v4
+        with:
+          version: 2026.8.6
+          install: true
+          install_args: --locked
 
-      - name: Create sub tags
-        if: steps.validate.outputs.tag_ok == 'true'
+      - name: Create native release tag
+        shell: bash
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          PRERELEASE: ${{ github.event.release.prerelease }}
         run: |
           set -euo pipefail
 
-          TAG="${{ github.event.release.tag_name }}"
-          NATIVE_TAG="native/${TAG}"
-
-          git fetch --force origin "refs/tags/${TAG}:refs/tags/${TAG}"
-          COMMIT="$(git rev-parse --verify "refs/tags/${TAG}^{commit}")"
-
-          if git ls-remote --exit-code --refs origin "refs/tags/${NATIVE_TAG}" >/dev/null; then
-            git fetch --force origin "refs/tags/${NATIVE_TAG}:refs/tags/${NATIVE_TAG}"
-            EXISTING_COMMIT="$(git rev-parse --verify "refs/tags/${NATIVE_TAG}^{commit}")"
-            if [[ "$EXISTING_COMMIT" == "$COMMIT" ]]; then
-              echo "$NATIVE_TAG already points to $COMMIT; nothing to do."
-              exit 0
-            fi
-            echo "::error::$NATIVE_TAG already points to $EXISTING_COMMIT instead of $COMMIT."
+          if [[ "$PRERELEASE" == "true" ]]; then
+            echo "::error::Prereleases are not supported."
+            exit 1
+          fi
+          if [[ ! "$TAG" =~ ^v(0|1)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::Invalid canonical v0/v1 release tag: $TAG"
             exit 1
           fi
 
-          echo "Set $NATIVE_TAG to $COMMIT..."
+          ROOT_COMMIT="$(git rev-parse --verify "refs/tags/${TAG}^{commit}")"
+          NATIVE_TAG="native/${TAG}"
+          git checkout --detach "$ROOT_COMMIT"
 
-          # Create tag(s)...
-          git tag "$NATIVE_TAG" "$COMMIT"
+          mise -E ci-go123 exec -- go -C native mod edit \
+            -dropreplace=github.com/echocat/slf4g \
+            -require="github.com/echocat/slf4g@${TAG}"
 
-          # Push tags(s)...
-          if git push origin "refs/tags/$NATIVE_TAG"; then
+          GOWORK=off \
+          GOTOOLCHAIN=local \
+          GOPROXY=direct \
+          GONOSUMDB=github.com/echocat/slf4g \
+            mise -E ci-go123 exec -- go -C native mod tidy
+
+          GOWORK=off \
+          GOTOOLCHAIN=local \
+          GOFLAGS=-mod=readonly \
+          GOPROXY=direct \
+          GONOSUMDB=github.com/echocat/slf4g \
+            mise -E ci-go123 exec -- go -C native mod verify
+
+          GOWORK=off \
+          GOTOOLCHAIN=local \
+          GOFLAGS=-mod=readonly \
+          GOPROXY=direct \
+          GONOSUMDB=github.com/echocat/slf4g \
+            mise -E ci-go123 exec -- go -C native test -race ./...
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- native/go.mod native/go.sum
+
+          while IFS= read -r file; do
+            case "$file" in
+              native/go.mod|native/go.sum) ;;
+              *)
+                echo "::error::Unexpected native release file: $file"
+                exit 1
+                ;;
+            esac
+          done < <(git diff --cached --name-only)
+
+          git commit -m "Prepare ${NATIVE_TAG}"
+          CANDIDATE_COMMIT="$(git rev-parse HEAD)"
+          CANDIDATE_TREE="$(git rev-parse "${CANDIDATE_COMMIT}^{tree}")"
+
+          validate_existing_tag() {
+            git fetch --force origin "refs/tags/${NATIVE_TAG}:refs/tags/${NATIVE_TAG}"
+            local existing_commit existing_parent existing_tree
+            existing_commit="$(git rev-parse --verify "refs/tags/${NATIVE_TAG}^{commit}")"
+            existing_parent="$(git rev-parse --verify "${existing_commit}^")"
+            existing_tree="$(git rev-parse --verify "${existing_commit}^{tree}")"
+            if [[ "$existing_parent" != "$ROOT_COMMIT" || "$existing_tree" != "$CANDIDATE_TREE" ]]; then
+              echo "::error::${NATIVE_TAG} does not match the generated release commit."
+              exit 1
+            fi
+            echo "${NATIVE_TAG} already contains the expected native release."
+          }
+
+          if git ls-remote --exit-code --refs origin "refs/tags/${NATIVE_TAG}" >/dev/null; then
+            validate_existing_tag
             exit 0
           fi
 
-          # A concurrent workflow might have created the same immutable tag.
-          git fetch --force origin "refs/tags/${NATIVE_TAG}:refs/tags/${NATIVE_TAG}"
-          EXISTING_COMMIT="$(git rev-parse --verify "refs/tags/${NATIVE_TAG}^{commit}")"
-          if [[ "$EXISTING_COMMIT" == "$COMMIT" ]]; then
-            echo "$NATIVE_TAG was concurrently created at $COMMIT; nothing to do."
+          git tag "$NATIVE_TAG" "$CANDIDATE_COMMIT"
+          if git push origin "refs/tags/${NATIVE_TAG}"; then
             exit 0
           fi
-          echo "::error::$NATIVE_TAG was concurrently created at $EXISTING_COMMIT instead of $COMMIT."
-          exit 1
+
+          # A concurrent run may have created the same release tag.
+          validate_existing_tag
