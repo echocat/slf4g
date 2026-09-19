@@ -1,0 +1,2 @@
+[tools]
+go = "{{vars.go_minimum}}"

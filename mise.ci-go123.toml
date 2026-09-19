@@ -1,0 +1,2 @@
+[tools]
+go = "{{vars.go_1_23}}"

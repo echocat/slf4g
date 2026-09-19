@@ -22,13 +22,20 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v7
 
+    - name: Install mise
+      uses: jdx/mise-action@v4
+      with:
+        version: 2026.8.6
+        install: true
+        install_args: --locked
+
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v4
       with:
         languages: ${{ matrix.language }}
 
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v4
+    - name: Build
+      run: mise run build
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v4
