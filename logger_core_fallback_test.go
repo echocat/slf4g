@@ -271,9 +271,9 @@ func Test_fallbackCoreLogger_NewEvent(t *testing.T) {
 
 	assert.ToBeEqual(t, &fallbackEvent{
 		provider: instance,
-		fields:   fields.WithAll(map[string]interface{}{"foo": "bar"}),
+		fields:   fields.WithAll(map[string]any{"foo": "bar"}),
 		level:    level.Fatal,
-	}, instance.NewEvent(level.Fatal, map[string]interface{}{"foo": "bar"}))
+	}, instance.NewEvent(level.Fatal, map[string]any{"foo": "bar"}))
 }
 
 func Test_fallbackCoreLogger_NewEventWithFields(t *testing.T) {
@@ -296,7 +296,7 @@ func Test_fallbackCoreLogger_NewEventWithFields_panicsOnErrors(t *testing.T) {
 	instance, _ := newFallbackCoreLogger("foo")
 
 	assert.Execution(t, func() {
-		instance.NewEventWithFields(level.Fatal, fields.ForEachFunc(func(func(string, interface{}) error) error {
+		instance.NewEventWithFields(level.Fatal, fields.ForEachFunc(func(func(string, any) error) error {
 			return errors.New("expected")
 		}))
 	}).WillPanicWith("^expected$")
@@ -356,16 +356,16 @@ func (*typedNilError) Error() string {
 
 type typedNilFiltered struct{}
 
-func (*typedNilFiltered) Get() interface{} {
+func (*typedNilFiltered) Get() any {
 	panic("must not be called")
 }
 
-func (*typedNilFiltered) Filter(fields.FilterContext) (interface{}, bool) {
+func (*typedNilFiltered) Filter(fields.FilterContext) (any, bool) {
 	panic("must not be called")
 }
 
 type typedNilLazy struct{}
 
-func (*typedNilLazy) Get() interface{} {
+func (*typedNilLazy) Get() any {
 	panic("must not be called")
 }

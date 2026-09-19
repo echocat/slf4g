@@ -20,11 +20,11 @@ package fields
 type Fields interface {
 	// ForEach will call the provided consumer for each field which is provided
 	// by this Fields instance.
-	ForEach(consumer func(key string, value interface{}) error) error
+	ForEach(consumer func(key string, value any) error) error
 
 	// Get will return for the given key the corresponding value if exists.
 	// The value itself can be nil but it cal still exist.
-	Get(key string) (value interface{}, exists bool)
+	Get(key string) (value any, exists bool)
 
 	// Len returns the len of this Fields instance.
 	Len() int
@@ -32,17 +32,17 @@ type Fields interface {
 	// With returns a variant of this Fields with the given key
 	// value pair contained inside. If the given key already exists in the
 	// current instance this means it will be overwritten.
-	With(key string, value interface{}) Fields
+	With(key string, value any) Fields
 
 	// Withf is similar to With, but it adds classic fmt.Printf functions to it.
 	// It is defined that the format itself will not be executed before the
 	// consumption of the value. (See ForEach() and Get())
-	Withf(key string, format string, args ...interface{}) Fields
+	Withf(key string, format string, args ...any) Fields
 
 	// WithAll is similar to With, but it can consume more than one field at
 	// once. Be aware: There is neither a guarantee that this instance will be
 	// copied or not.
-	WithAll(map[string]interface{}) Fields
+	WithAll(map[string]any) Fields
 
 	// Without returns a variant of this Fields without the given
 	// key contained inside. In other words: If someone afterwards tries to

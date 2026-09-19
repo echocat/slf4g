@@ -3,7 +3,7 @@ package fields
 const minimumCompactionCost = 64
 
 type compactedFields struct {
-	values    map[string]interface{}
+	values    map[string]any
 	keys      []string
 	hidden    keySet
 	base      Fields
@@ -97,12 +97,12 @@ func isCompactableLeaf(value Fields) bool {
 }
 
 func compactFields(root Fields) Fields {
-	values := map[string]interface{}{}
+	values := map[string]any{}
 	var keys []string
 	seen := keySet{}
 	current := root
 
-	add := func(key string, value interface{}) {
+	add := func(key string, value any) {
 		if _, exists := seen[key]; exists {
 			return
 		}
@@ -175,7 +175,7 @@ func compactFields(root Fields) Fields {
 	}
 }
 
-func finishCompaction(values map[string]interface{}, keys []string, seen keySet, base Fields) Fields {
+func finishCompaction(values map[string]any, keys []string, seen keySet, base Fields) Fields {
 	if len(values) == 0 && base == nil {
 		return Empty()
 	}
@@ -196,7 +196,7 @@ func finishCompaction(values map[string]interface{}, keys []string, seen keySet,
 	}
 }
 
-func (instance *compactedFields) ForEach(consumer func(key string, value interface{}) error) error {
+func (instance *compactedFields) ForEach(consumer func(key string, value any) error) error {
 	if instance == nil || consumer == nil {
 		return nil
 	}
@@ -212,7 +212,7 @@ func (instance *compactedFields) ForEach(consumer func(key string, value interfa
 	for key := range instance.hidden {
 		seen[key] = keyPresent
 	}
-	return instance.base.ForEach(func(key string, value interface{}) error {
+	return instance.base.ForEach(func(key string, value any) error {
 		if _, handled := seen[key]; handled {
 			return nil
 		}
@@ -221,7 +221,7 @@ func (instance *compactedFields) ForEach(consumer func(key string, value interfa
 	})
 }
 
-func (instance *compactedFields) Get(key string) (interface{}, bool) {
+func (instance *compactedFields) Get(key string) (any, bool) {
 	if instance == nil {
 		return nil, false
 	}
@@ -246,7 +246,7 @@ func (instance *compactedFields) Len() int {
 	for key := range instance.hidden {
 		seen[key] = keyPresent
 	}
-	_ = forEachField(instance.base, func(key string, _ interface{}) error {
+	_ = forEachField(instance.base, func(key string, _ any) error {
 		if _, handled := seen[key]; handled {
 			return nil
 		}
@@ -257,15 +257,15 @@ func (instance *compactedFields) Len() int {
 	return result
 }
 
-func (instance *compactedFields) With(key string, value interface{}) Fields {
+func (instance *compactedFields) With(key string, value any) Fields {
 	return newDerivedLineage(With(key, value), instance)
 }
 
-func (instance *compactedFields) Withf(key string, format string, args ...interface{}) Fields {
+func (instance *compactedFields) Withf(key string, format string, args ...any) Fields {
 	return newDerivedLineage(Withf(key, format, args...), instance)
 }
 
-func (instance *compactedFields) WithAll(values map[string]interface{}) Fields {
+func (instance *compactedFields) WithAll(values map[string]any) Fields {
 	return newDerivedLineage(WithAll(values), instance)
 }
 

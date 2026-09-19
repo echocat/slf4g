@@ -14,23 +14,23 @@ type without struct {
 
 var keyPresent = struct{}{}
 
-func (instance *without) ForEach(consumer func(key string, value interface{}) error) error {
+func (instance *without) ForEach(consumer func(key string, value any) error) error {
 	return forEachField(instance, consumer, false)
 }
 
-func (instance *without) Get(key string) (interface{}, bool) {
+func (instance *without) Get(key string) (any, bool) {
 	return getField(instance, key)
 }
 
-func (instance *without) With(key string, value interface{}) Fields {
+func (instance *without) With(key string, value any) Fields {
 	return instance.asParentOf(With(key, value))
 }
 
-func (instance *without) Withf(key string, format string, args ...interface{}) Fields {
+func (instance *without) Withf(key string, format string, args ...any) Fields {
 	return instance.asParentOf(Withf(key, format, args...))
 }
 
-func (instance *without) WithAll(of map[string]interface{}) Fields {
+func (instance *without) WithAll(of map[string]any) Fields {
 	return instance.asParentOf(WithAll(of))
 }
 

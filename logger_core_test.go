@@ -35,7 +35,7 @@ func (instance *mockCoreLogger) Log(e Event, _ uint16) {
 	panic("not implemented in tests")
 }
 
-func (instance *mockCoreLogger) NewEvent(level level.Level, values map[string]interface{}) Event {
+func (instance *mockCoreLogger) NewEvent(level level.Level, values map[string]any) Event {
 	return &fallbackEvent{
 		provider: instance.provider,
 		level:    level,

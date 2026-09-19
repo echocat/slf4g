@@ -13,7 +13,7 @@ import (
 
 func Test_Func_Format(t *testing.T) {
 	givenLogger := recording.NewLogger()
-	givenEvent := givenLogger.NewEvent(level.Warn, map[string]interface{}{
+	givenEvent := givenLogger.NewEvent(level.Warn, map[string]any{
 		"foo": "bar",
 	})
 	givenHints := &struct{}{}
@@ -36,7 +36,7 @@ func Test_Func_Format(t *testing.T) {
 
 func Test_Func_Format_errors(t *testing.T) {
 	givenLogger := recording.NewLogger()
-	givenEvent := givenLogger.NewEvent(level.Warn, map[string]interface{}{
+	givenEvent := givenLogger.NewEvent(level.Warn, map[string]any{
 		"foo": "bar",
 	})
 	givenHints := &struct{}{}
@@ -73,7 +73,7 @@ func Test_NewFacade(t *testing.T) {
 
 func Test_facade_Format(t *testing.T) {
 	givenLogger := recording.NewLogger()
-	givenEvent := givenLogger.NewEvent(level.Warn, map[string]interface{}{
+	givenEvent := givenLogger.NewEvent(level.Warn, map[string]any{
 		"foo": "bar",
 	})
 	givenHints := &struct{}{}
@@ -98,7 +98,7 @@ func Test_facade_Format(t *testing.T) {
 
 func Test_facade_Format_errors(t *testing.T) {
 	givenLogger := recording.NewLogger()
-	givenEvent := givenLogger.NewEvent(level.Warn, map[string]interface{}{
+	givenEvent := givenLogger.NewEvent(level.Warn, map[string]any{
 		"foo": "bar",
 	})
 	givenHints := &struct{}{}
@@ -124,7 +124,7 @@ func Test_facade_Format_errors(t *testing.T) {
 
 func Test_noopV_Format(t *testing.T) {
 	givenLogger := recording.NewLogger()
-	givenEvent := givenLogger.NewEvent(level.Warn, map[string]interface{}{
+	givenEvent := givenLogger.NewEvent(level.Warn, map[string]any{
 		"foo": "bar",
 	})
 	givenHints := &struct{}{}

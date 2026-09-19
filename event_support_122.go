@@ -15,7 +15,7 @@ func formatStrSlice(in []string) string {
 	return string(result)
 }
 
-func formatAnySlice(in []interface{}) string {
+func formatAnySlice(in []any) string {
 	var result []byte
 	for i, v := range in {
 		if i > 0 {

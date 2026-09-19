@@ -9,7 +9,7 @@ import (
 
 // FullLoggerNameGenerator creates a meaningful name for loggers with the full
 // name out of given objects.
-func FullLoggerNameGenerator(something interface{}) string {
+func FullLoggerNameGenerator(something any) string {
 	if f := FullLoggerNameCustomizer; f != nil {
 		return f(something)
 	}
@@ -52,9 +52,8 @@ func CurrentPackageLoggerNameGenerator(framesToSkip int) string {
 	allParts := strings.Split(frame.Function, "/")
 	lastPart := allParts[len(allParts)-1]
 
-	lastSubParts := strings.SplitN(lastPart, ".", 2)
-
-	allParts[len(allParts)-1] = lastSubParts[0]
+	packagePart, _, _ := strings.Cut(lastPart, ".")
+	allParts[len(allParts)-1] = packagePart
 
 	result := strings.Join(allParts, "/")
 
@@ -63,7 +62,7 @@ func CurrentPackageLoggerNameGenerator(framesToSkip int) string {
 
 // FullLoggerNameCustomizer will override the default behavior of
 // FullLoggerNameGenerator if set.
-var FullLoggerNameCustomizer func(something interface{}) string
+var FullLoggerNameCustomizer func(something any) string
 
 // CurrentPackageLoggerNameCustomizer will override the default behavior of
 // CurrentPackageLoggerNameGenerator if set.

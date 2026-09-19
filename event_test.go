@@ -10,12 +10,12 @@ import (
 
 type entries []entry
 
-func (instance *entries) add(key string, value interface{}) {
+func (instance *entries) add(key string, value any) {
 	*instance = append(*instance, entry{key, value})
 }
 
-func (instance *entries) consumer() func(key string, value interface{}) error {
-	return func(key string, value interface{}) error {
+func (instance *entries) consumer() func(key string, value any) error {
+	return func(key string, value any) error {
 		instance.add(key, value)
 		return nil
 	}
@@ -23,16 +23,16 @@ func (instance *entries) consumer() func(key string, value interface{}) error {
 
 type entry struct {
 	key   string
-	value interface{}
+	value any
 }
 
 func TestNewEvent(t *testing.T) {
-	someValues := map[string]interface{}{
+	someValues := map[string]any{
 		"foo": 1,
 		"bar": 2,
 	}
 	aLevel := level.Fatal
-	anEventFactory := eventFactory(func(l level.Level, values map[string]interface{}) Event {
+	anEventFactory := eventFactory(func(l level.Level, values map[string]any) Event {
 		return &fallbackEvent{nil, fields.WithAll(values), l}
 	})
 
@@ -45,7 +45,7 @@ func TestNewEvent(t *testing.T) {
 }
 func TestNewEventWithFields_direct(t *testing.T) {
 	t.Run("hasFunction_NewEventWithFields", func(t *testing.T) {
-		someFields := fields.WithAll(map[string]interface{}{
+		someFields := fields.WithAll(map[string]any{
 			"foo": 1,
 			"bar": 2,
 		})
@@ -65,12 +65,12 @@ func TestNewEventWithFields_direct(t *testing.T) {
 	})
 
 	t.Run("fallback_to_NewEvent", func(t *testing.T) {
-		someFields := fields.WithAll(map[string]interface{}{
+		someFields := fields.WithAll(map[string]any{
 			"foo": 1,
 			"bar": 2,
 		})
 		aLevel := level.Fatal
-		anEventFactory := eventFactory(func(l level.Level, values map[string]interface{}) Event {
+		anEventFactory := eventFactory(func(l level.Level, values map[string]any) Event {
 			return &fallbackEvent{nil, fields.WithAll(values), l}
 		})
 
@@ -83,15 +83,15 @@ func TestNewEventWithFields_direct(t *testing.T) {
 	})
 }
 
-type eventFactory func(level.Level, map[string]interface{}) Event
+type eventFactory func(level.Level, map[string]any) Event
 
-func (instance eventFactory) NewEvent(l level.Level, values map[string]interface{}) Event {
+func (instance eventFactory) NewEvent(l level.Level, values map[string]any) Event {
 	return instance(l, values)
 }
 
 type eventFactoryWithFields func(level.Level, fields.ForEachEnabled) Event
 
-func (instance eventFactoryWithFields) NewEvent(level.Level, map[string]interface{}) Event {
+func (instance eventFactoryWithFields) NewEvent(level.Level, map[string]any) Event {
 	panic("should not be called")
 }
 

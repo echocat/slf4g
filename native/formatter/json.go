@@ -92,7 +92,7 @@ func (instance *Json) encodeLevelChecked(of log.Event, using log.Provider, to en
 	}
 }
 
-func (instance *Json) formatLevel(of log.Event, using log.Provider) (interface{}, error) {
+func (instance *Json) formatLevel(of log.Event, using log.Provider) (any, error) {
 	return instance.getLevelFormatter(using).FormatLevel(of.GetLevel(), using)
 }
 
@@ -112,7 +112,7 @@ func (instance *Json) encodeValuesChecked(of log.Event, using log.Provider, to e
 		printRootLogger := instance.getPrintRootLogger()
 		loggerKey := using.GetFieldKeysSpec().GetLogger()
 		levelKey := instance.getLevelKey()
-		consumer := func(k string, v interface{}) error {
+		consumer := func(k string, v any) error {
 			if k == levelKey {
 				return nil
 			}

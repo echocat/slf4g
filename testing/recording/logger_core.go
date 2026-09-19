@@ -194,7 +194,7 @@ func (instance *CoreLogger) GetProvider() log.Provider {
 	return log.GetProvider()
 }
 
-func (instance *CoreLogger) NewEvent(l level.Level, values map[string]interface{}) log.Event {
+func (instance *CoreLogger) NewEvent(l level.Level, values map[string]any) log.Event {
 	return instance.NewEventWithFields(l, fields.WithAll(values))
 }
 

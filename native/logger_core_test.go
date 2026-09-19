@@ -323,7 +323,7 @@ func Test_CoreLogger_SetLevel_concurrentlyWithGetLevel(t *testing.T) {
 	go func() {
 		defer wait.Done()
 		<-start
-		for i := 0; i < 1000; i++ {
+		for range 1000 {
 			instance.SetLevel(level.Debug)
 			instance.SetLevel(level.Info)
 		}
@@ -331,7 +331,7 @@ func Test_CoreLogger_SetLevel_concurrentlyWithGetLevel(t *testing.T) {
 	go func() {
 		defer wait.Done()
 		<-start
-		for i := 0; i < 1000; i++ {
+		for range 1000 {
 			_ = instance.IsLevelEnabled(level.Info)
 		}
 	}()
@@ -382,9 +382,9 @@ func Test_CoreLogger_NewEvent(t *testing.T) {
 
 	assert.ToBeEqual(t, &event{
 		provider: instance.provider,
-		fields:   fields.WithAll(map[string]interface{}{"foo": "bar"}),
+		fields:   fields.WithAll(map[string]any{"foo": "bar"}),
 		level:    level.Fatal,
-	}, instance.NewEvent(level.Fatal, map[string]interface{}{"foo": "bar"}))
+	}, instance.NewEvent(level.Fatal, map[string]any{"foo": "bar"}))
 }
 
 func Test_CoreLogger_NewEventWithFields(t *testing.T) {
@@ -407,7 +407,7 @@ func Test_CoreLogger_NewEventWithFields_panicsOnError(t *testing.T) {
 	instance, _ := newCoreLogger()
 
 	assert.Execution(t, func() {
-		instance.NewEventWithFields(level.Fatal, fields.ForEachFunc(func(func(string, interface{}) error) error {
+		instance.NewEventWithFields(level.Fatal, fields.ForEachFunc(func(func(string, any) error) error {
 			return errors.New("expected")
 		}))
 	}).WillPanicWith("^expected$")

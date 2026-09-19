@@ -68,7 +68,7 @@ func Test_Interceptors_OnBeforeLog(t *testing.T) {
 	givenEvent := givenLogger.NewEventWithFields(level.Warn, fields.With("foo", "bar"))
 
 	instance := make(Interceptors, 10)
-	for i := 0; i < len(instance); i++ {
+	for i := range len(instance) {
 		instance[i] = newOnBeforeLogCalledInterceptor()
 	}
 
@@ -85,7 +85,7 @@ func Test_Interceptors_OnBeforeLog_withNilEvent(t *testing.T) {
 	givenLogger := recording.NewLogger()
 
 	instance := make(Interceptors, 10)
-	for i := 0; i < len(instance); i++ {
+	for i := range len(instance) {
 		instance[i] = newOnBeforeLogCalledInterceptor()
 	}
 
@@ -103,7 +103,7 @@ func Test_Interceptors_OnBeforeLog_oneReturnsNil(t *testing.T) {
 	givenEvent := givenLogger.NewEventWithFields(level.Warn, fields.With("foo", "bar"))
 
 	instance := make(Interceptors, 10)
-	for i := 0; i < len(instance); i++ {
+	for i := range len(instance) {
 		if i == 2 {
 			instance[2] = OnBeforeLogFunc(func(actualEvent log.Event, _ log.Provider) log.Event {
 				assert.ToBeSame(t, givenEvent, actualEvent)
@@ -132,7 +132,7 @@ func Test_Interceptors_OnAfterLog(t *testing.T) {
 	givenEvent := givenLogger.NewEventWithFields(level.Warn, fields.With("foo", "bar"))
 
 	instance := make(Interceptors, 10)
-	for i := 0; i < len(instance); i++ {
+	for i := range len(instance) {
 		instance[i] = newOnAfterLogCalledInterceptor(t, givenEvent, true)
 	}
 
@@ -150,7 +150,7 @@ func Test_Interceptors_OnAfterLog_withStop(t *testing.T) {
 	givenEvent := givenLogger.NewEventWithFields(level.Warn, fields.With("foo", "bar"))
 
 	instance := make(Interceptors, 10)
-	for i := 0; i < len(instance); i++ {
+	for i := range len(instance) {
 		instance[i] = newOnAfterLogCalledInterceptor(t, givenEvent, i < len(instance)-2)
 	}
 
@@ -172,7 +172,7 @@ func Test_Interceptors_OnAfterLog_withNilEvent(t *testing.T) {
 	givenEvent := givenLogger.NewEventWithFields(level.Warn, fields.With("foo", "bar"))
 
 	instance := make(Interceptors, 10)
-	for i := 0; i < len(instance); i++ {
+	for i := range len(instance) {
 		instance[i] = newOnAfterLogCalledInterceptor(t, givenEvent, true)
 	}
 

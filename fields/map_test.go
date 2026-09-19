@@ -8,7 +8,7 @@ import (
 )
 
 func Test_WithAll(t *testing.T) {
-	actual := WithAll(map[string]interface{}{"foo": 1, "bar": 2})
+	actual := WithAll(map[string]any{"foo": 1, "bar": 2})
 
 	assert.ToBeEqual(t, mapped{"foo": 1, "bar": 2}, actual)
 }
@@ -16,14 +16,14 @@ func Test_WithAll(t *testing.T) {
 func Test_mapped_ForEach(t *testing.T) {
 	instance := mapped{"foo": 1, "bar": 2}
 
-	actualConsumed := map[string]interface{}{}
-	actualErr := instance.ForEach(func(k string, v interface{}) error {
+	actualConsumed := map[string]any{}
+	actualErr := instance.ForEach(func(k string, v any) error {
 		actualConsumed[k] = v
 		return nil
 	})
 
 	assert.ToBeNoError(t, actualErr)
-	assert.ToBeEqual(t, map[string]interface{}{
+	assert.ToBeEqual(t, map[string]any{
 		"foo": 1,
 		"bar": 2,
 	}, actualConsumed)
@@ -33,7 +33,7 @@ func Test_mapped_ForEach_isForwardingErrors(t *testing.T) {
 	expectedErr := errors.New("foo")
 	instance := mapped{"foo": 1, "bar": 2}
 
-	actualErr := instance.ForEach(func(string, interface{}) error {
+	actualErr := instance.ForEach(func(string, any) error {
 		return expectedErr
 	})
 
@@ -44,7 +44,7 @@ func Test_mapped_ForEach_isForwardingErrors(t *testing.T) {
 func Test_mapped_ForEach_withNilInstance(t *testing.T) {
 	var instance mapped
 
-	actualErr := instance.ForEach(func(k string, v interface{}) error {
+	actualErr := instance.ForEach(func(k string, v any) error {
 		assert.Fail(t, "should never be called")
 		return nil
 	})
@@ -136,7 +136,7 @@ func Test_mapped_Withf_withNilInstance(t *testing.T) {
 func Test_mapped_WithAll(t *testing.T) {
 	instance := mapped{"foo": 1, "bar": 2}
 
-	actual := instance.WithAll(map[string]interface{}{"bar": 66, "xyz": 3})
+	actual := instance.WithAll(map[string]any{"bar": 66, "xyz": 3})
 	assert.ToBeEqual(t, mapped{"foo": 1, "bar": 66, "xyz": 3}, mustAsMap(actual))
 }
 
@@ -144,7 +144,7 @@ func Test_mapped_WithAll(t *testing.T) {
 func Test_mapped_WithAll_withNilInstance(t *testing.T) {
 	var instance mapped
 
-	actual := instance.WithAll(map[string]interface{}{"bar": 66, "xyz": 3})
+	actual := instance.WithAll(map[string]any{"bar": 66, "xyz": 3})
 	assert.ToBeEqual(t, mapped{"bar": 66, "xyz": 3}, mustAsMap(actual))
 }
 

@@ -11,7 +11,7 @@ var DefaultKeySorter KeySorter = func(what []string) {
 // SortedForEach is calling the consumer for all entries of ForEachEnabled but
 // in the order ensured by KeySorter. If KeySorter is nil DefaultKeySorter is
 // used.
-func SortedForEach(input ForEachEnabled, sorter KeySorter, consumer func(key string, value interface{}) error) error {
+func SortedForEach(input ForEachEnabled, sorter KeySorter, consumer func(key string, value any) error) error {
 	if input == nil {
 		return nil
 	}
@@ -55,5 +55,5 @@ func NoopKeySorter() KeySorter {
 var noopKeySorterV = func(what []string) {}
 
 func isNoopKeySorter(v KeySorter) bool {
-	return interface{}(noopKeySorterV) == interface{}(v)
+	return any(noopKeySorterV) == any(v)
 }

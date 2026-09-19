@@ -30,7 +30,7 @@ type namedImpl struct {
 	names level.Names
 }
 
-func (instance *namedImpl) Get() interface{} {
+func (instance *namedImpl) Get() any {
 	return instance.Unwrap()
 }
 

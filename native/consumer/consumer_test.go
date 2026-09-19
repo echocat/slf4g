@@ -11,7 +11,7 @@ import (
 
 func Test_Func_Consume(t *testing.T) {
 	givenLogger := recording.NewLogger()
-	givenEvent := givenLogger.NewEvent(level.Warn, map[string]interface{}{
+	givenEvent := givenLogger.NewEvent(level.Warn, map[string]any{
 		"foo": "bar",
 	})
 
@@ -29,7 +29,7 @@ func Test_Func_Consume(t *testing.T) {
 
 func Test_noopV_Consume(t *testing.T) {
 	givenLogger := recording.NewLogger()
-	givenEvent := givenLogger.NewEvent(level.Warn, map[string]interface{}{
+	givenEvent := givenLogger.NewEvent(level.Warn, map[string]any{
 		"foo": "bar",
 	})
 
@@ -58,7 +58,7 @@ func Test_NewFacade(t *testing.T) {
 
 func Test_facade_Consume(t *testing.T) {
 	givenLogger := recording.NewLogger()
-	givenEvent := givenLogger.NewEvent(level.Warn, map[string]interface{}{
+	givenEvent := givenLogger.NewEvent(level.Warn, map[string]any{
 		"foo": "bar",
 	})
 	wasCalled := false

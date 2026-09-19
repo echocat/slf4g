@@ -10,31 +10,31 @@ import (
 type Logger interface {
 	// Print calls l.Output to print to the logger.
 	// Arguments are handled in the manner of fmt.Print.
-	Print(...interface{})
+	Print(...any)
 	// Printf calls l.Output to print to the logger.
 	// Arguments are handled in the manner of fmt.Printf.
-	Printf(string, ...interface{})
+	Printf(string, ...any)
 	// Println calls l.Output to print to the logger.
 	// Arguments are handled in the manner of fmt.Println.
-	Println(...interface{})
+	Println(...any)
 
 	// Fatal is equivalent to l.Print() and can be followed by a call to
 	// os.Exit(1).
-	Fatal(...interface{})
+	Fatal(...any)
 	// Fatalf is equivalent to l.Printf() and can be followed by a call to
 	// os.Exit(1).
-	Fatalf(string, ...interface{})
+	Fatalf(string, ...any)
 	// Fatalln is equivalent to l.Println() and can be followed by a call to
 	// os.Exit(1).
-	Fatalln(...interface{})
+	Fatalln(...any)
 
 	// Panic is equivalent to l.Print() and can followed by a call to panic().
-	Panic(...interface{})
+	Panic(...any)
 	// Panicf is equivalent to l.Printf() and can followed by a call to panic().
-	Panicf(string, ...interface{})
+	Panicf(string, ...any)
 	// Panicln is equivalent to l.Println() and can followed by a call to
 	// panic().
-	Panicln(...interface{})
+	Panicln(...any)
 }
 
 // NewLogger creates a new instance of an SDK compatible Logger which forwards

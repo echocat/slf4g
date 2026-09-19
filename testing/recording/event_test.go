@@ -90,7 +90,7 @@ func Test_event_WithError(t *testing.T) {
 }
 
 func Test_event_WithAll(t *testing.T) {
-	givenMap := map[string]interface{}{
+	givenMap := map[string]any{
 		"b": 2,
 		"c": 3,
 	}
@@ -137,12 +137,12 @@ func Test_event_Format(t *testing.T) {
 
 type entries []entry
 
-func (instance *entries) add(key string, value interface{}) {
+func (instance *entries) add(key string, value any) {
 	*instance = append(*instance, entry{key, value})
 }
 
-func (instance *entries) consumer() func(key string, value interface{}) error {
-	return func(key string, value interface{}) error {
+func (instance *entries) consumer() func(key string, value any) error {
+	return func(key string, value any) error {
 		instance.add(key, value)
 		return nil
 	}
@@ -150,5 +150,5 @@ func (instance *entries) consumer() func(key string, value interface{}) error {
 
 type entry struct {
 	key   string
-	value interface{}
+	value any
 }

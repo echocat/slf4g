@@ -17,7 +17,7 @@ func Test_compaction_releasesOverwrittenHistory(t *testing.T) {
 
 	compacted, ok := instance.(*compactedFields)
 	assert.ToBeEqual(t, true, ok)
-	assert.ToBeEqual(t, map[string]interface{}{"key": minimumCompactionCost}, compacted.values)
+	assert.ToBeEqual(t, map[string]any{"key": minimumCompactionCost}, compacted.values)
 	assert.ToBeEqual(t, []string{"key"}, compacted.keys)
 	assert.ToBeNil(t, compacted.base)
 	assert.ToBeEqual(t, minimumCompactionCost, compacted.compactAt)
@@ -38,7 +38,7 @@ func Test_compaction_releasesHistoryCreatedWithPublicConstructor(t *testing.T) {
 
 	compacted, ok := instance.(*compactedFields)
 	assert.ToBeEqual(t, true, ok)
-	assert.ToBeEqual(t, map[string]interface{}{"key": minimumCompactionCost}, compacted.values)
+	assert.ToBeEqual(t, map[string]any{"key": minimumCompactionCost}, compacted.values)
 	assert.ToBeNil(t, compacted.base)
 }
 
@@ -53,7 +53,7 @@ func Test_compaction_preservesOrderAndGrowsThreshold(t *testing.T) {
 	assert.ToBeEqual(t, minimumCompactionCost+1, compacted.Len())
 
 	var actualKeys []string
-	actualErr := compacted.ForEach(func(key string, _ interface{}) error {
+	actualErr := compacted.ForEach(func(key string, _ any) error {
 		actualKeys = append(actualKeys, key)
 		return nil
 	})
@@ -117,7 +117,7 @@ func Test_compaction_preservesLocalWithoutScope(t *testing.T) {
 func Test_compaction_doesNotEvaluateLazyOrFilteredValues(t *testing.T) {
 	lazyCalls := 0
 	newLazy := func(value int) Lazy {
-		return LazyFunc(func() interface{} {
+		return LazyFunc(func() any {
 			lazyCalls++
 			return value
 		})
@@ -141,7 +141,7 @@ func Test_compaction_doesNotEvaluateLazyOrFilteredValues(t *testing.T) {
 func Test_compaction_preservesOpaqueBaseEvaluation(t *testing.T) {
 	expectedErr := errors.New("expected")
 	base := &observedFields{
-		values: map[string]interface{}{"shadowed": "base", "base": "visible"},
+		values: map[string]any{"shadowed": "base", "base": "visible"},
 		err:    expectedErr,
 	}
 	var instance Fields = base
@@ -154,7 +154,7 @@ func Test_compaction_preservesOpaqueBaseEvaluation(t *testing.T) {
 	assert.ToBeEqual(t, 0, base.lenCalls)
 
 	var actualKeys []string
-	actualErr := instance.ForEach(func(key string, _ interface{}) error {
+	actualErr := instance.ForEach(func(key string, _ any) error {
 		actualKeys = append(actualKeys, key)
 		return nil
 	})
@@ -179,7 +179,7 @@ func Test_compaction_preservesOpaqueBaseEvaluation(t *testing.T) {
 func Test_compaction_LenIgnoresOpaqueBaseErrors(t *testing.T) {
 	expectedErr := errors.New("expected")
 	base := NewLineage(
-		&observedFields{values: map[string]interface{}{"target": true}, err: expectedErr},
+		&observedFields{values: map[string]any{"target": true}, err: expectedErr},
 		With("parent", true),
 	)
 	instance := base
@@ -189,7 +189,7 @@ func Test_compaction_LenIgnoresOpaqueBaseErrors(t *testing.T) {
 
 	assert.ToBeOfType(t, &compactedFields{}, instance)
 	assert.ToBeEqual(t, 3, instance.Len())
-	actualErr := instance.ForEach(func(string, interface{}) error { return nil })
+	actualErr := instance.ForEach(func(string, any) error { return nil })
 	assert.ToBeEqual(t, expectedErr, actualErr)
 }
 
@@ -216,12 +216,12 @@ func Test_compaction_matchesUncompactedMixedOperations(t *testing.T) {
 		assert.ToBeEqual(t, expectedExists, actualExists)
 	}
 	var expectedKeys []string
-	expectedErr := expected.ForEach(func(key string, _ interface{}) error {
+	expectedErr := expected.ForEach(func(key string, _ any) error {
 		expectedKeys = append(expectedKeys, key)
 		return nil
 	})
 	var actualKeys []string
-	actualErr := actual.ForEach(func(key string, _ interface{}) error {
+	actualErr := actual.ForEach(func(key string, _ any) error {
 		actualKeys = append(actualKeys, key)
 		return nil
 	})
@@ -231,14 +231,14 @@ func Test_compaction_matchesUncompactedMixedOperations(t *testing.T) {
 }
 
 type observedFields struct {
-	values       map[string]interface{}
+	values       map[string]any
 	err          error
 	forEachCalls int
 	getCalls     int
 	lenCalls     int
 }
 
-func (instance *observedFields) ForEach(consumer func(key string, value interface{}) error) error {
+func (instance *observedFields) ForEach(consumer func(key string, value any) error) error {
 	instance.forEachCalls++
 	for key, value := range instance.values {
 		if err := consumer(key, value); err != nil {
@@ -248,7 +248,7 @@ func (instance *observedFields) ForEach(consumer func(key string, value interfac
 	return instance.err
 }
 
-func (instance *observedFields) Get(key string) (interface{}, bool) {
+func (instance *observedFields) Get(key string) (any, bool) {
 	instance.getCalls++
 	value, exists := instance.values[key]
 	return value, exists
@@ -259,15 +259,15 @@ func (instance *observedFields) Len() int {
 	return len(instance.values)
 }
 
-func (instance *observedFields) With(key string, value interface{}) Fields {
+func (instance *observedFields) With(key string, value any) Fields {
 	return NewLineage(With(key, value), instance)
 }
 
-func (instance *observedFields) Withf(key string, format string, args ...interface{}) Fields {
+func (instance *observedFields) Withf(key string, format string, args ...any) Fields {
 	return NewLineage(Withf(key, format, args...), instance)
 }
 
-func (instance *observedFields) WithAll(values map[string]interface{}) Fields {
+func (instance *observedFields) WithAll(values map[string]any) Fields {
 	return NewLineage(WithAll(values), instance)
 }
 

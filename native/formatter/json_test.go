@@ -79,7 +79,7 @@ func Test_Json_getPrintRootLogger_default(t *testing.T) {
 
 func Test_Json_getLevelFormatter_explicit(t *testing.T) {
 	givenProvider := recording.NewProvider()
-	givenFormatter := LevelFunc(func(in level.Level, using log.Provider) (interface{}, error) {
+	givenFormatter := LevelFunc(func(in level.Level, using log.Provider) (any, error) {
 		return fmt.Sprintf("some-%d", in), nil
 	})
 	instance := NewJson(func(json *Json) {
@@ -132,7 +132,7 @@ func Test_Json_Format(t *testing.T) {
 		expected string
 	}{{
 		name: "withStringAndInteger",
-		given: logger.NewEvent(level.Info, map[string]interface{}{
+		given: logger.NewEvent(level.Info, map[string]any{
 			"foo": "foo",
 			"bar": 1,
 		}),
@@ -145,7 +145,7 @@ func Test_Json_Format(t *testing.T) {
 `,
 	}, {
 		name: "withDefaultLevelKeyCollision",
-		given: logger.NewEvent(level.Info, map[string]interface{}{
+		given: logger.NewEvent(level.Info, map[string]any{
 			"foo":   "foo",
 			"level": "ERROR",
 		}),
@@ -153,7 +153,7 @@ func Test_Json_Format(t *testing.T) {
 `,
 	}, {
 		name: "withCustomLevelKeyCollision",
-		given: logger.NewEvent(level.Info, map[string]interface{}{
+		given: logger.NewEvent(level.Info, map[string]any{
 			"foo":      "foo",
 			"severity": "ERROR",
 		}),
@@ -180,12 +180,12 @@ func Test_Json_Format(t *testing.T) {
 func Test_Json_Format_failing(t *testing.T) {
 	givenProvider := recording.NewProvider()
 	givenLogger := givenProvider.GetRootLogger()
-	givenEvent := givenLogger.NewEvent(level.Warn, map[string]interface{}{
+	givenEvent := givenLogger.NewEvent(level.Warn, map[string]any{
 		"secret": "not-for-the-error",
 	})
 	givenError := errors.New("expected")
 	instance := NewJson(func(json *Json) {
-		json.LevelFormatter = LevelFunc(func(level.Level, log.Provider) (interface{}, error) {
+		json.LevelFormatter = LevelFunc(func(level.Level, log.Provider) (any, error) {
 			return nil, givenError
 		})
 	})
@@ -202,7 +202,7 @@ func Test_Json_encodeLevelChecked(t *testing.T) {
 	givenEvent := givenLogger.NewEvent(level.Warn, nil)
 	givenEncoder := encoding.NewBufferedJsonEncoder()
 	instance := NewJson(func(json *Json) {
-		json.LevelFormatter = LevelFunc(func(actualLevel level.Level, actualProvider log.Provider) (interface{}, error) {
+		json.LevelFormatter = LevelFunc(func(actualLevel level.Level, actualProvider log.Provider) (any, error) {
 			assert.ToBeEqual(t, givenProvider, actualProvider)
 			assert.ToBeEqual(t, givenEvent.GetLevel(), actualLevel)
 			return 666, nil
@@ -223,7 +223,7 @@ func Test_Json_encodeLevelChecked_failingOnLevelFormat(t *testing.T) {
 	givenEncoder := encoding.NewBufferedJsonEncoder()
 	givenError := errors.New("expected")
 	instance := NewJson(func(json *Json) {
-		json.LevelFormatter = LevelFunc(func(actualLevel level.Level, actualProvider log.Provider) (interface{}, error) {
+		json.LevelFormatter = LevelFunc(func(actualLevel level.Level, actualProvider log.Provider) (any, error) {
 			assert.ToBeEqual(t, givenProvider, actualProvider)
 			assert.ToBeEqual(t, givenEvent.GetLevel(), actualLevel)
 			return 0, givenError
@@ -244,7 +244,7 @@ func Test_Json_encodeLevelChecked_failingOnEncodeValue(t *testing.T) {
 	givenEncoder := encoding.NewBufferedJsonEncoder()
 	givenError := errors.New("expected")
 	instance := NewJson(func(json *Json) {
-		json.LevelFormatter = LevelFunc(func(actualLevel level.Level, actualProvider log.Provider) (interface{}, error) {
+		json.LevelFormatter = LevelFunc(func(actualLevel level.Level, actualProvider log.Provider) (any, error) {
 			assert.ToBeEqual(t, givenProvider, actualProvider)
 			assert.ToBeEqual(t, givenEvent.GetLevel(), actualLevel)
 			return &failingJsonMarshalling{givenError}, nil
@@ -270,79 +270,79 @@ func Test_Json_encodeValuesChecked(t *testing.T) {
 		unsorted        bool
 	}{{
 		name: "withStringAndInteger",
-		given: givenLogger.NewEvent(0, map[string]interface{}{
+		given: givenLogger.NewEvent(0, map[string]any{
 			"foo": "foo",
 			"bar": 1,
 		}),
 		expected: `,"bar":1,"foo":"foo"`,
 	}, {
 		name: "withStringAndMap",
-		given: givenLogger.NewEvent(0, map[string]interface{}{
+		given: givenLogger.NewEvent(0, map[string]any{
 			"foo": "foo",
-			"bar": map[string]interface{}{
+			"bar": map[string]any{
 				"hello": "world",
 			},
 		}),
 		expected: `,"bar":{"hello":"world"},"foo":"foo"`,
 	}, {
 		name: "withStringAndError",
-		given: givenLogger.NewEvent(0, map[string]interface{}{
+		given: givenLogger.NewEvent(0, map[string]any{
 			"foo": "foo",
 			"bar": errors.New("anErrorMessage"),
 		}),
 		expected: `,"bar":"anErrorMessage","foo":"foo"`,
 	}, {
 		name: "withStringAndStringPointer",
-		given: givenLogger.NewEvent(0, map[string]interface{}{
+		given: givenLogger.NewEvent(0, map[string]any{
 			"foo": "foo",
 			"bar": pstring("barAsPointer"),
 		}),
 		expected: `,"bar":"barAsPointer","foo":"foo"`,
 	}, {
 		name: "withStringAndLazy",
-		given: givenLogger.NewEvent(0, map[string]interface{}{
+		given: givenLogger.NewEvent(0, map[string]any{
 			"foo": "foo",
 			"bar": aLazy("barAsLazy"),
 		}),
 		expected: `,"bar":"barAsLazy","foo":"foo"`,
 	}, {
 		name: "withStringAndFilteredRespected",
-		given: givenLogger.NewEvent(level.Info, map[string]interface{}{
+		given: givenLogger.NewEvent(level.Info, map[string]any{
 			"foo": "foo",
 			"bar": fields.RequireMaximalLevel(level.Info, "barAsFiltered"),
 		}),
 		expected: `,"bar":"barAsFiltered","foo":"foo"`,
 	}, {
 		name: "withStringAndFilteredIgnored",
-		given: givenLogger.NewEvent(level.Info, map[string]interface{}{
+		given: givenLogger.NewEvent(level.Info, map[string]any{
 			"foo": "foo",
 			"bar": fields.RequireMaximalLevel(level.Debug, "barAsFiltered"),
 		}),
 		expected: `,"foo":"foo"`,
 	}, {
 		name: "withoutExcluded",
-		given: givenLogger.NewEvent(level.Info, map[string]interface{}{
+		given: givenLogger.NewEvent(level.Info, map[string]any{
 			"foo": "foo",
 			"bar": fields.Exclude,
 		}),
 		expected: `,"foo":"foo"`,
 	}, {
 		name: "withStringAndSomeLogger",
-		given: givenLogger.NewEvent(0, map[string]interface{}{
+		given: givenLogger.NewEvent(0, map[string]any{
 			"foo":    "foo",
 			"logger": "aLogger",
 		}),
 		expected: `,"foo":"foo","logger":"aLogger"`,
 	}, {
 		name: "withStringAndHiddenRootLogger",
-		given: givenLogger.NewEvent(0, map[string]interface{}{
+		given: givenLogger.NewEvent(0, map[string]any{
 			"foo":    "foo",
 			"logger": "ROOT",
 		}),
 		expected: `,"foo":"foo"`,
 	}, {
 		name: "withStringAndShowRootLogger",
-		given: givenLogger.NewEvent(0, map[string]interface{}{
+		given: givenLogger.NewEvent(0, map[string]any{
 			"foo":    "foo",
 			"logger": "ROOT",
 		}),
@@ -350,7 +350,7 @@ func Test_Json_encodeValuesChecked(t *testing.T) {
 		expected:        `,"foo":"foo","logger":"ROOT"`,
 	}, {
 		name: "withStringAndLazy",
-		given: givenLogger.NewEvent(0, map[string]interface{}{
+		given: givenLogger.NewEvent(0, map[string]any{
 			"foo": "foo",
 			"bar": aLazy("bar"),
 		}),
@@ -358,14 +358,14 @@ func Test_Json_encodeValuesChecked(t *testing.T) {
 		expected:        `,"bar":"bar","foo":"foo"`,
 	}, {
 		name: "unsorted",
-		given: givenLogger.NewEvent(0, map[string]interface{}{
+		given: givenLogger.NewEvent(0, map[string]any{
 			"foo": "foo",
 		}),
 		unsorted: true,
 		expected: `,"foo":"foo"`,
 	}, {
 		name: "withTypedNilValues",
-		given: givenLogger.NewEvent(0, map[string]interface{}{
+		given: givenLogger.NewEvent(0, map[string]any{
 			"error":    (*typedNilError)(nil),
 			"filtered": (*typedNilFiltered)(nil),
 			"lazy":     (*typedNilLazy)(nil),

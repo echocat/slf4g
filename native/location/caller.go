@@ -105,7 +105,7 @@ type callerImpl struct {
 	frame     *runtime.Frame
 }
 
-func (instance callerImpl) Get() interface{} {
+func (instance callerImpl) Get() any {
 	if instance.discovery.ReportingType == CallerReportingTypePrefersType && instance.frame.Function != "" {
 		return instance.formatType()
 	}

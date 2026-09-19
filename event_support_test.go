@@ -98,14 +98,14 @@ func Test_GetMessageOf_withStringSliceValue(t *testing.T) {
 
 func Test_GetMessageOf_withAnySliceValue(t *testing.T) {
 	cases := []struct {
-		given    []interface{}
+		given    []any
 		expected string
 	}{
-		{[]interface{}{"foo", "bar", "xyz"}, "foo bar xyz"},
-		{[]interface{}{"foo", "bar"}, "foo bar"},
-		{[]interface{}{"foo"}, "foo"},
-		{[]interface{}{}, ""},
-		{[]interface{}{"foo", 1, "bar"}, "foo 1 bar"},
+		{[]any{"foo", "bar", "xyz"}, "foo bar xyz"},
+		{[]any{"foo", "bar"}, "foo bar"},
+		{[]any{"foo"}, "foo"},
+		{[]any{}, ""},
+		{[]any{"foo", 1, "bar"}, "foo 1 bar"},
 	}
 	givenProvider := newMockProvider("test").withRootLogger()
 
@@ -169,7 +169,7 @@ func Test_GetMessageOf_withFilteredLazyValue(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			calls := 0
-			filtered := fields.RequireMaximalLevelLazy(c.maximalLevel, fields.LazyFunc(func() interface{} {
+			filtered := fields.RequireMaximalLevelLazy(c.maximalLevel, fields.LazyFunc(func() any {
 				calls++
 				return "value"
 			}))
@@ -218,7 +218,7 @@ func Test_GetMessageOf_withTypedNilFilteredValue(t *testing.T) {
 func Test_GetMessageOf_withLazyTypedNilResult(t *testing.T) {
 	givenProvider := newMockProvider("test").withRootLogger()
 	givenEvent := givenProvider.newEvent(level.Info).
-		With(givenProvider.fieldKeysSpec.GetMessage(), fields.LazyFunc(func() interface{} {
+		With(givenProvider.fieldKeysSpec.GetMessage(), fields.LazyFunc(func() any {
 			var result *string
 			return result
 		}))
@@ -395,7 +395,7 @@ func Test_GetTimestampOf_withLazyValue(t *testing.T) {
 	givenTimestamp := support.PTime(time.Now())
 	givenProvider := newMockProvider("test").withRootLogger()
 	givenEvent := givenProvider.newEvent(level.Info).
-		With(givenProvider.fieldKeysSpec.GetTimestamp(), fields.LazyFunc(func() interface{} {
+		With(givenProvider.fieldKeysSpec.GetTimestamp(), fields.LazyFunc(func() any {
 			return givenTimestamp
 		}))
 
@@ -557,7 +557,7 @@ func Test_stringError_String(t *testing.T) {
 
 type lazyMock int
 
-func (instance lazyMock) Get() interface{} {
+func (instance lazyMock) Get() any {
 	return int(instance)
 }
 
@@ -575,7 +575,7 @@ func (instance namedMock) GetName() string {
 
 type nilLazyMock struct{}
 
-func (*nilLazyMock) Get() interface{} {
+func (*nilLazyMock) Get() any {
 	panic("must not be called")
 }
 
@@ -587,11 +587,11 @@ func (*nilErrorMock) Error() string {
 
 type nilFilteredMock struct{}
 
-func (*nilFilteredMock) Get() interface{} {
+func (*nilFilteredMock) Get() any {
 	panic("must not be called")
 }
 
-func (*nilFilteredMock) Filter(fields.FilterContext) (interface{}, bool) {
+func (*nilFilteredMock) Filter(fields.FilterContext) (any, bool) {
 	panic("must not be called")
 }
 

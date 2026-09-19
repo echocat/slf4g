@@ -12,23 +12,23 @@ type lineage struct {
 	compactAt             int
 }
 
-func (instance *lineage) ForEach(consumer func(key string, value interface{}) error) error {
+func (instance *lineage) ForEach(consumer func(key string, value any) error) error {
 	return forEachField(instance, consumer, false)
 }
 
-func (instance *lineage) Get(key string) (interface{}, bool) {
+func (instance *lineage) Get(key string) (any, bool) {
 	return getField(instance, key)
 }
 
-func (instance *lineage) With(key string, value interface{}) Fields {
+func (instance *lineage) With(key string, value any) Fields {
 	return instance.asParentOf(With(key, value))
 }
 
-func (instance *lineage) Withf(key string, format string, args ...interface{}) Fields {
+func (instance *lineage) Withf(key string, format string, args ...any) Fields {
 	return instance.asParentOf(Withf(key, format, args...))
 }
 
-func (instance *lineage) WithAll(of map[string]interface{}) Fields {
+func (instance *lineage) WithAll(of map[string]any) Fields {
 	return instance.asParentOf(WithAll(of))
 }
 

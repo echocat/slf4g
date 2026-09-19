@@ -13,12 +13,12 @@ func (instance eventWithProgramCounter) GetProgramCounter() uintptr {
 	return instance.programCounter
 }
 
-func (instance eventWithProgramCounter) With(key string, value interface{}) log.Event {
+func (instance eventWithProgramCounter) With(key string, value any) log.Event {
 	instance.Event = instance.Event.With(key, value)
 	return instance
 }
 
-func (instance eventWithProgramCounter) Withf(key string, format string, args ...interface{}) log.Event {
+func (instance eventWithProgramCounter) Withf(key string, format string, args ...any) log.Event {
 	instance.Event = instance.Event.Withf(key, format, args...)
 	return instance
 }
@@ -28,7 +28,7 @@ func (instance eventWithProgramCounter) WithError(err error) log.Event {
 	return instance
 }
 
-func (instance eventWithProgramCounter) WithAll(values map[string]interface{}) log.Event {
+func (instance eventWithProgramCounter) WithAll(values map[string]any) log.Event {
 	instance.Event = instance.Event.WithAll(values)
 	return instance
 }

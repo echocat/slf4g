@@ -43,7 +43,7 @@ func (instance *Logger) Log(event log.Event, skipFrames uint16) {
 }
 
 // NewEvent implements log.CoreLogger#NewEvent()
-func (instance *Logger) NewEvent(l level.Level, values map[string]interface{}) log.Event {
+func (instance *Logger) NewEvent(l level.Level, values map[string]any) log.Event {
 	return instance.CoreLogger.NewEvent(l, values)
 }
 

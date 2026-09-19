@@ -12,7 +12,7 @@ func Test_SortedForEach(t *testing.T) {
 	expected := entries{{"a", "value_a"}, {"f", "value_f"}, {"h", "value_h"}, {"z", "value_z"}}
 
 	actualEntries := entries{}
-	actualErr := SortedForEach(given, DefaultKeySorter, func(key string, value interface{}) error {
+	actualErr := SortedForEach(given, DefaultKeySorter, func(key string, value any) error {
 		actualEntries.add(key, value)
 		return nil
 	})
@@ -23,11 +23,11 @@ func Test_SortedForEach(t *testing.T) {
 
 func Test_SortedForEach_withAsMapError(t *testing.T) {
 	givenErr := errors.New("expected")
-	given := ForEachFunc(func(func(key string, value interface{}) error) error {
+	given := ForEachFunc(func(func(key string, value any) error) error {
 		return givenErr
 	})
 
-	actualErr := SortedForEach(given, DefaultKeySorter, func(key string, value interface{}) error {
+	actualErr := SortedForEach(given, DefaultKeySorter, func(key string, value any) error {
 		panic("should never be called")
 	})
 
@@ -40,7 +40,7 @@ func Test_SortedForEach_withError(t *testing.T) {
 	expected := entries{{"a", "value_a"}}
 
 	actualEntries := entries{}
-	actualErr := SortedForEach(given, DefaultKeySorter, func(key string, value interface{}) error {
+	actualErr := SortedForEach(given, DefaultKeySorter, func(key string, value any) error {
 		if key == "f" {
 			return giveError
 		}
@@ -53,7 +53,7 @@ func Test_SortedForEach_withError(t *testing.T) {
 }
 
 func Test_SortedForEach_withNilInput(t *testing.T) {
-	actualErr := SortedForEach(nil, DefaultKeySorter, func(key string, value interface{}) error {
+	actualErr := SortedForEach(nil, DefaultKeySorter, func(key string, value any) error {
 		panic("should never be called")
 	})
 
@@ -65,7 +65,7 @@ func Test_SortedForEach_withNilSorter(t *testing.T) {
 	expected := entries{{"a", "value_a"}, {"f", "value_f"}, {"h", "value_h"}, {"z", "value_z"}}
 
 	actualEntries := entries{}
-	actualErr := SortedForEach(given, nil, func(key string, value interface{}) error {
+	actualErr := SortedForEach(given, nil, func(key string, value any) error {
 		actualEntries.add(key, value)
 		return nil
 	})
@@ -85,7 +85,7 @@ func Test_SortedForEach_withNilSorterAndDefaultIsNilToo(t *testing.T) {
 	expected := mapped{"f": "value_f", "h": "value_h", "z": "value_z", "a": "value_a"}
 
 	actualEntries := mapped{}
-	actualErr := SortedForEach(given, nil, func(key string, value interface{}) error {
+	actualErr := SortedForEach(given, nil, func(key string, value any) error {
 		actualEntries[key] = value
 		return nil
 	})
@@ -99,7 +99,7 @@ func Test_SortedForEach_withEmptyFields(t *testing.T) {
 	expected := entries{}
 
 	actualEntries := entries{}
-	actualErr := SortedForEach(given, nil, func(key string, value interface{}) error {
+	actualErr := SortedForEach(given, nil, func(key string, value any) error {
 		actualEntries.add(key, value)
 		return nil
 	})
@@ -124,11 +124,11 @@ func Test_noopKeySorterV(t *testing.T) {
 
 type entries []entry
 
-func (instance *entries) add(k string, v interface{}) {
+func (instance *entries) add(k string, v any) {
 	*instance = append(*instance, entry{k, v})
 }
 
 type entry struct {
 	key   string
-	value interface{}
+	value any
 }

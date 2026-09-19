@@ -15,13 +15,13 @@ var DefaultLevel Level = NewNamesBasedLevel(level.NewNamesFacade(func() level.Na
 // Level is used to format a given level.Level.
 type Level interface {
 	// FormatLevel formats the given level.Level.
-	FormatLevel(in level.Level, using log.Provider) (interface{}, error)
+	FormatLevel(in level.Level, using log.Provider) (any, error)
 }
 
 // NewNamesBasedLevel creates a new instance of Level which uses given nlevel.Names to
 // resolve the name of a given log.Level and format it with it.
 func NewNamesBasedLevel(names level.Names) Level {
-	return LevelFunc(func(in level.Level, using log.Provider) (interface{}, error) {
+	return LevelFunc(func(in level.Level, using log.Provider) (any, error) {
 		result, err := names.ToName(in)
 		return result, err
 	})
@@ -30,16 +30,16 @@ func NewNamesBasedLevel(names level.Names) Level {
 // NewOrdinalBasedLevel creates a new instance of Level which formats the given
 // level.Level by its ordinal.
 func NewOrdinalBasedLevel() Level {
-	return LevelFunc(func(in level.Level, using log.Provider) (interface{}, error) {
+	return LevelFunc(func(in level.Level, using log.Provider) (any, error) {
 		return uint16(in), nil
 	})
 }
 
 // LevelFunc is wrapping the given function into a Level.
-type LevelFunc func(in level.Level, using log.Provider) (interface{}, error)
+type LevelFunc func(in level.Level, using log.Provider) (any, error)
 
 // FormatLevel implements Level.FormatLevel()
-func (instance LevelFunc) FormatLevel(in level.Level, using log.Provider) (interface{}, error) {
+func (instance LevelFunc) FormatLevel(in level.Level, using log.Provider) (any, error) {
 	return instance(in, using)
 }
 
@@ -51,7 +51,7 @@ func NewLevelFacade(provider func() Level) Level {
 
 type levelFacade func() Level
 
-func (instance levelFacade) FormatLevel(in level.Level, using log.Provider) (interface{}, error) {
+func (instance levelFacade) FormatLevel(in level.Level, using log.Provider) (any, error) {
 	return instance.Unwrap().FormatLevel(in, using)
 }
 
@@ -64,6 +64,6 @@ func NoopLevel() Level {
 	return noopLevelV
 }
 
-var noopLevelV = LevelFunc(func(in level.Level, _ log.Provider) (interface{}, error) {
+var noopLevelV = LevelFunc(func(in level.Level, _ log.Provider) (any, error) {
 	return in, nil
 })

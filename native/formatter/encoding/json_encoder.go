@@ -14,11 +14,11 @@ import (
 type JsonEncoder interface {
 	TextEncoder
 
-	WriteKeyValue(k string, v interface{}) error
-	WriteKeyValueChecked(k string, v interface{}) func() error
+	WriteKeyValue(k string, v any) error
+	WriteKeyValueChecked(k string, v any) func() error
 
-	WriteValue(v interface{}) error
-	WriteValueChecked(v interface{}) func() error
+	WriteValue(v any) error
+	WriteValueChecked(v any) func() error
 }
 
 type BufferedJsonEncoder interface {
@@ -38,7 +38,7 @@ type bufferedJsonEncoder struct {
 	encoder *json.Encoder
 }
 
-func (instance *bufferedJsonEncoder) WriteKeyValue(k string, v interface{}) error {
+func (instance *bufferedJsonEncoder) WriteKeyValue(k string, v any) error {
 	return execution.Execute(
 		instance.WriteValueChecked(k),
 		instance.WriteByteChecked(':'),
@@ -46,13 +46,13 @@ func (instance *bufferedJsonEncoder) WriteKeyValue(k string, v interface{}) erro
 	)
 }
 
-func (instance *bufferedJsonEncoder) WriteKeyValueChecked(k string, v interface{}) func() error {
+func (instance *bufferedJsonEncoder) WriteKeyValueChecked(k string, v any) func() error {
 	return func() error {
 		return instance.WriteKeyValue(k, v)
 	}
 }
 
-func (instance *bufferedJsonEncoder) WriteValue(v interface{}) error {
+func (instance *bufferedJsonEncoder) WriteValue(v any) error {
 	if ve, ok := v.(error); ok {
 		if support.IsNil(ve) {
 			v = nil
@@ -73,7 +73,7 @@ func (instance *bufferedJsonEncoder) WriteValue(v interface{}) error {
 	return instance.encoder.Encode(v)
 }
 
-func (instance *bufferedJsonEncoder) WriteValueChecked(v interface{}) func() error {
+func (instance *bufferedJsonEncoder) WriteValueChecked(v any) func() error {
 	return func() error {
 		return instance.WriteValue(v)
 	}

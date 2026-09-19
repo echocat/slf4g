@@ -24,7 +24,7 @@ func GetProvider() Provider {
 }
 
 func getProvider() Provider {
-	return globalprovider.Resolve(func() interface{} {
+	return globalprovider.Resolve(func() any {
 		return exactOneProvider()
 	}).(Provider)
 }

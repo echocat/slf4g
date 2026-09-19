@@ -15,17 +15,17 @@ import (
 type Lazy interface {
 	// Get is the method which will be called at the moment where the value
 	// should be consumed.
-	Get() interface{}
+	Get() any
 }
 
 // LazyFunc wraps Lazy into a single function pointer.
-func LazyFunc(provider func() interface{}) Lazy {
+func LazyFunc(provider func() any) Lazy {
 	return lazyFunc(provider)
 }
 
-type lazyFunc func() interface{}
+type lazyFunc func() any
 
-func (instance lazyFunc) Get() interface{} {
+func (instance lazyFunc) Get() any {
 	if instance == nil {
 		return nil
 	}
@@ -34,28 +34,28 @@ func (instance lazyFunc) Get() interface{} {
 
 // LazyFormat returns a value which will be executed the fmt.Sprintf action at
 // the moment when it will be consumed or in other words: Lazy.Get() is called.
-func LazyFormat(format string, args ...interface{}) Lazy {
-	return &lazyFormat{format, append([]interface{}(nil), args...)}
+func LazyFormat(format string, args ...any) Lazy {
+	return &lazyFormat{format, append([]any(nil), args...)}
 }
 
 type lazyFormat struct {
 	format string
-	args   []interface{}
+	args   []any
 }
 
-func (instance *lazyFormat) Get() interface{} {
+func (instance *lazyFormat) Get() any {
 	return instance.String()
 }
 
 func (instance *lazyFormat) String() string {
-	targetArgs := make([]interface{}, len(instance.args))
+	targetArgs := make([]any, len(instance.args))
 	for i, arg := range instance.args {
 		targetArgs[i] = resolveLazy(arg)
 	}
 	return fmt.Sprintf(instance.format, targetArgs...)
 }
 
-func resolveLazy(value interface{}) interface{} {
+func resolveLazy(value any) any {
 	if value == nil {
 		return nil
 	}

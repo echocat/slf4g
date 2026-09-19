@@ -8,35 +8,35 @@ import (
 	"testing"
 )
 
-func ToBeSame(t testing.TB, expected, actual interface{}) {
+func ToBeSame(t testing.TB, expected, actual any) {
 	t.Helper()
 	if !isSame(expected, actual) {
 		Failf(t, "Expected to be same as: <%+v>; but got: <%+v>", expected, actual)
 	}
 }
 
-func ToBeNotSame(t testing.TB, expected, actual interface{}) {
+func ToBeNotSame(t testing.TB, expected, actual any) {
 	t.Helper()
 	if isSame(expected, actual) {
 		Failf(t, "Expected to be not same as: <%+v>; but got: <%+v>", expected, actual)
 	}
 }
 
-func ToBeEqual(t testing.TB, expected, actual interface{}) {
+func ToBeEqual(t testing.TB, expected, actual any) {
 	t.Helper()
 	if !isEqual(expected, actual) {
 		Failf(t, "Expected to be equal to: <%+v>; but got: <%+v>", expected, actual)
 	}
 }
 
-func ToBeNotEqual(t testing.TB, expected, actual interface{}) {
+func ToBeNotEqual(t testing.TB, expected, actual any) {
 	t.Helper()
 	if isEqual(expected, actual) {
 		Failf(t, "Expected to be not equal to: <%+v>; but got: <%+v>", expected, actual)
 	}
 }
 
-func ToBeEqualUsing(t testing.TB, expected, actual interface{}, comparator interface{}) {
+func ToBeEqualUsing(t testing.TB, expected, actual any, comparator any) {
 	t.Helper()
 	isEqual, err := callComparator(expected, actual, comparator)
 	if err != nil {
@@ -46,7 +46,7 @@ func ToBeEqualUsing(t testing.TB, expected, actual interface{}, comparator inter
 	}
 }
 
-func ToBeNotEqualUsing(t testing.TB, expected, actual interface{}, comparator interface{}) {
+func ToBeNotEqualUsing(t testing.TB, expected, actual any, comparator any) {
 	t.Helper()
 	isEqual, err := callComparator(expected, actual, comparator)
 	if err != nil {
@@ -56,7 +56,7 @@ func ToBeNotEqualUsing(t testing.TB, expected, actual interface{}, comparator in
 	}
 }
 
-func ToBeMatching(t testing.TB, expectedPattern string, actual interface{}) {
+func ToBeMatching(t testing.TB, expectedPattern string, actual any) {
 	t.Helper()
 	if actual == nil {
 		Failf(t, "Expected to be matching: <%s>; but got: <%+v>", expectedPattern, actual)
@@ -69,7 +69,7 @@ func ToBeMatching(t testing.TB, expectedPattern string, actual interface{}) {
 	}
 }
 
-func ToBeOfType(t testing.TB, expectedType, actual interface{}) {
+func ToBeOfType(t testing.TB, expectedType, actual any) {
 	t.Helper()
 	if !isType(expectedType, actual) {
 		Failf(t, "Expected to be type of: <%+v>; but got: <%+v>", reflect.TypeOf(expectedType), reflect.TypeOf(actual))
@@ -83,14 +83,14 @@ func ToBeNoError(t testing.TB, actual error) {
 	}
 }
 
-func ToBeNil(t testing.TB, actual interface{}) {
+func ToBeNil(t testing.TB, actual any) {
 	t.Helper()
 	if !isNil(actual) {
 		Failf(t, "Expected to be nil; but got: <%+v>", actual)
 	}
 }
 
-func ToBeNotNil(t testing.TB, actual interface{}) {
+func ToBeNotNil(t testing.TB, actual any) {
 	t.Helper()
 	if isNil(actual) {
 		Failf(t, "Expected to be not nil; but got: <%+v>", actual)
@@ -101,17 +101,17 @@ func Execution(t testing.TB, f func()) *ExecutionT {
 	return &ExecutionT{t, f}
 }
 
-func Fail(t testing.TB, fmt string, args ...interface{}) {
+func Fail(t testing.TB, fmt string, args ...any) {
 	t.Helper()
 	t.Errorf(fmt, args...)
 }
 
-func Failf(t testing.TB, fmt string, args ...interface{}) {
+func Failf(t testing.TB, fmt string, args ...any) {
 	t.Helper()
 	t.Errorf(fmt, args...)
 }
 
-func isSame(expected, actual interface{}) bool {
+func isSame(expected, actual any) bool {
 	if expected == nil && actual == nil {
 		return true
 	}
@@ -128,18 +128,18 @@ func isSame(expected, actual interface{}) bool {
 	return expected == actual
 }
 
-func isEqual(expected, actual interface{}) bool {
+func isEqual(expected, actual any) bool {
 	if isFunction(expected) {
 		return isSame(expected, actual)
 	}
 	return reflect.DeepEqual(expected, actual)
 }
 
-func isType(expectedType, actual interface{}) bool {
+func isType(expectedType, actual any) bool {
 	return reflect.TypeOf(expectedType) == reflect.TypeOf(actual)
 }
 
-func isFunction(arg interface{}) bool {
+func isFunction(arg any) bool {
 	if arg == nil {
 		return false
 	}
@@ -171,7 +171,7 @@ func (instance *ExecutionT) WillPanicWithRegexp(pattern *regexp.Regexp) {
 	instance.what()
 }
 
-func callComparator(expected, actual interface{}, comparator interface{}) (equal bool, err error) {
+func callComparator(expected, actual any, comparator any) (equal bool, err error) {
 	if comparator == nil {
 		panic("comparator of kind func expected; but got: <nil>")
 	}
@@ -202,7 +202,7 @@ func callComparator(expected, actual interface{}, comparator interface{}) (equal
 	return
 }
 
-func isNil(object interface{}) bool {
+func isNil(object any) bool {
 	if object == nil {
 		return true
 	}

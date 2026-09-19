@@ -12,8 +12,8 @@ func Test_DefaultValueEquality(t *testing.T) {
 	funcB := func() {}
 
 	cases := map[string]struct {
-		left     interface{}
-		right    interface{}
+		left     any
+		right    any
 		expected bool
 	}{
 		"bothString":       {"hello", "hello", true},
@@ -46,7 +46,7 @@ func Test_ValueEqualityFunc_AreValuesEqual(t *testing.T) {
 	givenRight := &struct{ bar string }{"aBar"}
 	givenErr := errors.New("expected")
 
-	instance := ValueEqualityFunc(func(name string, left, right interface{}) (bool, error) {
+	instance := ValueEqualityFunc(func(name string, left, right any) (bool, error) {
 		assert.ToBeEqual(t, "foo", name)
 		assert.ToBeSame(t, givenLeft, left)
 		assert.ToBeSame(t, givenRight, right)
@@ -71,7 +71,7 @@ func Test_valueEqualityFacade_AreValuesEqual(t *testing.T) {
 	givenLeft := &struct{ foo string }{"aFoo"}
 	givenRight := &struct{ bar string }{"aBar"}
 	givenErr := errors.New("expected")
-	givenEquality := ValueEqualityFunc(func(name string, left, right interface{}) (bool, error) {
+	givenEquality := ValueEqualityFunc(func(name string, left, right any) (bool, error) {
 		assert.ToBeEqual(t, "foo", name)
 		assert.ToBeSame(t, givenLeft, left)
 		assert.ToBeSame(t, givenRight, right)

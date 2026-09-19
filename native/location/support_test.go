@@ -6,6 +6,6 @@ import (
 	"github.com/echocat/slf4g/testing/recording"
 )
 
-func newEvent(l level.Level, values map[string]interface{}) log.Event {
+func newEvent(l level.Level, values map[string]any) log.Event {
 	return recording.NewCoreLogger().NewEvent(l, values)
 }

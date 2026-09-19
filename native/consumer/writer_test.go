@@ -223,7 +223,7 @@ func Test_Writer_Consume_initIfRequiredConcurrently(t *testing.T) {
 
 	start := make(chan struct{})
 	var wait sync.WaitGroup
-	for i := 0; i < 32; i++ {
+	for range 32 {
 		wait.Add(1)
 		go func() {
 			defer wait.Done()
@@ -317,7 +317,7 @@ func Test_Writer_Consume_serializesFormatter(t *testing.T) {
 
 	start := make(chan struct{})
 	var wait sync.WaitGroup
-	for i := 0; i < 32; i++ {
+	for range 32 {
 		wait.Add(1)
 		go func() {
 			defer wait.Done()
@@ -612,15 +612,15 @@ func Test_Writer_SetFormatter(t *testing.T) {
 func Test_Writer_SetFormatter_concurrentlyWithConsume(t *testing.T) {
 	logger := recording.NewLogger()
 	event := logger.NewEvent(level.Info, nil)
-	var firstCount int32
+	var firstCount atomic.Int32
 	first := formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
-		atomic.AddInt32(&firstCount, 1)
+		firstCount.Add(1)
 		return nil, nil
 	})
-	var secondCount int32
+	var secondCount atomic.Int32
 	second := formatter.NewFacade(func() formatter.Formatter {
 		return formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
-			atomic.AddInt32(&secondCount, 1)
+			secondCount.Add(1)
 			return nil, nil
 		})
 	})
@@ -634,7 +634,7 @@ func Test_Writer_SetFormatter_concurrentlyWithConsume(t *testing.T) {
 	go func() {
 		defer wait.Done()
 		<-start
-		for i := 0; i < 1000; i++ {
+		for range 1000 {
 			instance.SetFormatter(first)
 			instance.SetFormatter(second)
 			runtime.Gosched()
@@ -643,7 +643,7 @@ func Test_Writer_SetFormatter_concurrentlyWithConsume(t *testing.T) {
 	go func() {
 		defer wait.Done()
 		<-start
-		for i := 0; i < 1000; i++ {
+		for range 1000 {
 			instance.Consume(event, logger)
 			runtime.Gosched()
 		}
@@ -651,15 +651,15 @@ func Test_Writer_SetFormatter_concurrentlyWithConsume(t *testing.T) {
 
 	close(start)
 	wait.Wait()
-	assert.ToBeEqual(t, int32(1000), atomic.LoadInt32(&firstCount)+atomic.LoadInt32(&secondCount))
+	assert.ToBeEqual(t, int32(1000), firstCount.Load()+secondCount.Load())
 }
 
 func Test_Writer_SetFormatter_reentrantFromFormatter(t *testing.T) {
 	logger := recording.NewLogger()
 	event := logger.NewEvent(level.Info, nil)
-	var secondCalls int32
+	var secondCalls atomic.Int32
 	second := formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
-		atomic.AddInt32(&secondCalls, 1)
+		secondCalls.Add(1)
 		return nil, nil
 	})
 	var instance *Writer
@@ -682,7 +682,7 @@ func Test_Writer_SetFormatter_reentrantFromFormatter(t *testing.T) {
 		t.Fatal("reentrant formatter update deadlocked")
 	}
 	instance.Consume(event, logger)
-	assert.ToBeEqual(t, int32(1), atomic.LoadInt32(&secondCalls))
+	assert.ToBeEqual(t, int32(1), secondCalls.Load())
 }
 
 func Test_Writer_GetFormatter_explicit(t *testing.T) {

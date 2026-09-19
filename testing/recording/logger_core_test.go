@@ -49,7 +49,7 @@ func Test_CoreLogger_MustContains(t *testing.T) {
 func Test_CoreLogger_MustContains_panicsOnErrorsForRoot(t *testing.T) {
 	previous := fields.DefaultValueEquality
 	defer func() { fields.DefaultValueEquality = previous }()
-	fields.DefaultValueEquality = fields.ValueEqualityFunc(func(name string, left, right interface{}) (bool, error) {
+	fields.DefaultValueEquality = fields.ValueEqualityFunc(func(name string, left, right any) (bool, error) {
 		return false, errors.New("expected")
 	})
 
@@ -233,8 +233,8 @@ func Test_CoreLogger_Log_doesNotHoldLockDuringLazyEvaluation(t *testing.T) {
 	}
 	defer releaseLazy()
 	timestampKey := instance.GetProvider().GetFieldKeysSpec().GetTimestamp()
-	event := instance.NewEvent(level.Info, map[string]interface{}{
-		timestampKey: fields.LazyFunc(func() interface{} {
+	event := instance.NewEvent(level.Info, map[string]any{
+		timestampKey: fields.LazyFunc(func() any {
 			close(entered)
 			<-release
 			return time.Now()
@@ -473,9 +473,9 @@ func Test_CoreLogger_NewEvent(t *testing.T) {
 
 	assert.ToBeEqual(t, &event{
 		provider: instance.Provider,
-		fields:   fields.WithAll(map[string]interface{}{"foo": "bar"}),
+		fields:   fields.WithAll(map[string]any{"foo": "bar"}),
 		level:    level.Fatal,
-	}, instance.NewEvent(level.Fatal, map[string]interface{}{"foo": "bar"}))
+	}, instance.NewEvent(level.Fatal, map[string]any{"foo": "bar"}))
 }
 
 func Test_CoreLogger_NewEvent_withErrorWithoutConfiguredProvider(t *testing.T) {
@@ -512,7 +512,7 @@ func Test_CoreLogger_NewEventWithFields_panicsOnError(t *testing.T) {
 	instance := NewCoreLogger()
 
 	assert.Execution(t, func() {
-		instance.NewEventWithFields(level.Fatal, fields.ForEachFunc(func(func(string, interface{}) error) error {
+		instance.NewEventWithFields(level.Fatal, fields.ForEachFunc(func(func(string, any) error) error {
 			return errors.New("expected")
 		}))
 	}).WillPanicWith("^expected$")

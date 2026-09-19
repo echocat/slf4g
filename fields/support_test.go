@@ -39,7 +39,7 @@ func Test_mustAsMap_withNil(t *testing.T) {
 
 func Test_asMap_withError(t *testing.T) {
 	givenErr := errors.New("expected")
-	given := ForEachFunc(func(func(key string, value interface{}) error) error {
+	given := ForEachFunc(func(func(key string, value any) error) error {
 		return givenErr
 	})
 
@@ -51,7 +51,7 @@ func Test_asMap_withError(t *testing.T) {
 
 func Test_mustAsMap_withError(t *testing.T) {
 	givenErr := errors.New("expected")
-	given := ForEachFunc(func(func(key string, value interface{}) error) error {
+	given := ForEachFunc(func(func(key string, value any) error) error {
 		return givenErr
 	})
 
@@ -83,9 +83,9 @@ func Test_AsFields_withForEachEnabled(t *testing.T) {
 	assert.ToBeEqual(t, mapped{"foo": 1, "bar": 2}, actual)
 }
 
-type aMap map[string]interface{}
+type aMap map[string]any
 
-func (instance aMap) ForEach(consumer func(string, interface{}) error) error {
+func (instance aMap) ForEach(consumer func(string, any) error) error {
 	for k, v := range instance {
 		if err := consumer(k, v); err != nil {
 			return err

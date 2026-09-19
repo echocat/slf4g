@@ -38,11 +38,11 @@ type Event interface {
 
 	// ForEach will call the provided consumer for each field which is provided
 	// by this Fields instance.
-	ForEach(consumer func(key string, value interface{}) error) error
+	ForEach(consumer func(key string, value any) error) error
 
 	// Get will return for the given key the corresponding value if exists.
 	// Otherwise, it will return nil.
-	Get(key string) (value interface{}, exists bool)
+	Get(key string) (value any, exists bool)
 
 	// Len returns the len of all key value pairs contained in this event which
 	// can be received by using ForEach() or Get().
@@ -51,13 +51,13 @@ type Event interface {
 	// With returns a variant of this Event with the given key
 	// value pair contained inside. If the given key already exists in the
 	// current instance this means it will be overwritten.
-	With(key string, value interface{}) Event
+	With(key string, value any) Event
 
 	// Withf is similar to With, but it adds classic fmt.Printf functions to it.
 	// It is defined that the format itself will not be executed before the
 	// consumption of the value. (See fields.Fields.ForEach() and
 	// fields.Fields.Get())
-	Withf(key string, format string, args ...interface{}) Event
+	Withf(key string, format string, args ...any) Event
 
 	// WithError is similar to With, but it adds an error as field.
 	WithError(error) Event
@@ -65,7 +65,7 @@ type Event interface {
 	// WithAll is similar to With, but it can consume more than one field at
 	// once. Be aware: There is neither a guarantee that this instance will be
 	// copied or not.
-	WithAll(map[string]interface{}) Event
+	WithAll(map[string]any) Event
 
 	// Without returns a variant of this Event without the given
 	// key contained inside. In other words: If someone afterwards tries to
@@ -77,7 +77,7 @@ type Event interface {
 // EventFactory creates a new instance of [Event] using the provided [level.Level]
 // and values.
 type EventFactory interface {
-	NewEvent(l level.Level, values map[string]interface{}) Event
+	NewEvent(l level.Level, values map[string]any) Event
 }
 
 // EventFactoryWithFields creates a new instance of [Event] using the provided
@@ -88,7 +88,7 @@ type EventFactoryWithFields interface {
 
 // NewEvent creates a new [Event] using the provided [EventFactory], [level.Level]
 // and values.
-func NewEvent(factory EventFactory, l level.Level, values map[string]interface{}) Event {
+func NewEvent(factory EventFactory, l level.Level, values map[string]any) Event {
 	return factory.NewEvent(l, values)
 }
 

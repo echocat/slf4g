@@ -66,7 +66,7 @@ func (instance Formatter) Set(plain string) error {
 }
 
 // Get implements flag.Getter.
-func (instance Formatter) Get() interface{} {
+func (instance Formatter) Get() any {
 	return instance.Target.GetFormatter()
 }
 

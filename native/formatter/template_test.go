@@ -61,7 +61,7 @@ func Test_Template_MustNewTemplate_failing(t *testing.T) {
 }
 
 func Test_Template_MustNewTemplateWithFuncMap(t *testing.T) {
-	actual := MustNewTemplateWithFuncMap("foo{{ myFunc }}bar", map[string]interface{}{
+	actual := MustNewTemplateWithFuncMap("foo{{ myFunc }}bar", map[string]any{
 		"myFunc": func() string { return "some" },
 	})
 
@@ -91,7 +91,7 @@ func Test_Template_MustNewTemplateWithFuncMap_customize(t *testing.T) {
 
 func Test_Template_MustNewTemplateWithFuncMap_failing(t *testing.T) {
 	assert.Execution(t, func() {
-		_ = MustNewTemplateWithFuncMap("foo{{ other }}bar", map[string]interface{}{
+		_ = MustNewTemplateWithFuncMap("foo{{ other }}bar", map[string]any{
 			"myFunc": func() string { return "some" },
 		})
 	}).WillPanicWith("function \"other\" not defined")
@@ -330,7 +330,7 @@ func Test_TemplateRenderingContext_Fields(t *testing.T) {
 
 	assert.ToBeNoError(t, actualErr)
 	assert.ToBeNotNil(t, actual)
-	assert.ToBeEqual(t, map[string]interface{}{"foo": "bar"}, actual)
+	assert.ToBeEqual(t, map[string]any{"foo": "bar"}, actual)
 }
 
 func newTestTemplateRenderingContext(h hints.Hints) TemplateRenderingContext {

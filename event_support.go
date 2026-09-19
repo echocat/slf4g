@@ -34,7 +34,7 @@ func GetMessageOf(e Event, using Provider) *string {
 	case []string:
 		result := formatStrSlice(v)
 		return &result
-	case []interface{}:
+	case []any:
 		result := formatAnySlice(v)
 		return &result
 	default:
@@ -146,7 +146,7 @@ func GetLoggerOf(e Event, using Provider) *string {
 	}
 }
 
-func resolveEventValue(event Event, value interface{}) interface{} {
+func resolveEventValue(event Event, value any) any {
 	if value == nil {
 		return nil
 	}

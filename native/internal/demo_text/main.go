@@ -25,22 +25,22 @@ func main() {
 	log.With("bar", 234).Error()
 	log.With("bar", 234).Info("hello\nworld")
 	log.Info("\nhello\nworld")
-	log.WithAll(map[string]interface{}{
+	log.WithAll(map[string]any{
 		"a": "1",
 		"b": "2",
-		"c": fields.LazyFunc(func() interface{} {
+		"c": fields.LazyFunc(func() any {
 			return "3"
 		}),
 		"excluded": fields.Exclude,
-		"excludedLazy": fields.LazyFunc(func() interface{} {
+		"excludedLazy": fields.LazyFunc(func() any {
 			return fields.Exclude
 		}),
 		"nil": nil,
-		"nilLazy": fields.LazyFunc(func() interface{} {
+		"nilLazy": fields.LazyFunc(func() any {
 			return nil
 		}),
 		"empty": "",
-		"emptyLazy": fields.LazyFunc(func() interface{} {
+		"emptyLazy": fields.LazyFunc(func() any {
 			return ""
 		}),
 	}).Info("Some more variants in a map")

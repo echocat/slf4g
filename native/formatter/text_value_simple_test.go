@@ -26,7 +26,7 @@ func Test_NewSimpleTextValue_withCustomization(t *testing.T) {
 
 func Test_SimpleTextValue_FormatTextValue(t *testing.T) {
 	cases := []struct {
-		given      interface{}
+		given      any
 		minimal    string
 		normal     string
 		everything string
@@ -95,7 +95,7 @@ func pstring(v string) *string {
 
 type aLazy string
 
-func (instance aLazy) Get() interface{} {
+func (instance aLazy) Get() any {
 	return string(instance)
 }
 
@@ -140,16 +140,16 @@ func (*typedNilError) Error() string {
 
 type typedNilFiltered struct{}
 
-func (*typedNilFiltered) Get() interface{} {
+func (*typedNilFiltered) Get() any {
 	panic("must not be called")
 }
 
-func (*typedNilFiltered) Filter(fields.FilterContext) (interface{}, bool) {
+func (*typedNilFiltered) Filter(fields.FilterContext) (any, bool) {
 	panic("must not be called")
 }
 
 type typedNilLazy struct{}
 
-func (*typedNilLazy) Get() interface{} {
+func (*typedNilLazy) Get() any {
 	panic("must not be called")
 }

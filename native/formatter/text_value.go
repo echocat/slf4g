@@ -11,15 +11,15 @@ var DefaultTextValue TextValue = NewSimpleTextValue()
 // TextValue formats a given value to be printed in the text.
 type TextValue interface {
 	// FormatValue formats the given value to a readable format.
-	FormatTextValue(value interface{}, provider log.Provider) ([]byte, error)
+	FormatTextValue(value any, provider log.Provider) ([]byte, error)
 }
 
 // TextValueFunc is wrapping the given function into a
 // TextValue.
-type TextValueFunc func(interface{}, log.Provider) ([]byte, error)
+type TextValueFunc func(any, log.Provider) ([]byte, error)
 
 // FormatTextValue implements TextValue.FormatTextValue().
-func (instance TextValueFunc) FormatTextValue(value interface{}, provider log.Provider) ([]byte, error) {
+func (instance TextValueFunc) FormatTextValue(value any, provider log.Provider) ([]byte, error) {
 	return instance(value, provider)
 }
 
@@ -31,7 +31,7 @@ func NewTextValueFacade(provider func() TextValue) TextValue {
 
 type textValueFacade func() TextValue
 
-func (instance textValueFacade) FormatTextValue(value interface{}, provider log.Provider) ([]byte, error) {
+func (instance textValueFacade) FormatTextValue(value any, provider log.Provider) ([]byte, error) {
 	return instance.Unwrap().FormatTextValue(value, provider)
 }
 
@@ -44,6 +44,6 @@ func NoopTextValue() TextValue {
 	return noopTextValueV
 }
 
-var noopTextValueV = TextValueFunc(func(interface{}, log.Provider) ([]byte, error) {
+var noopTextValueV = TextValueFunc(func(any, log.Provider) ([]byte, error) {
 	return []byte{}, nil
 })

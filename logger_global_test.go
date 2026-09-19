@@ -84,7 +84,7 @@ func Test_IsLevelEnabled(t *testing.T) {
 
 func Test_Log(t *testing.T) {
 	cases := []struct {
-		logFunc func(args ...interface{})
+		logFunc func(args ...any)
 		level   level.Level
 	}{
 		{Trace, level.Trace},
@@ -124,7 +124,7 @@ func Test_Log(t *testing.T) {
 			)
 			assert.ToBeEqualUsing(t,
 				givenLogger.NewEvent(c.level, nil).
-					With(messageKey, []interface{}{1, 2, 3}),
+					With(messageKey, []any{1, 2, 3}),
 				givenLogger.loggedEvent(2),
 				AreEventsEqual,
 			)
@@ -134,7 +134,7 @@ func Test_Log(t *testing.T) {
 
 func Test_Logf(t *testing.T) {
 	cases := []struct {
-		logFunc func(fmt string, args ...interface{})
+		logFunc func(fmt string, args ...any)
 		level   level.Level
 	}{
 		{Tracef, level.Trace},
@@ -249,7 +249,7 @@ func Test_WithAll(t *testing.T) {
 	givenLogger := newMockLogger("foo")
 	defer setRootLogger(givenLogger)()
 
-	actual := WithAll(map[string]interface{}{"a": 1, "b": 2}).With("c", 3)
+	actual := WithAll(map[string]any{"a": 1, "b": 2}).With("c", 3)
 
 	assert.ToBeOfType(t, &loggerImpl{}, actual)
 	assert.ToBeEqualUsing(t, fields.

@@ -5,7 +5,7 @@ type traversalFrame struct {
 	excludedKeys keySet
 }
 
-func forEachField(root Fields, consumer func(key string, value interface{}) error, ignoreSourceErrors bool) error {
+func forEachField(root Fields, consumer func(key string, value any) error, ignoreSourceErrors bool) error {
 	if root == nil || consumer == nil {
 		return nil
 	}
@@ -58,7 +58,7 @@ func forEachField(root Fields, consumer func(key string, value interface{}) erro
 			if current.fields == nil {
 				continue
 			}
-			err := current.fields.ForEach(func(key string, value interface{}) error {
+			err := current.fields.ForEach(func(key string, value any) error {
 				if excludedKeys[key] > 0 {
 					return nil
 				}
@@ -78,7 +78,7 @@ func forEachField(root Fields, consumer func(key string, value interface{}) erro
 	return nil
 }
 
-func getField(root Fields, key string) (interface{}, bool) {
+func getField(root Fields, key string) (any, bool) {
 	stack := []Fields{root}
 	for len(stack) > 0 {
 		last := len(stack) - 1
@@ -111,7 +111,7 @@ func getField(root Fields, key string) (interface{}, bool) {
 }
 
 func fieldCount(root Fields) (result int) {
-	_ = forEachField(root, func(string, interface{}) error {
+	_ = forEachField(root, func(string, any) error {
 		result++
 		return nil
 	}, true)

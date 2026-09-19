@@ -16,7 +16,7 @@ func TestIsNil(t *testing.T) {
 	)
 	cases := []struct {
 		name     string
-		given    interface{}
+		given    any
 		expected bool
 	}{
 		{"nil", nil, true},

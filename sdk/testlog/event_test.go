@@ -16,14 +16,14 @@ func Test_event_ForEach(t *testing.T) {
 		With("b", 2).
 		With("c", 3)}
 
-	actual := map[string]interface{}{}
-	actualErr := instance.ForEach(func(key string, value interface{}) error {
+	actual := map[string]any{}
+	actualErr := instance.ForEach(func(key string, value any) error {
 		actual[key] = value
 		return nil
 	})
 
 	assert.ToBeNil(t, actualErr)
-	assert.ToBeEqual(t, map[string]interface{}{"c": 3, "b": 2, "a": 1}, actual)
+	assert.ToBeEqual(t, map[string]any{"c": 3, "b": 2, "a": 1}, actual)
 }
 
 func Test_event_Get(t *testing.T) {
@@ -92,7 +92,7 @@ func Test_event_WithError(t *testing.T) {
 }
 
 func Test_event_WithAll(t *testing.T) {
-	givenMap := map[string]interface{}{
+	givenMap := map[string]any{
 		"b": 2,
 		"c": 3,
 	}

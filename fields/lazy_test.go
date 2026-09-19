@@ -9,7 +9,7 @@ import (
 )
 
 func ExampleLazyFunc() {
-	lazy := LazyFunc(func() interface{} {
+	lazy := LazyFunc(func() any {
 		return someVariable.someResourceIntensiveMethod()
 	})
 
@@ -21,7 +21,7 @@ func ExampleLazyFunc() {
 
 func Test_LazyFunc_callsItselfOnGet(t *testing.T) {
 	expected := struct{ foo string }{foo: "bar"}
-	givenProvider := func() interface{} { return expected }
+	givenProvider := func() any { return expected }
 
 	actualInstance := LazyFunc(givenProvider)
 	actual := actualInstance.Get()
@@ -47,7 +47,7 @@ func ExampleLazyFormat() {
 func Test_LazyFormat_formats(t *testing.T) {
 	actualCallAmount := uint64(0)
 
-	instance := LazyFormat("foo%s", LazyFunc(func() interface{} {
+	instance := LazyFormat("foo%s", LazyFunc(func() any {
 		atomic.AddUint64(&actualCallAmount, 1)
 		return "bar"
 	}))
@@ -60,7 +60,7 @@ func Test_LazyFormat_formats(t *testing.T) {
 }
 
 func Test_LazyFormat_copiesArguments(t *testing.T) {
-	args := []interface{}{"before"}
+	args := []any{"before"}
 	instance := LazyFormat("%s", args...)
 
 	args[0] = "after"
@@ -83,7 +83,7 @@ type someStruct struct {
 
 type nilLazy struct{}
 
-func (*nilLazy) Get() interface{} {
+func (*nilLazy) Get() any {
 	panic("must not be called")
 }
 

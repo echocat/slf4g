@@ -15,7 +15,7 @@ func GetRootLogger() Logger {
 // GetLogger returns a logger for the given name from the global Provider.
 // If instead of a string another object is given this will be used to create
 // a logger name from its package name.
-func GetLogger(nameOrReference interface{}) Logger {
+func GetLogger(nameOrReference any) Logger {
 	return GetProvider().GetLogger(names.FullLoggerNameGenerator(nameOrReference))
 }
 
@@ -33,7 +33,7 @@ func IsLevelEnabled(level level.Level) bool {
 }
 
 // Trace logs the provided arguments on Trace at the current root Logger.
-func Trace(args ...interface{}) {
+func Trace(args ...any) {
 	l, helper := log(level.Trace, args...)
 	helper()
 	l()
@@ -42,7 +42,7 @@ func Trace(args ...interface{}) {
 // Tracef is like Trace but wraps the message itself in a fmt.Sprintf action.
 // By contract the actual format action will not be executed before the value
 // will be really consumed.
-func Tracef(format string, args ...interface{}) {
+func Tracef(format string, args ...any) {
 	l, helper := logf(level.Trace, format, args...)
 	helper()
 	l()
@@ -54,7 +54,7 @@ func IsTraceEnabled() bool {
 }
 
 // Debug logs the provided arguments on Debug at the current root Logger.
-func Debug(args ...interface{}) {
+func Debug(args ...any) {
 	l, helper := log(level.Debug, args...)
 	helper()
 	l()
@@ -63,7 +63,7 @@ func Debug(args ...interface{}) {
 // Debugf is like Debug but wraps the message itself in a fmt.Sprintf action.
 // By contract the actual format action will not be executed before the value
 // will be really consumed.
-func Debugf(format string, args ...interface{}) {
+func Debugf(format string, args ...any) {
 	l, helper := logf(level.Debug, format, args...)
 	helper()
 	l()
@@ -75,7 +75,7 @@ func IsDebugEnabled() bool {
 }
 
 // Info logs the provided arguments on Info at the current root Logger.
-func Info(args ...interface{}) {
+func Info(args ...any) {
 	l, helper := log(level.Info, args...)
 	helper()
 	l()
@@ -84,7 +84,7 @@ func Info(args ...interface{}) {
 // Infof is like Info but wraps the message itself in a fmt.Sprintf action.
 // By contract the actual format action will not be executed before the value
 // will be really consumed.
-func Infof(format string, args ...interface{}) {
+func Infof(format string, args ...any) {
 	l, helper := logf(level.Info, format, args...)
 	helper()
 	l()
@@ -96,7 +96,7 @@ func IsInfoEnabled() bool {
 }
 
 // Warn logs the provided arguments on Warn at the current root Logger.
-func Warn(args ...interface{}) {
+func Warn(args ...any) {
 	l, helper := log(level.Warn, args...)
 	helper()
 	l()
@@ -105,7 +105,7 @@ func Warn(args ...interface{}) {
 // Warnf is like Warn but wraps the message itself in a fmt.Sprintf action.
 // By contract the actual format action will not be executed before the value
 // will be really consumed.
-func Warnf(format string, args ...interface{}) {
+func Warnf(format string, args ...any) {
 	l, helper := logf(level.Warn, format, args...)
 	helper()
 	l()
@@ -117,7 +117,7 @@ func IsWarnEnabled() bool {
 }
 
 // Error logs the provided arguments on Error at the current root Logger.
-func Error(args ...interface{}) {
+func Error(args ...any) {
 	l, helper := log(level.Error, args...)
 	helper()
 	l()
@@ -126,7 +126,7 @@ func Error(args ...interface{}) {
 // Errorf is like Error but wraps the message itself in a fmt.Sprintf action.
 // By contract the actual format action will not be executed before the value
 // will be really consumed.
-func Errorf(format string, args ...interface{}) {
+func Errorf(format string, args ...any) {
 	l, helper := logf(level.Error, format, args...)
 	helper()
 	l()
@@ -143,7 +143,7 @@ func IsErrorEnabled() bool {
 // with slf4g does not lead to an os.Exit() by default. By contract the
 // application can do that, but it is doing that always GRACEFUL. All processes
 // should be always able to do shut down operations if needed AND possible.
-func Fatal(args ...interface{}) {
+func Fatal(args ...any) {
 	l, helper := log(level.Fatal, args...)
 	helper()
 	l()
@@ -157,7 +157,7 @@ func Fatal(args ...interface{}) {
 // with slf4g does not lead to an os.Exit() by default. By contract the
 // application can do that, but it is doing that always GRACEFUL. All processes
 // should be always able to do shut down operations if needed AND possible.
-func Fatalf(format string, args ...interface{}) {
+func Fatalf(format string, args ...any) {
 	l, helper := logf(level.Fatal, format, args...)
 	helper()
 	l()
@@ -169,14 +169,14 @@ func IsFatalEnabled() bool {
 }
 
 // With returns a root Logger which will contain the provided field.
-func With(name string, value interface{}) Logger {
+func With(name string, value any) Logger {
 	return GetRootLogger().With(name, value)
 }
 
 // Withf is similar to With, but it adds classic fmt.Printf functions to it.
 // It is defined that the format itself will not be executed before the
 // consumption of the value.
-func Withf(name string, format string, args ...interface{}) Logger {
+func Withf(name string, format string, args ...any) Logger {
 	return GetRootLogger().Withf(name, format, args...)
 }
 
@@ -188,11 +188,11 @@ func WithError(err error) Logger {
 // WithAll is similar to With, but it can consume more than one field at
 // once. Be aware: There is neither a guarantee that this instance will be
 // copied or not.
-func WithAll(of map[string]interface{}) Logger {
+func WithAll(of map[string]any) Logger {
 	return GetRootLogger().WithAll(of)
 }
 
-func log(l level.Level, args ...interface{}) (doLog, helper func()) {
+func log(l level.Level, args ...any) (doLog, helper func()) {
 	p := GetProvider()
 	logger := p.GetRootLogger()
 	helper = helperOf(logger)
@@ -200,10 +200,10 @@ func log(l level.Level, args ...interface{}) (doLog, helper func()) {
 		return func() {}, helper
 	}
 
-	var values map[string]interface{}
+	var values map[string]any
 
 	if len(args) > 0 {
-		values = make(map[string]interface{}, 1)
+		values = make(map[string]any, 1)
 		if len(args) == 1 {
 			values[p.GetFieldKeysSpec().GetMessage()] = args[0]
 		} else {
@@ -218,7 +218,7 @@ func log(l level.Level, args ...interface{}) (doLog, helper func()) {
 	}, helper
 }
 
-func logf(l level.Level, format string, args ...interface{}) (doLog, helper func()) {
+func logf(l level.Level, format string, args ...any) (doLog, helper func()) {
 	p := GetProvider()
 	logger := p.GetRootLogger()
 	helper = helperOf(logger)
@@ -226,7 +226,7 @@ func logf(l level.Level, format string, args ...interface{}) (doLog, helper func
 		return func() {}, helper
 	}
 
-	values := map[string]interface{}{
+	values := map[string]any{
 		p.GetFieldKeysSpec().GetMessage(): fields.LazyFormat(format, args...),
 	}
 
