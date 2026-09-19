@@ -2,6 +2,7 @@ package native
 
 import (
 	"maps"
+	"runtime"
 	"sync"
 	"sync/atomic"
 
@@ -11,7 +12,9 @@ import (
 )
 
 type rootLoggerState struct {
-	current atomic.Pointer[rootLoggerSnapshot]
+	current      atomic.Pointer[rootLoggerSnapshot]
+	pendingMutex sync.Mutex
+	pending      []func()
 }
 
 type rootLoggerSnapshot struct {
@@ -30,6 +33,11 @@ type rootLoggerEvent struct {
 	state    *rootLoggerState
 	logger   log.Logger
 	delegate log.Event
+}
+
+type rootLoggerEventWithProgramCounter struct {
+	log.Event
+	programCounter uintptr
 }
 
 type rootLoggerFacade struct {
@@ -58,6 +66,14 @@ func (instance *rootLoggerFacade) setDelegate(delegate log.CoreLogger) {
 		logger:  logger,
 		version: previous.version + 1,
 	})
+
+	instance.state.pendingMutex.Lock()
+	pending := instance.state.pending
+	instance.state.pending = nil
+	instance.state.pendingMutex.Unlock()
+	for _, action := range pending {
+		action()
+	}
 }
 
 func (instance *rootLoggerFacade) setFailed() {
@@ -66,6 +82,71 @@ func (instance *rootLoggerFacade) setFailed() {
 		version: previous.version + 1,
 		failed:  true,
 	})
+	instance.state.pendingMutex.Lock()
+	instance.state.pending = nil
+	instance.state.pendingMutex.Unlock()
+}
+
+func (instance *rootLoggerFacade) isInitializing() bool {
+	return instance.state.current.Load().version == 0
+}
+
+func (instance *rootLoggerFacade) deferUntilReady(action func(log.Logger)) bool {
+	if instance.state.current.Load().version > 0 {
+		return false
+	}
+
+	// Queue writes instead of blocking, so calls from inside the customizer remain reentrant.
+	instance.state.pendingMutex.Lock()
+	defer instance.state.pendingMutex.Unlock()
+	if instance.state.current.Load().version > 0 {
+		return false
+	}
+	instance.state.pending = append(instance.state.pending, func() { action(instance.current()) })
+	return true
+}
+
+func (instance *rootLoggerFacade) deferLogUntilReady(
+	v level.Level,
+	skipFrames uint16,
+	args []any,
+	action func(log.Logger, []any),
+) bool {
+	if instance.state.current.Load().version > 0 {
+		return false
+	}
+
+	instance.state.pendingMutex.Lock()
+	defer instance.state.pendingMutex.Unlock()
+	if instance.state.current.Load().version > 0 {
+		return false
+	}
+
+	current := instance.state.current.Load()
+	core, ok := current.core.(*CoreLogger)
+	argsCopy := append([]any(nil), args...)
+	if !ok {
+		instance.state.pending = append(instance.state.pending, func() { action(instance.current(), argsCopy) })
+		return true
+	}
+	pcs := make([]uintptr, 1)
+	if runtime.Callers(int(skipFrames)+3, pcs) == 0 {
+		instance.state.pending = append(instance.state.pending, func() { action(instance.current(), argsCopy) })
+		return true
+	}
+	instance.state.pending = append(instance.state.pending, func() {
+		current := instance.current()
+		event := rootLoggerEventWithProgramCounter{
+			Event:          core.NewEvent(v, nil),
+			programCounter: pcs[0],
+		}
+		location := core.getLocationDiscovery().DiscoverLocation(event, 0)
+		if location != nil {
+			current = current.With(core.getProvider().getFieldKeysSpec().GetLocation(), location)
+		}
+		action(current, argsCopy)
+	})
+	return true
 }
 
 func (instance *rootLoggerFacade) snapshot() (log.CoreLogger, log.Logger, uint64) {
@@ -113,6 +194,9 @@ func (instance *rootLoggerFacade) derive(transform func(log.Logger) log.Logger) 
 
 func (instance *rootLoggerFacade) Unwrap() log.CoreLogger {
 	current, _, _ := instance.snapshot()
+	if instance.state.current.Load().version == 0 {
+		return instance
+	}
 	if instance.transform != nil {
 		return instance.current()
 	}
@@ -120,6 +204,25 @@ func (instance *rootLoggerFacade) Unwrap() log.CoreLogger {
 }
 
 func (instance *rootLoggerFacade) Log(event log.Event, skipFrames uint16) {
+	if event == nil {
+		return
+	}
+	if instance.isInitializing() && instance.deferUntilReady(func(current log.Logger) {
+		values, err := fields.AsMap(event)
+		if err != nil {
+			panic(err)
+		}
+		rematerialized := current.NewEvent(event.GetLevel(), values)
+		if source, ok := event.(interface{ GetProgramCounter() uintptr }); ok {
+			rematerialized = rootLoggerEventWithProgramCounter{
+				Event:          rematerialized,
+				programCounter: source.GetProgramCounter(),
+			}
+		}
+		current.Log(rematerialized, skipFrames+1)
+	}) {
+		return
+	}
 	if own, ok := event.(*rootLoggerEvent); ok && own.state == instance.state {
 		instance.snapshot()
 		own.logger.Log(own.delegate, skipFrames+1)
@@ -159,6 +262,15 @@ func (instance *rootLoggerFacade) GetProvider() log.Provider {
 }
 
 func (instance *rootLoggerFacade) DoLog(v level.Level, skipFrames uint16, args ...any) {
+	if instance.isInitializing() && instance.deferLogUntilReady(v, skipFrames, args, func(delegate log.Logger, args []any) {
+		if delegate, ok := delegate.(log.LoggerFacade); ok {
+			delegate.DoLog(v, skipFrames+1, args...)
+			return
+		}
+		log.NewLoggerFacade(func() log.CoreLogger { return delegate }).DoLog(v, skipFrames+1, args...)
+	}) {
+		return
+	}
 	delegate := instance.current()
 	if delegate, ok := delegate.(log.LoggerFacade); ok {
 		delegate.DoLog(v, skipFrames+1, args...)
@@ -168,6 +280,15 @@ func (instance *rootLoggerFacade) DoLog(v level.Level, skipFrames uint16, args .
 }
 
 func (instance *rootLoggerFacade) DoLogf(v level.Level, skipFrames uint16, format string, args ...any) {
+	if instance.isInitializing() && instance.deferLogUntilReady(v, skipFrames, args, func(delegate log.Logger, args []any) {
+		if delegate, ok := delegate.(log.LoggerFacade); ok {
+			delegate.DoLogf(v, skipFrames+1, format, args...)
+			return
+		}
+		log.NewLoggerFacade(func() log.CoreLogger { return delegate }).DoLogf(v, skipFrames+1, format, args...)
+	}) {
+		return
+	}
 	delegate := instance.current()
 	if delegate, ok := delegate.(log.LoggerFacade); ok {
 		delegate.DoLogf(v, skipFrames+1, format, args...)
@@ -177,10 +298,16 @@ func (instance *rootLoggerFacade) DoLogf(v level.Level, skipFrames uint16, forma
 }
 
 func (instance *rootLoggerFacade) Trace(args ...any) {
+	if instance.isInitializing() && instance.deferLogUntilReady(level.Trace, 0, args, func(current log.Logger, args []any) { current.Trace(args...) }) {
+		return
+	}
 	instance.current().Trace(args...)
 }
 
 func (instance *rootLoggerFacade) Tracef(format string, args ...any) {
+	if instance.isInitializing() && instance.deferLogUntilReady(level.Trace, 0, args, func(current log.Logger, args []any) { current.Tracef(format, args...) }) {
+		return
+	}
 	instance.current().Tracef(format, args...)
 }
 
@@ -189,10 +316,16 @@ func (instance *rootLoggerFacade) IsTraceEnabled() bool {
 }
 
 func (instance *rootLoggerFacade) Debug(args ...any) {
+	if instance.isInitializing() && instance.deferLogUntilReady(level.Debug, 0, args, func(current log.Logger, args []any) { current.Debug(args...) }) {
+		return
+	}
 	instance.current().Debug(args...)
 }
 
 func (instance *rootLoggerFacade) Debugf(format string, args ...any) {
+	if instance.isInitializing() && instance.deferLogUntilReady(level.Debug, 0, args, func(current log.Logger, args []any) { current.Debugf(format, args...) }) {
+		return
+	}
 	instance.current().Debugf(format, args...)
 }
 
@@ -201,10 +334,16 @@ func (instance *rootLoggerFacade) IsDebugEnabled() bool {
 }
 
 func (instance *rootLoggerFacade) Info(args ...any) {
+	if instance.isInitializing() && instance.deferLogUntilReady(level.Info, 0, args, func(current log.Logger, args []any) { current.Info(args...) }) {
+		return
+	}
 	instance.current().Info(args...)
 }
 
 func (instance *rootLoggerFacade) Infof(format string, args ...any) {
+	if instance.isInitializing() && instance.deferLogUntilReady(level.Info, 0, args, func(current log.Logger, args []any) { current.Infof(format, args...) }) {
+		return
+	}
 	instance.current().Infof(format, args...)
 }
 
@@ -213,10 +352,16 @@ func (instance *rootLoggerFacade) IsInfoEnabled() bool {
 }
 
 func (instance *rootLoggerFacade) Warn(args ...any) {
+	if instance.isInitializing() && instance.deferLogUntilReady(level.Warn, 0, args, func(current log.Logger, args []any) { current.Warn(args...) }) {
+		return
+	}
 	instance.current().Warn(args...)
 }
 
 func (instance *rootLoggerFacade) Warnf(format string, args ...any) {
+	if instance.isInitializing() && instance.deferLogUntilReady(level.Warn, 0, args, func(current log.Logger, args []any) { current.Warnf(format, args...) }) {
+		return
+	}
 	instance.current().Warnf(format, args...)
 }
 
@@ -225,10 +370,16 @@ func (instance *rootLoggerFacade) IsWarnEnabled() bool {
 }
 
 func (instance *rootLoggerFacade) Error(args ...any) {
+	if instance.isInitializing() && instance.deferLogUntilReady(level.Error, 0, args, func(current log.Logger, args []any) { current.Error(args...) }) {
+		return
+	}
 	instance.current().Error(args...)
 }
 
 func (instance *rootLoggerFacade) Errorf(format string, args ...any) {
+	if instance.isInitializing() && instance.deferLogUntilReady(level.Error, 0, args, func(current log.Logger, args []any) { current.Errorf(format, args...) }) {
+		return
+	}
 	instance.current().Errorf(format, args...)
 }
 
@@ -237,10 +388,16 @@ func (instance *rootLoggerFacade) IsErrorEnabled() bool {
 }
 
 func (instance *rootLoggerFacade) Fatal(args ...any) {
+	if instance.isInitializing() && instance.deferLogUntilReady(level.Fatal, 0, args, func(current log.Logger, args []any) { current.Fatal(args...) }) {
+		return
+	}
 	instance.current().Fatal(args...)
 }
 
 func (instance *rootLoggerFacade) Fatalf(format string, args ...any) {
+	if instance.isInitializing() && instance.deferLogUntilReady(level.Fatal, 0, args, func(current log.Logger, args []any) { current.Fatalf(format, args...) }) {
+		return
+	}
 	instance.current().Fatalf(format, args...)
 }
 
@@ -317,4 +474,33 @@ func (instance *rootLoggerEvent) Without(keys ...string) log.Event {
 
 func (instance *rootLoggerEvent) wrap(delegate log.Event) log.Event {
 	return &rootLoggerEvent{state: instance.state, logger: instance.logger, delegate: delegate}
+}
+
+func (instance rootLoggerEventWithProgramCounter) GetProgramCounter() uintptr {
+	return instance.programCounter
+}
+
+func (instance rootLoggerEventWithProgramCounter) With(key string, value any) log.Event {
+	instance.Event = instance.Event.With(key, value)
+	return instance
+}
+
+func (instance rootLoggerEventWithProgramCounter) Withf(key string, format string, args ...any) log.Event {
+	instance.Event = instance.Event.Withf(key, format, args...)
+	return instance
+}
+
+func (instance rootLoggerEventWithProgramCounter) WithError(err error) log.Event {
+	instance.Event = instance.Event.WithError(err)
+	return instance
+}
+
+func (instance rootLoggerEventWithProgramCounter) WithAll(values map[string]any) log.Event {
+	instance.Event = instance.Event.WithAll(values)
+	return instance
+}
+
+func (instance rootLoggerEventWithProgramCounter) Without(keys ...string) log.Event {
+	instance.Event = instance.Event.Without(keys...)
+	return instance
 }

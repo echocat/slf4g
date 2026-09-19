@@ -54,8 +54,11 @@ func (instance *CoreLogger) Log(event log.Event, skipFrames uint16) {
 	if v := log.GetLoggerOf(event, provider); v == nil || *v != instance.name {
 		event = event.With(fieldKeysSpec.GetLogger(), instance.name)
 	}
-	if v := instance.getLocationDiscovery().DiscoverLocation(event, skipFrames+1); v != nil {
-		event = event.With(fieldKeysSpec.GetLocation(), v)
+	locationKey := fieldKeysSpec.GetLocation()
+	if current, exists := event.Get(locationKey); !exists || current == nil {
+		if v := instance.getLocationDiscovery().DiscoverLocation(event, skipFrames+1); v != nil {
+			event = event.With(locationKey, v)
+		}
 	}
 
 	instance.getConsumer().Consume(event, instance)
