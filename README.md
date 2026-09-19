@@ -191,12 +191,15 @@ import (
 
 The development toolchain and common build commands are managed with
 [mise](https://mise.jdx.dev/) 2026.8.6 or newer. Trust the reviewed project
-configuration and install the pinned tools once:
+configuration and install the pinned default toolchain once:
 
 ```shell
 mise trust
 mise install
 ```
+
+Tasks automatically install additional pinned tools and Go versions when they
+are needed.
 
 Race-detector tasks require a working C toolchain, such as Xcode Command Line
 Tools on macOS, GCC on Linux, or MinGW-w64 on Windows.
@@ -216,11 +219,17 @@ Use `mise tasks` to list every available task. The main entry points are:
 | `mise run tidy:check` | Verify that all module files are tidy |
 | `mise run actionlint` | Validate GitHub Actions workflows |
 | `mise run vuln` | Scan all modules for known vulnerabilities |
+| `mise run tools:lock` | Refresh tool lockfile metadata |
+| `mise run tools:update` | Update locked tool versions |
 | `mise run check` | Run the standard local quality gate |
 | `mise run check:full` | Also run the Go matrix and vulnerability scans |
 
 Module-specific tasks such as `mise run test:native` and
 `mise run lint:eventlog` are available for focused work.
+Tool version requests are declared in `mise.toml`; the committed lockfiles pin
+the exact versions and checksums used locally and in CI.
+The GitHub Actions workflows use the same pinned tools and tasks, including Go
+1.18 as the minimum supported version of the root module.
 
 ## Contributing
 

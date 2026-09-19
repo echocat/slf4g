@@ -2,6 +2,7 @@
 /*.iml
 /var
 profile.cov
+profile.cov.full
 /mise.local.toml
 /mise.local.lock
 /.mise/locks/mise.local/

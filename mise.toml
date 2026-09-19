@@ -10,17 +10,17 @@ locked = true
 GOTOOLCHAIN = "local"
 
 [vars]
-go_stable = "1.27.1"
-go_1_23 = "1.23.12"
-go_1_22 = "1.22.12"
-go_1_18 = "1.18.10"
+go_stable = "latest"
+go_1_23 = "prefix:1.23"
+go_1_22 = "prefix:1.22"
+go_minimum = "prefix:1.18"
+golangci_lint = "latest"
+actionlint = "latest"
+shellcheck = "latest"
+govulncheck = "latest"
 
 [tools]
 go = "{{vars.go_stable}}"
-golangci-lint = "2.13.2"
-actionlint = "1.7.12"
-shellcheck = "0.11.0"
-"go:golang.org/x/vuln/cmd/govulncheck" = "1.8.0"
 
 [tasks.build]
 description = "Build all modules"
@@ -66,16 +66,19 @@ depends = ["format:check:root", "format:check:native", "format:check:eventlog"]
 
 [tasks."format:check:root"]
 description = "Check formatting in the root module"
+tools.golangci-lint = "{{vars.golangci_lint}}"
 run = "golangci-lint fmt --diff"
 
 [tasks."format:check:native"]
 description = "Check formatting in the native module"
 dir = "{{config_root}}/native"
+tools.golangci-lint = "{{vars.golangci_lint}}"
 run = "golangci-lint fmt --diff"
 
 [tasks."format:check:eventlog"]
 description = "Check formatting in the Windows eventlog module"
 dir = "{{config_root}}/platform/windows/eventlog"
+tools.golangci-lint = "{{vars.golangci_lint}}"
 run = "golangci-lint fmt --diff"
 
 [tasks.test]
@@ -131,7 +134,7 @@ depends = [
 
 [tasks."test:matrix:root:go118"]
 description = "Test the root module with Go 1.18"
-tools.go = "{{vars.go_1_18}}"
+tools.go = "{{vars.go_minimum}}"
 run = "go test --tags=mock -race ./..."
 
 [tasks."test:matrix:root:go122"]
@@ -155,6 +158,50 @@ description = "Test the Windows eventlog module with Go 1.23"
 dir = "{{config_root}}/platform/windows/eventlog"
 tools.go = "{{vars.go_1_23}}"
 run = "go test --tags=mock -race ./..."
+
+[tasks."ci:test:root:go118"]
+description = "Test the root module with coverage using the minimum Go version"
+tools.go = "{{vars.go_minimum}}"
+run = "go test --tags=mock -v -race -covermode=atomic -coverprofile=profile.cov.full ./..."
+
+[tasks."ci:test:root:go122"]
+description = "Test the root module with coverage using Go 1.22"
+tools.go = "{{vars.go_1_22}}"
+run = "go test --tags=mock -v -race -covermode=atomic -coverprofile=profile.cov.full ./..."
+
+[tasks."ci:test:root:go123"]
+description = "Test the root module with coverage using Go 1.23"
+tools.go = "{{vars.go_1_23}}"
+run = "go test --tags=mock -v -race -covermode=atomic -coverprofile=profile.cov.full ./..."
+
+[tasks."ci:test:root:stable"]
+description = "Test the root module with coverage using stable Go"
+tools.go = "{{vars.go_stable}}"
+run = "go test --tags=mock -v -race -covermode=atomic -coverprofile=profile.cov.full ./..."
+
+[tasks."ci:test:native:go123"]
+description = "Test the native module with coverage using Go 1.23"
+dir = "{{config_root}}/native"
+tools.go = "{{vars.go_1_23}}"
+run = "go test --tags=mock -v -race -covermode=atomic -coverprofile=profile.cov.full ./..."
+
+[tasks."ci:test:native:stable"]
+description = "Test the native module with coverage using stable Go"
+dir = "{{config_root}}/native"
+tools.go = "{{vars.go_stable}}"
+run = "go test --tags=mock -v -race -covermode=atomic -coverprofile=profile.cov.full ./..."
+
+[tasks."ci:test:eventlog:go123"]
+description = "Test the Windows eventlog module using Go 1.23"
+dir = "{{config_root}}/platform/windows/eventlog"
+tools.go = "{{vars.go_1_23}}"
+run = "go test --tags=mock -v -race ./..."
+
+[tasks."ci:test:eventlog:stable"]
+description = "Test the Windows eventlog module using stable Go"
+dir = "{{config_root}}/platform/windows/eventlog"
+tools.go = "{{vars.go_stable}}"
+run = "go test --tags=mock -v -race ./..."
 
 [tasks.coverage]
 description = "Create coverage profiles for all modules"
@@ -181,16 +228,19 @@ depends = ["lint:root", "lint:native", "lint:eventlog"]
 
 [tasks."lint:root"]
 description = "Lint the root module"
+tools.golangci-lint = "{{vars.golangci_lint}}"
 run = 'golangci-lint run --config "{{config_root}}/.golangci.yaml"'
 
 [tasks."lint:native"]
 description = "Lint the native module"
 dir = "{{config_root}}/native"
+tools.golangci-lint = "{{vars.golangci_lint}}"
 run = 'golangci-lint run --config "{{config_root}}/.golangci.yaml"'
 
 [tasks."lint:eventlog"]
 description = "Lint the Windows eventlog module"
 dir = "{{config_root}}/platform/windows/eventlog"
+tools.golangci-lint = "{{vars.golangci_lint}}"
 run = 'golangci-lint run --config "{{config_root}}/.golangci.yaml"'
 
 [tasks.vet]
@@ -253,11 +303,31 @@ run = "go mod tidy -diff"
 
 [tasks.actionlint]
 description = "Lint GitHub Actions workflows"
+tools.actionlint = "{{vars.actionlint}}"
+tools.shellcheck = "{{vars.shellcheck}}"
 run = 'actionlint -pyflakes=""'
 
 [tasks."tools:lock"]
-description = "Regenerate the tool lockfile for supported platforms"
-run = "mise lock --platform linux-x64,linux-arm64,macos-x64,macos-arm64,windows-x64"
+description = "Regenerate all tool lockfiles for supported platforms"
+run = [
+  "mise lock --platform linux-x64,linux-arm64,macos-x64,macos-arm64,windows-x64",
+  "mise -E ci-go118 lock --platform linux-x64,linux-arm64,macos-x64,macos-arm64,windows-x64",
+  "mise -E ci-go122 lock --platform linux-x64,linux-arm64,macos-x64,macos-arm64,windows-x64",
+  "mise -E ci-go123 lock --platform linux-x64,linux-arm64,macos-x64,macos-arm64,windows-x64",
+  "mise -E ci-lint lock --platform linux-x64,linux-arm64,macos-x64,macos-arm64,windows-x64",
+  "mise -E ci-stable lock --platform linux-x64,linux-arm64,macos-x64,macos-arm64,windows-x64",
+]
+
+[tasks."tools:update"]
+description = "Update all tool lockfiles to releases at least seven days old"
+run = [
+  "mise lock --bump --minimum-release-age 7d --platform linux-x64,linux-arm64,macos-x64,macos-arm64,windows-x64",
+  "mise -E ci-go118 lock --bump --minimum-release-age 7d --platform linux-x64,linux-arm64,macos-x64,macos-arm64,windows-x64",
+  "mise -E ci-go122 lock --bump --minimum-release-age 7d --platform linux-x64,linux-arm64,macos-x64,macos-arm64,windows-x64",
+  "mise -E ci-go123 lock --bump --minimum-release-age 7d --platform linux-x64,linux-arm64,macos-x64,macos-arm64,windows-x64",
+  "mise -E ci-lint lock --bump --minimum-release-age 7d --platform linux-x64,linux-arm64,macos-x64,macos-arm64,windows-x64",
+  "mise -E ci-stable lock --bump --minimum-release-age 7d --platform linux-x64,linux-arm64,macos-x64,macos-arm64,windows-x64",
+]
 
 [tasks.vuln]
 description = "Scan all modules for known vulnerabilities"
@@ -265,16 +335,19 @@ depends = ["vuln:root", "vuln:native", "vuln:eventlog"]
 
 [tasks."vuln:root"]
 description = "Scan the root module for known vulnerabilities"
+tools."go:golang.org/x/vuln/cmd/govulncheck" = "{{vars.govulncheck}}"
 run = "govulncheck ./..."
 
 [tasks."vuln:native"]
 description = "Scan the native module for known vulnerabilities"
 dir = "{{config_root}}/native"
+tools."go:golang.org/x/vuln/cmd/govulncheck" = "{{vars.govulncheck}}"
 run = "govulncheck ./..."
 
 [tasks."vuln:eventlog"]
 description = "Scan the Windows eventlog module for known vulnerabilities"
 dir = "{{config_root}}/platform/windows/eventlog"
+tools."go:golang.org/x/vuln/cmd/govulncheck" = "{{vars.govulncheck}}"
 run = "govulncheck ./..."
 
 [tasks.check]
