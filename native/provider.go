@@ -209,7 +209,7 @@ func (instance *Provider) getCache() log.LoggerCache {
 			completed := false
 			defer func() {
 				if !completed {
-					root.setFailed()
+					root.failInitialization()
 				}
 			}()
 			root.setDelegate(customizer(instance, cl))
