@@ -76,8 +76,11 @@ func (instance *rootLoggerFacade) setDelegate(delegate log.CoreLogger) {
 	}
 }
 
-func (instance *rootLoggerFacade) setFailed() {
+func (instance *rootLoggerFacade) failInitialization() {
 	previous := instance.state.current.Load()
+	if previous.version > 0 {
+		return
+	}
 	instance.state.current.Store(&rootLoggerSnapshot{
 		version: previous.version + 1,
 		failed:  true,

@@ -629,6 +629,68 @@ func Test_Provider_GetRootLogger_acceptsReentrantRootAsCustomization(t *testing.
 	assert.ToBeEqual(t, "value", actual)
 }
 
+func Test_Provider_GetRootLogger_preservesCustomizedLoggerAfterPendingLogPanic(t *testing.T) {
+	instance, recorder := newProvider()
+	var customizerCalls atomic.Int32
+	var consumerCalls atomic.Int32
+	instance.Consumer = consumer.Func(func(event log.Event, source log.CoreLogger) {
+		if consumerCalls.Add(1) == 1 {
+			panic("expected")
+		}
+		recorder.Consume(event, source)
+	})
+	instance.CoreLoggerCustomizer = func(actualProvider *Provider, logger *CoreLogger) log.CoreLogger {
+		customizerCalls.Add(1)
+		actualProvider.GetRootLogger().Info("pending")
+		return log.NewLogger(logger).With("custom", "value")
+	}
+
+	func() {
+		defer func() { assert.ToBeEqual(t, "expected", recover()) }()
+		instance.GetRootLogger()
+	}()
+	instance.GetRootLogger().Info("after")
+
+	assert.ToBeEqual(t, int32(1), customizerCalls.Load())
+	assert.ToBeEqual(t, int32(2), consumerCalls.Load())
+	assert.ToBeEqual(t, 1, recorder.Len())
+	actual, exists := recorder.Get(0).Get("custom")
+	assert.ToBeEqual(t, true, exists)
+	assert.ToBeEqual(t, "value", actual)
+}
+
+func Test_Provider_GetRootLogger_preservesCustomizedLoggerAfterPendingLogGoexit(t *testing.T) {
+	instance, recorder := newProvider()
+	var customizerCalls atomic.Int32
+	var consumerCalls atomic.Int32
+	instance.Consumer = consumer.Func(func(event log.Event, source log.CoreLogger) {
+		if consumerCalls.Add(1) == 1 {
+			runtime.Goexit()
+		}
+		recorder.Consume(event, source)
+	})
+	instance.CoreLoggerCustomizer = func(actualProvider *Provider, logger *CoreLogger) log.CoreLogger {
+		customizerCalls.Add(1)
+		actualProvider.GetRootLogger().Info("pending")
+		return log.NewLogger(logger).With("custom", "value")
+	}
+
+	initialized := make(chan struct{})
+	go func() {
+		defer close(initialized)
+		instance.GetRootLogger()
+	}()
+	<-initialized
+	instance.GetRootLogger().Info("after")
+
+	assert.ToBeEqual(t, int32(1), customizerCalls.Load())
+	assert.ToBeEqual(t, int32(2), consumerCalls.Load())
+	assert.ToBeEqual(t, 1, recorder.Len())
+	actual, exists := recorder.Get(0).Get("custom")
+	assert.ToBeEqual(t, true, exists)
+	assert.ToBeEqual(t, "value", actual)
+}
+
 func Test_Provider_GetRootLogger_exposesCustomizerFailure(t *testing.T) {
 	instance, _ := newProvider()
 	instance.CoreLoggerCustomizer = func(_ *Provider, _ *CoreLogger) log.CoreLogger {
