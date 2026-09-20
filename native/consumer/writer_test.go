@@ -332,6 +332,66 @@ func Test_Writer_Consume_serializesFormatter(t *testing.T) {
 	assert.ToBeEqual(t, int32(32), formatted.Load())
 }
 
+func Test_Writer_Consume_boundsAndCoalescesReentrantQueue(t *testing.T) {
+	stderr, err := os.CreateTemp(t.TempDir(), "stderr")
+	assert.ToBeNoError(t, err)
+	defer func() { _ = stderr.Close() }()
+	oldStderr := os.Stderr
+	os.Stderr = stderr
+	defer func() { os.Stderr = oldStderr }()
+
+	givenLogger := recording.NewLogger()
+	givenEvent := givenLogger.NewEvent(level.Info, nil)
+	var reentered atomic.Bool
+	var formatted atomic.Int32
+	var overflowReportedBeforeDrain atomic.Bool
+	maxPending := 0
+	var instance *Writer
+	instance = NewWriter(io.Discard, func(writer *Writer) {
+		writer.Formatter = formatter.Func(func(event log.Event, _ log.Provider, _ hints.Hints) ([]byte, error) {
+			formattedCount := formatted.Add(1)
+			if reentered.CompareAndSwap(false, true) {
+				for range maxPendingWriterRequests + 100 {
+					instance.Consume(event, givenLogger)
+				}
+				instance.mutex.Lock()
+				maxPending = len(instance.pending)
+				instance.mutex.Unlock()
+			}
+			if formattedCount == 2 {
+				info, statErr := stderr.Stat()
+				overflowReportedBeforeDrain.Store(statErr == nil && info.Size() > 0)
+				for range 100 {
+					instance.Consume(event, givenLogger)
+				}
+			}
+			return nil, nil
+		})
+	})
+
+	done := make(chan struct{})
+	go func() {
+		instance.Consume(givenEvent, givenLogger)
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("full reentrant queue deadlocked")
+	}
+
+	os.Stderr = oldStderr
+	_, err = stderr.Seek(0, io.SeekStart)
+	assert.ToBeNoError(t, err)
+	actualStderr, err := io.ReadAll(stderr)
+	assert.ToBeNoError(t, err)
+	assert.ToBeEqual(t, maxPendingWriterRequests, maxPending)
+	assert.ToBeEqual(t, int32(maxPendingWriterRequests+2), formatted.Load())
+	assert.ToBeEqual(t, true, overflowReportedBeforeDrain.Load())
+	assert.ToBeEqual(t, queueFullFallback, string(actualStderr))
+	assert.ToBeEqual(t, false, instance.pendingOverflow)
+}
+
 func Test_Writer_Consume_recoversStateAfterFormatterPanic(t *testing.T) {
 	givenLogger := recording.NewLogger()
 	givenEvent := givenLogger.NewEvent(level.Info, nil)

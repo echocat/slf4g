@@ -12,8 +12,13 @@ import (
 	"github.com/echocat/slf4g/native/interceptor"
 )
 
-const formatErrorFallback = "{\"error\":\"LOG_EVENT_FORMAT_ERROR\"}\n"
-const writeErrorFallback = "{\"error\":\"LOG_EVENT_WRITE_ERROR\"}\n"
+const (
+	// Absorb transient contention without retaining events indefinitely behind a stalled sink.
+	maxPendingWriterRequests = 1024
+	formatErrorFallback      = "{\"error\":\"LOG_EVENT_FORMAT_ERROR\"}\n"
+	writeErrorFallback       = "{\"error\":\"LOG_EVENT_WRITE_ERROR\"}\n"
+	queueFullFallback        = "{\"error\":\"LOG_EVENT_QUEUE_FULL\"}\n"
+)
 
 // Writer is an implementation of Writer which formats the consumed log.Entry
 // using a configured Formatter and logs it to the configured io.Writer.
@@ -42,7 +47,8 @@ type Writer struct {
 	// environments; which is meaningful in the most context. It might have
 	// additional performance costs. If an event is already being consumed,
 	// concurrent or reentrant calls are queued and can return before their event
-	// was written.
+	// was written. If the bounded queue is full, new events are dropped and the
+	// active caller writes one safe diagnostic to stderr per drain cycle.
 	Synchronized bool
 
 	// OnFormatError will be called if their as any kind of error while
@@ -57,11 +63,12 @@ type Writer struct {
 	// will be silently swallowed.
 	OnColorInitializationError func(*Writer, io.Writer, error)
 
-	out            io.Writer
-	colorSupported *color.Supported
-	mutex          sync.Mutex
-	consuming      bool
-	pending        []writerRequest
+	out             io.Writer
+	colorSupported  *color.Supported
+	mutex           sync.Mutex
+	consuming       bool
+	pending         []writerRequest
+	pendingOverflow bool
 }
 
 type writerRequest struct {
@@ -99,6 +106,11 @@ func (instance *Writer) Consume(event log.Event, source log.CoreLogger) {
 	// and output remain serialized.
 	instance.mutex.Lock()
 	if instance.consuming {
+		if len(instance.pending) >= maxPendingWriterRequests {
+			instance.pendingOverflow = true
+			instance.mutex.Unlock()
+			return
+		}
 		instance.pending = append(instance.pending, writerRequest{event, source})
 		instance.mutex.Unlock()
 		return
@@ -111,12 +123,14 @@ func (instance *Writer) Consume(event log.Event, source log.CoreLogger) {
 
 func (instance *Writer) consumePending(request writerRequest) {
 	completed := false
+	overflowReported := false
 	defer func() {
 		if !completed {
 			// Do not leave the writer blocked if user-provided code panics or exits
 			// its goroutine. Requests accepted during the failed event are dropped.
 			instance.mutex.Lock()
 			instance.pending = nil
+			instance.pendingOverflow = false
 			instance.consuming = false
 			instance.mutex.Unlock()
 		}
@@ -126,8 +140,16 @@ func (instance *Writer) consumePending(request writerRequest) {
 		instance.consume(request.event, request.source)
 
 		instance.mutex.Lock()
+		if instance.pendingOverflow && !overflowReported {
+			instance.pendingOverflow = false
+			instance.mutex.Unlock()
+			_, _ = io.WriteString(os.Stderr, queueFullFallback)
+			overflowReported = true
+			instance.mutex.Lock()
+		}
 		if len(instance.pending) == 0 {
 			instance.pending = nil
+			instance.pendingOverflow = false
 			instance.consuming = false
 			completed = true
 			instance.mutex.Unlock()
