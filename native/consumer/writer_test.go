@@ -392,13 +392,20 @@ func Test_Writer_Consume_boundsAndCoalescesReentrantQueue(t *testing.T) {
 	assert.ToBeEqual(t, false, instance.pendingOverflow)
 }
 
-func Test_Writer_Consume_recoversStateAfterFormatterPanic(t *testing.T) {
+func Test_Writer_Consume_preservesPendingAfterFormatterPanic(t *testing.T) {
 	givenLogger := recording.NewLogger()
-	givenEvent := givenLogger.NewEvent(level.Info, nil)
-	var calls atomic.Int32
-	instance := NewWriter(io.Discard, func(writer *Writer) {
-		writer.Formatter = formatter.Func(func(log.Event, log.Provider, hints.Hints) ([]byte, error) {
-			if calls.Add(1) == 1 {
+	failedEvent := givenLogger.NewEvent(level.Info, nil)
+	pendingEvent1 := givenLogger.NewEvent(level.Info, nil)
+	pendingEvent2 := givenLogger.NewEvent(level.Info, nil)
+	resumeEvent := givenLogger.NewEvent(level.Info, nil)
+	var seen []log.Event
+	var instance *Writer
+	instance = NewWriter(io.Discard, func(writer *Writer) {
+		writer.Formatter = formatter.Func(func(event log.Event, _ log.Provider, _ hints.Hints) ([]byte, error) {
+			seen = append(seen, event)
+			if len(seen) == 1 {
+				instance.Consume(pendingEvent1, givenLogger)
+				instance.Consume(pendingEvent2, givenLogger)
 				panic("expected")
 			}
 			return nil, nil
@@ -409,11 +416,59 @@ func Test_Writer_Consume_recoversStateAfterFormatterPanic(t *testing.T) {
 		defer func() {
 			assert.ToBeEqual(t, "expected", recover())
 		}()
-		instance.Consume(givenEvent, givenLogger)
+		instance.Consume(failedEvent, givenLogger)
 	}()
-	instance.Consume(givenEvent, givenLogger)
+	assert.ToBeEqual(t, false, instance.consuming)
+	assert.ToBeEqual(t, 2, len(instance.pending))
 
-	assert.ToBeEqual(t, int32(2), calls.Load())
+	instance.Consume(resumeEvent, givenLogger)
+
+	assert.ToBeEqual(t, 4, len(seen))
+	assert.ToBeSame(t, failedEvent, seen[0])
+	assert.ToBeSame(t, pendingEvent1, seen[1])
+	assert.ToBeSame(t, pendingEvent2, seen[2])
+	assert.ToBeSame(t, resumeEvent, seen[3])
+	assert.ToBeEqual(t, false, instance.consuming)
+	assert.ToBeEqual(t, 0, len(instance.pending))
+}
+
+func Test_Writer_Consume_preservesPendingAfterFormatterGoexit(t *testing.T) {
+	givenLogger := recording.NewLogger()
+	failedEvent := givenLogger.NewEvent(level.Info, nil)
+	pendingEvent := givenLogger.NewEvent(level.Info, nil)
+	resumeEvent := givenLogger.NewEvent(level.Info, nil)
+	var seen []log.Event
+	var instance *Writer
+	instance = NewWriter(io.Discard, func(writer *Writer) {
+		writer.Formatter = formatter.Func(func(event log.Event, _ log.Provider, _ hints.Hints) ([]byte, error) {
+			seen = append(seen, event)
+			if len(seen) == 1 {
+				instance.Consume(pendingEvent, givenLogger)
+				runtime.Goexit()
+			}
+			return nil, nil
+		})
+	})
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		instance.Consume(failedEvent, givenLogger)
+	}()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("formatter Goexit did not release writer state")
+	}
+	assert.ToBeEqual(t, false, instance.consuming)
+	assert.ToBeEqual(t, 1, len(instance.pending))
+
+	instance.Consume(resumeEvent, givenLogger)
+
+	assert.ToBeEqual(t, 3, len(seen))
+	assert.ToBeSame(t, failedEvent, seen[0])
+	assert.ToBeSame(t, pendingEvent, seen[1])
+	assert.ToBeSame(t, resumeEvent, seen[2])
 	assert.ToBeEqual(t, false, instance.consuming)
 	assert.ToBeEqual(t, 0, len(instance.pending))
 }
