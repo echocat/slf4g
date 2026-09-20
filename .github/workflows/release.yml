@@ -6,17 +6,125 @@ on:
       - published
 
 permissions:
-  contents: write
+  actions: read
+  contents: read
 
 jobs:
-  create-native-tag:
+  validate-release:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      commit: ${{ steps.release.outputs.commit }}
 
     steps:
+      - name: Validate release metadata
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ github.event.release.prerelease }}
+          RELEASE_ID: ${{ github.event.release.id }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$PRERELEASE" == "true" ]]; then
+            echo "::error::Prereleases are not supported."
+            exit 1
+          fi
+          if [[ ! "$TAG" =~ ^v(0|1)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::Invalid canonical v0/v1 release tag: $TAG"
+            exit 1
+          fi
+          if [[ "$(gh api "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" --jq .immutable)" != "true" ]]; then
+            echo "::error::Release ${TAG} is not immutable."
+            exit 1
+          fi
+
       - name: Checkout release tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate release commit
+        id: release
+        shell: bash
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+
+          ROOT_COMMIT="$(git rev-parse --verify "refs/tags/${TAG}^{commit}")"
+          git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main"
+          if ! git merge-base --is-ancestor "$ROOT_COMMIT" refs/remotes/origin/main; then
+            echo "::error::Release tag ${TAG} is not based on main."
+            exit 1
+          fi
+          echo "commit=${ROOT_COMMIT}" >> "$GITHUB_OUTPUT"
+
+      - name: Require successful main checks
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ROOT_COMMIT: ${{ steps.release.outputs.commit }}
+        run: |
+          set -euo pipefail
+
+          deadline=$((SECONDS + 600))
+          require_successful_run() {
+            local workflow="$1"
+            local label="$2"
+            local state
+
+            while true; do
+              state="$(gh api \
+                "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?event=push&head_sha=${ROOT_COMMIT}&per_page=100" \
+                --jq '
+                  if any(.workflow_runs[]; .conclusion == "success") then "success"
+                  elif any(.workflow_runs[]; .status != "completed") then "pending"
+                  elif (.workflow_runs | length) > 0 then "failed"
+                  else "pending"
+                  end
+                ')"
+              case "$state" in
+                success)
+                  echo "${label} passed for ${ROOT_COMMIT}."
+                  return
+                  ;;
+                failed)
+                  echo "::error::${label} did not pass for ${ROOT_COMMIT}."
+                  exit 1
+                  ;;
+                pending)
+                  if (( SECONDS >= deadline )); then
+                    echo "::error::Timed out waiting for ${label} on ${ROOT_COMMIT}."
+                    exit 1
+                  fi
+                  sleep 10
+                  ;;
+                *)
+                  echo "::error::Unexpected ${label} state: ${state}"
+                  exit 1
+                  ;;
+              esac
+            done
+          }
+
+          require_successful_run ci.yml "Continuous Integration"
+          require_successful_run codeql-analysis.yml "CodeQL"
+
+  create-native-tag:
+    needs: validate-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout validated release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.validate-release.outputs.commit }}
           fetch-depth: 0
 
       - name: Install mise
@@ -29,21 +137,11 @@ jobs:
       - name: Create native release tag
         shell: bash
         env:
+          ROOT_COMMIT: ${{ needs.validate-release.outputs.commit }}
           TAG: ${{ github.event.release.tag_name }}
-          PRERELEASE: ${{ github.event.release.prerelease }}
         run: |
           set -euo pipefail
 
-          if [[ "$PRERELEASE" == "true" ]]; then
-            echo "::error::Prereleases are not supported."
-            exit 1
-          fi
-          if [[ ! "$TAG" =~ ^v(0|1)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-            echo "::error::Invalid canonical v0/v1 release tag: $TAG"
-            exit 1
-          fi
-
-          ROOT_COMMIT="$(git rev-parse --verify "refs/tags/${TAG}^{commit}")"
           NATIVE_TAG="native/${TAG}"
           git checkout --detach "$ROOT_COMMIT"
 
