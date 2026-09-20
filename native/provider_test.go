@@ -2,7 +2,9 @@ package native
 
 import (
 	"context"
+	"io"
 	stdslog "log/slog"
+	"os"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -471,6 +473,51 @@ func Test_Provider_GetRootLogger_customizesOnceDuringConcurrentInitialization(t 
 	assert.ToBeEqual(t, int32(1), customizerCalls.Load())
 }
 
+func Test_Provider_GetRootLogger_boundsPendingLogs(t *testing.T) {
+	stderr, err := os.CreateTemp(t.TempDir(), "stderr")
+	assert.ToBeNoError(t, err)
+	defer func() { _ = stderr.Close() }()
+	oldStderr := os.Stderr
+	os.Stderr = stderr
+	defer func() { os.Stderr = oldStderr }()
+
+	instance, recorder := newProvider()
+	customizerEntered := make(chan struct{})
+	releaseCustomizer := make(chan struct{})
+	actualMaxPending := 0
+	instance.CoreLoggerCustomizer = func(_ *Provider, logger *CoreLogger) log.CoreLogger {
+		close(customizerEntered)
+		<-releaseCustomizer
+		return logger
+	}
+
+	initialized := make(chan struct{})
+	go func() {
+		defer close(initialized)
+		instance.GetRootLogger()
+	}()
+	<-customizerEntered
+	root := instance.GetRootLogger()
+	for range maxPendingRootLoggerActions + 100 {
+		root.Info("pending")
+	}
+	facade := root.(*rootLoggerFacade)
+	facade.state.pendingMutex.Lock()
+	actualMaxPending = len(facade.state.pending)
+	facade.state.pendingMutex.Unlock()
+	close(releaseCustomizer)
+	<-initialized
+
+	os.Stderr = oldStderr
+	_, err = stderr.Seek(0, io.SeekStart)
+	assert.ToBeNoError(t, err)
+	actualStderr, err := io.ReadAll(stderr)
+	assert.ToBeNoError(t, err)
+	assert.ToBeEqual(t, maxPendingRootLoggerActions, actualMaxPending)
+	assert.ToBeEqual(t, maxPendingRootLoggerActions, recorder.Len())
+	assert.ToBeEqual(t, "{\"error\":\"ROOT_LOGGER_QUEUE_FULL\"}\n", string(actualStderr))
+}
+
 func Test_Provider_GetRootLogger_preservesCustomizedLogger(t *testing.T) {
 	instance, recorder := newProvider()
 	instance.CoreLoggerCustomizer = func(_ *Provider, logger *CoreLogger) log.CoreLogger {
@@ -799,6 +846,26 @@ func Test_Provider_GetRootLogger_preservesPendingCallerLocation(t *testing.T) {
 	actual, exists := recorder.Get(0).Get(instance.getFieldKeysSpec().GetLocation())
 	assert.ToBeEqual(t, true, exists)
 	assert.ToBeEqual(t, "github.com/echocat/slf4g/native.logThroughPendingCustomizedRoot", actual.(location.Caller).GetFrame().Function)
+}
+
+func Test_Provider_GetRootLogger_usesCustomizedLocationDiscoveryForPendingLog(t *testing.T) {
+	instance, recorder := newProvider()
+	instance.LocationDiscovery = location.DiscoveryFunc(func(log.Event, uint16) location.Location {
+		return "provisional"
+	})
+	instance.CoreLoggerCustomizer = func(actualProvider *Provider, logger *CoreLogger) log.CoreLogger {
+		logger.LocationDiscovery = location.DiscoveryFunc(func(log.Event, uint16) location.Location {
+			return "customized"
+		})
+		actualProvider.GetRootLogger().Info("pending")
+		return &strictCoreLogger{CoreLogger: logger, token: new(int)}
+	}
+
+	instance.GetRootLogger()
+
+	actual, exists := recorder.Get(0).Get(instance.getFieldKeysSpec().GetLocation())
+	assert.ToBeEqual(t, true, exists)
+	assert.ToBeEqual(t, "customized", actual)
 }
 
 func programCounterForSlogRecord() uintptr {

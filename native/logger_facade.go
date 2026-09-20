@@ -1,7 +1,9 @@
 package native
 
 import (
+	"io"
 	"maps"
+	"os"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -11,10 +13,18 @@ import (
 	"github.com/echocat/slf4g/level"
 )
 
+const (
+	// Absorb transient initialization contention without retaining logs indefinitely.
+	maxPendingRootLoggerActions = 1024
+	rootLoggerQueueFullFallback = "{\"error\":\"ROOT_LOGGER_QUEUE_FULL\"}\n"
+)
+
 type rootLoggerState struct {
-	current      atomic.Pointer[rootLoggerSnapshot]
-	pendingMutex sync.Mutex
-	pending      []func()
+	current         atomic.Pointer[rootLoggerSnapshot]
+	locationCore    *CoreLogger
+	pendingMutex    sync.Mutex
+	pending         []func()
+	pendingOverflow bool
 }
 
 type rootLoggerSnapshot struct {
@@ -48,8 +58,8 @@ type rootLoggerFacade struct {
 	cache      atomic.Pointer[rootLoggerCache]
 }
 
-func newRootLoggerFacade(delegate log.CoreLogger) *rootLoggerFacade {
-	state := &rootLoggerState{}
+func newRootLoggerFacade(delegate log.CoreLogger, locationCore *CoreLogger) *rootLoggerFacade {
+	state := &rootLoggerState{locationCore: locationCore}
 	logger := log.NewLogger(delegate)
 	state.current.Store(&rootLoggerSnapshot{core: log.UnwrapCoreLogger(logger), logger: logger})
 	return &rootLoggerFacade{state: state}
@@ -69,8 +79,13 @@ func (instance *rootLoggerFacade) setDelegate(delegate log.CoreLogger) {
 
 	instance.state.pendingMutex.Lock()
 	pending := instance.state.pending
+	pendingOverflow := instance.state.pendingOverflow
 	instance.state.pending = nil
+	instance.state.pendingOverflow = false
 	instance.state.pendingMutex.Unlock()
+	if pendingOverflow {
+		_, _ = io.WriteString(os.Stderr, rootLoggerQueueFullFallback)
+	}
 	for _, action := range pending {
 		action()
 	}
@@ -87,7 +102,23 @@ func (instance *rootLoggerFacade) failInitialization() {
 	})
 	instance.state.pendingMutex.Lock()
 	instance.state.pending = nil
+	instance.state.pendingOverflow = false
 	instance.state.pendingMutex.Unlock()
+}
+
+func (instance *rootLoggerFacade) hasPendingCapacityLocked() bool {
+	if len(instance.state.pending) >= maxPendingRootLoggerActions {
+		instance.state.pendingOverflow = true
+		return false
+	}
+	return true
+}
+
+func (instance *rootLoggerFacade) appendPendingLocked(action func()) {
+	if !instance.hasPendingCapacityLocked() {
+		return
+	}
+	instance.state.pending = append(instance.state.pending, action)
 }
 
 func (instance *rootLoggerFacade) isInitializing() bool {
@@ -105,7 +136,7 @@ func (instance *rootLoggerFacade) deferUntilReady(action func(log.Logger)) bool 
 	if instance.state.current.Load().version > 0 {
 		return false
 	}
-	instance.state.pending = append(instance.state.pending, func() { action(instance.current()) })
+	instance.appendPendingLocked(func() { action(instance.current()) })
 	return true
 }
 
@@ -124,9 +155,12 @@ func (instance *rootLoggerFacade) deferLogUntilReady(
 	if instance.state.current.Load().version > 0 {
 		return false
 	}
+	if !instance.hasPendingCapacityLocked() {
+		return true
+	}
 
 	current := instance.state.current.Load()
-	core, ok := current.core.(*CoreLogger)
+	_, ok := current.core.(*CoreLogger)
 	argsCopy := append([]any(nil), args...)
 	if !ok {
 		instance.state.pending = append(instance.state.pending, func() { action(instance.current(), argsCopy) })
@@ -139,13 +173,18 @@ func (instance *rootLoggerFacade) deferLogUntilReady(
 	}
 	instance.state.pending = append(instance.state.pending, func() {
 		current := instance.current()
+		currentCore := instance.state.current.Load().core
+		locationCore, ok := currentCore.(*CoreLogger)
+		if !ok {
+			locationCore = instance.state.locationCore
+		}
 		event := rootLoggerEventWithProgramCounter{
-			Event:          core.NewEvent(v, nil),
+			Event:          locationCore.NewEvent(v, nil),
 			programCounter: pcs[0],
 		}
-		location := core.getLocationDiscovery().DiscoverLocation(event, 0)
+		location := locationCore.getLocationDiscovery().DiscoverLocation(event, 0)
 		if location != nil {
-			current = current.With(core.getProvider().getFieldKeysSpec().GetLocation(), location)
+			current = current.With(locationCore.getProvider().getFieldKeysSpec().GetLocation(), location)
 		}
 		action(current, argsCopy)
 	})
