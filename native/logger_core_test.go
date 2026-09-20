@@ -189,6 +189,43 @@ func Test_CoreLogger_Log_withTimestamp(t *testing.T) {
 	}
 }
 
+func Test_CoreLogger_Log_doesNotRestoreFilteredReservedFields(t *testing.T) {
+	givenProvider, recorder := newProvider()
+	instance := newCoreLoggerWith(givenProvider)
+	timestamp := &countingFilteredValue{value: time.Now()}
+	logger := &countingFilteredValue{value: "secret"}
+	givenEvent := newEvent(givenProvider, level.Info).
+		With("timestamp", timestamp).
+		With("logger", logger)
+
+	instance.Log(givenEvent, 0)
+
+	assert.ToBeEqual(t, 1, timestamp.calls)
+	assert.ToBeEqual(t, 1, logger.calls)
+	actual := recorder.Get(0)
+	assert.ToBeNil(t, log.GetTimestampOf(actual, givenProvider))
+	assert.ToBeNil(t, log.GetLoggerOf(actual, givenProvider))
+}
+
+func Test_CoreLogger_Log_appliesDefaultsForInvalidRespectedReservedFields(t *testing.T) {
+	givenProvider, recorder := newProvider()
+	instance := newCoreLoggerWith(givenProvider)
+	timestamp := &countingFilteredValue{value: time.Time{}, respected: true}
+	logger := &countingFilteredValue{value: "different", respected: true}
+	givenEvent := newEvent(givenProvider, level.Info).
+		With("timestamp", timestamp).
+		With("logger", logger)
+
+	instance.Log(givenEvent, 0)
+
+	assert.ToBeEqual(t, 1, timestamp.calls)
+	assert.ToBeEqual(t, 1, logger.calls)
+	actual := recorder.Get(0)
+	assert.ToBeNotNil(t, log.GetTimestampOf(actual, givenProvider))
+	expectedLogger := "test"
+	assert.ToBeEqual(t, &expectedLogger, log.GetLoggerOf(actual, givenProvider))
+}
+
 func Test_CoreLogger_Log_withLocation(t *testing.T) {
 	givenProvider, recorder := newProvider(func(provider *Provider) {
 		provider.LocationDiscovery = location.NewDepthOnlyDiscovery()
@@ -474,4 +511,19 @@ func newCoreLoggerWith(provider *Provider, customizer ...func(*CoreLogger)) *Cor
 		c(result)
 	}
 	return result
+}
+
+type countingFilteredValue struct {
+	value     any
+	respected bool
+	calls     int
+}
+
+func (instance *countingFilteredValue) Filter(fields.FilterContext) (any, bool) {
+	instance.calls++
+	return instance.value, instance.respected
+}
+
+func (instance *countingFilteredValue) Get() any {
+	return instance.value
 }
