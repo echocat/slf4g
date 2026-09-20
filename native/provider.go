@@ -202,7 +202,7 @@ func (instance *Provider) getCache() log.LoggerCache {
 			provider: instance,
 			name:     rootLoggerName,
 		}
-		root := newRootLoggerFacade(provisional)
+		root := newRootLoggerFacade(provisional, cl)
 		c := log.NewLoggerCache(func() log.Logger { return root }, instance.factory)
 
 		if atomic.CompareAndSwapPointer(&instance.cachePointer, unsafe.Pointer(v), unsafe.Pointer(&c)) {
