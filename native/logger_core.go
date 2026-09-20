@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/echocat/slf4g/fields"
+	"github.com/echocat/slf4g/internal/eventvalue"
 
 	"github.com/echocat/slf4g/level"
 
@@ -48,11 +49,17 @@ func (instance *CoreLogger) Log(event log.Event, skipFrames uint16) {
 	provider := instance.getProvider()
 	fieldKeysSpec := provider.getFieldKeysSpec()
 
-	if v := log.GetTimestampOf(event, provider); v == nil {
-		event = event.With(fieldKeysSpec.GetTimestamp(), time.Now())
+	timestampKey := fieldKeysSpec.GetTimestamp()
+	timestamp, _ := event.Get(timestampKey)
+	timestamp, timestampRespected := eventvalue.Resolve(event, timestamp)
+	if timestampRespected && eventvalue.AsTimestamp(timestamp) == nil {
+		event = event.With(timestampKey, time.Now())
 	}
-	if v := log.GetLoggerOf(event, provider); v == nil || *v != instance.name {
-		event = event.With(fieldKeysSpec.GetLogger(), instance.name)
+	loggerKey := fieldKeysSpec.GetLogger()
+	logger, _ := event.Get(loggerKey)
+	logger, loggerRespected := eventvalue.Resolve(event, logger)
+	if v := eventvalue.AsLogger(logger); loggerRespected && (v == nil || *v != instance.name) {
+		event = event.With(loggerKey, instance.name)
 	}
 	locationKey := fieldKeysSpec.GetLocation()
 	if current, exists := event.Get(locationKey); !exists || current == nil {

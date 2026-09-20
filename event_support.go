@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/echocat/slf4g/fields"
+	"github.com/echocat/slf4g/internal/eventvalue"
 	"github.com/echocat/slf4g/internal/support"
 )
 
@@ -82,24 +82,8 @@ func GetTimestampOf(e Event, using Provider) *time.Time {
 		return nil
 	}
 	pv, _ := e.Get(using.GetFieldKeysSpec().GetTimestamp())
-	pv = resolveEventValue(e, pv)
-	switch v := pv.(type) {
-	case time.Time:
-		if v.IsZero() {
-			return nil
-		}
-		return &v
-	case *time.Time:
-		if v == nil {
-			return nil
-		}
-		if v.IsZero() {
-			return nil
-		}
-		return v
-	default:
-		return nil
-	}
+	pv, _ = eventvalue.Resolve(e, pv)
+	return eventvalue.AsTimestamp(pv)
 }
 
 // GetLoggerOf returns for the given Event the contained logger (name)
@@ -109,64 +93,13 @@ func GetLoggerOf(e Event, using Provider) *string {
 		return nil
 	}
 	pv, _ := e.Get(using.GetFieldKeysSpec().GetLogger())
-	pv = resolveEventValue(e, pv)
-	switch v := pv.(type) {
-	case nil:
-		return nil
-	case string:
-		return &v
-	case *string:
-		if v == nil {
-			return nil
-		}
-		return v
-	case Logger:
-		if support.IsNil(v) {
-			return nil
-		}
-		result := v.GetName()
-		return &result
-	case interface {
-		GetName() string
-	}:
-		if support.IsNil(v) {
-			return nil
-		}
-		result := v.GetName()
-		return &result
-	case fmt.Stringer:
-		if support.IsNil(v) {
-			return nil
-		}
-		result := v.String()
-		return &result
-	default:
-		result := fmt.Sprint(pv)
-		return &result
-	}
+	pv, _ = eventvalue.Resolve(e, pv)
+	return eventvalue.AsLogger(pv)
 }
 
 func resolveEventValue(event Event, value any) any {
-	if value == nil {
-		return nil
-	}
-	if filtered, ok := value.(fields.Filtered); ok {
-		if support.IsNil(filtered) {
-			return nil
-		}
-		resolved, respected := filtered.Filter(event)
-		if !respected {
-			return nil
-		}
-		return resolved
-	}
-	if lazy, ok := value.(fields.Lazy); ok {
-		if support.IsNil(lazy) {
-			return nil
-		}
-		return lazy.Get()
-	}
-	return value
+	resolved, _ := eventvalue.Resolve(event, value)
+	return resolved
 }
 
 type stringError string
