@@ -48,7 +48,9 @@ type Writer struct {
 	// additional performance costs. If an event is already being consumed,
 	// concurrent or reentrant calls are queued and can return before their event
 	// was written. If the bounded queue is full, new events are dropped and the
-	// active caller writes one safe diagnostic to stderr per drain cycle.
+	// active caller writes one safe diagnostic to stderr per drain cycle. If
+	// consumption panics or exits its goroutine, accepted requests remain queued
+	// until the next call resumes draining them.
 	Synchronized bool
 
 	// OnFormatError will be called if their as any kind of error while
@@ -115,10 +117,16 @@ func (instance *Writer) Consume(event log.Event, source log.CoreLogger) {
 		instance.mutex.Unlock()
 		return
 	}
+	request := writerRequest{event, source}
 	instance.consuming = true
+	if len(instance.pending) > 0 {
+		request = instance.pending[0]
+		instance.pending[0] = writerRequest{}
+		instance.pending = append(instance.pending[1:], writerRequest{event, source})
+	}
 	instance.mutex.Unlock()
 
-	instance.consumePending(writerRequest{event, source})
+	instance.consumePending(request)
 }
 
 func (instance *Writer) consumePending(request writerRequest) {
@@ -127,10 +135,8 @@ func (instance *Writer) consumePending(request writerRequest) {
 	defer func() {
 		if !completed {
 			// Do not leave the writer blocked if user-provided code panics or exits
-			// its goroutine. Requests accepted during the failed event are dropped.
+			// its goroutine. A later Consume call resumes the accepted queue.
 			instance.mutex.Lock()
-			instance.pending = nil
-			instance.pendingOverflow = false
 			instance.consuming = false
 			instance.mutex.Unlock()
 		}
