@@ -231,13 +231,31 @@ jobs:
   finish:
     name: Finish
     needs:
+      - lint
       - test
       - test-native
       - test-eventlog
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
+      - name: Verify required jobs
+        shell: bash
+        env:
+          LINT_RESULT: ${{ needs.lint.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+          TEST_NATIVE_RESULT: ${{ needs.test-native.result }}
+          TEST_EVENTLOG_RESULT: ${{ needs.test-eventlog.result }}
+        run: |
+          if [[ "$LINT_RESULT" != "success" ||
+                "$TEST_RESULT" != "success" ||
+                "$TEST_NATIVE_RESULT" != "success" ||
+                "$TEST_EVENTLOG_RESULT" != "success" ]]; then
+            echo "::error::Required CI jobs did not all succeed: lint=${LINT_RESULT}, test=${TEST_RESULT}, native=${TEST_NATIVE_RESULT}, eventlog=${TEST_EVENTLOG_RESULT}"
+            exit 1
+          fi
+
       - name: Send coverage finish
+        if: ${{ always() }}
         uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2
         with:
           parallel-finished: true
