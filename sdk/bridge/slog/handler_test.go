@@ -106,6 +106,8 @@ func TestHandler_Handle(t *testing.T) {
 
 				actual := baseLogger.Get(0)
 				assert.ToBeEqual(t, c.expectedLevel, actual.GetLevel())
+				_, withProgramCounter := actual.(interface{ GetProgramCounter() uintptr })
+				assert.ToBeEqual(t, false, withProgramCounter)
 
 				actualAsMap, err := fields.AsMap(actual)
 				assert.ToBeNoError(t, err)
@@ -133,6 +135,26 @@ func TestHandler_Handle_preservesProgramCounter(t *testing.T) {
 	actualPC, ok := actual.(interface{ GetProgramCounter() uintptr })
 	assert.ToBeEqual(t, true, ok)
 	assert.ToBeEqual(t, uintptr(666), actualPC.GetProgramCounter())
+}
+
+func TestHandler_Handle_respectsCustomizedDefaultDetectSkipFramesWithProgramCounter(t *testing.T) {
+	original := DefaultDetectSkipFrames
+	defer func() { DefaultDetectSkipFrames = original }()
+	detectorCalled := false
+	DefaultDetectSkipFrames = func(skip uint16) uint16 {
+		detectorCalled = true
+		return skip
+	}
+	baseLogger := recording.NewCoreLogger()
+	instance := &Handler{Delegate: baseLogger}
+
+	actualErr := instance.Handle(context.Background(), sdk.Record{Level: LevelInfo, PC: 666})
+
+	assert.ToBeNoError(t, actualErr)
+	assert.ToBeEqual(t, true, detectorCalled)
+	actual := baseLogger.Get(0)
+	_, withProgramCounter := actual.(interface{ GetProgramCounter() uintptr })
+	assert.ToBeEqual(t, false, withProgramCounter)
 }
 
 func TestHandler_Handle_respectsRejectedProgramCounterEvent(t *testing.T) {

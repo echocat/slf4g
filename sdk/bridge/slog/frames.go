@@ -3,6 +3,7 @@
 package sdk
 
 import (
+	"reflect"
 	"runtime"
 	"strings"
 )
@@ -15,6 +16,14 @@ type DetectSkipFrames func(skip uint16) uint16
 //
 // By default, it ignores several relevant packages of the SDK and this package.
 var DefaultDetectSkipFrames DetectSkipFrames = detectSkipFramesFromSdk
+
+// Function values are not comparable. Comparing the entry point of this named,
+// non-closure function preserves direct assignment compatibility of the public default.
+var detectSkipFramesFromSdkPointer = reflect.ValueOf(detectSkipFramesFromSdk).Pointer()
+
+func isBuiltInDetectSkipFrames(candidate DetectSkipFrames) bool {
+	return candidate != nil && reflect.ValueOf(candidate).Pointer() == detectSkipFramesFromSdkPointer
+}
 
 func detectSkipFramesFromSdk(skip uint16) uint16 {
 	pcs := make([]uintptr, 64)
