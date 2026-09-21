@@ -62,10 +62,11 @@ func (instance *CoreLogger) Log(event log.Event, skipFrames uint16) {
 		event = event.With(loggerKey, instance.name)
 	}
 	locationKey := fieldKeysSpec.GetLocation()
-	if current, exists := event.Get(locationKey); !exists || current == nil {
-		if v := instance.getLocationDiscovery().DiscoverLocation(event, skipFrames+1); v != nil {
-			event = event.With(locationKey, v)
-		}
+	currentLocation, _ := event.Get(locationKey)
+	if precomputed, ok := currentLocation.(precomputedRootLoggerLocation); ok {
+		event = event.With(locationKey, precomputed.value)
+	} else if v := instance.getLocationDiscovery().DiscoverLocation(event, skipFrames+1); v != nil {
+		event = event.With(locationKey, v)
 	}
 
 	instance.getConsumer().Consume(event, instance)

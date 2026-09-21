@@ -11,6 +11,7 @@ import (
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/level"
+	"github.com/echocat/slf4g/native/location"
 )
 
 const (
@@ -49,6 +50,10 @@ type rootLoggerEvent struct {
 type rootLoggerEventWithProgramCounter struct {
 	log.Event
 	programCounter uintptr
+}
+
+type precomputedRootLoggerLocation struct {
+	value location.Location
 }
 
 type rootLoggerFacade struct {
@@ -185,7 +190,10 @@ func (instance *rootLoggerFacade) deferLogUntilReady(
 		}
 		location := locationCore.getLocationDiscovery().DiscoverLocation(event, 0)
 		if location != nil {
-			current = current.With(locationCore.getProvider().getFieldKeysSpec().GetLocation(), location)
+			current = current.With(
+				locationCore.getProvider().getFieldKeysSpec().GetLocation(),
+				precomputedRootLoggerLocation{value: location},
+			)
 		}
 		action(current, argsCopy)
 	})
