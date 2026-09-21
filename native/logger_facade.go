@@ -11,6 +11,7 @@ import (
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/level"
+	"github.com/echocat/slf4g/native/location"
 )
 
 const (
@@ -49,6 +50,10 @@ type rootLoggerEvent struct {
 type rootLoggerEventWithProgramCounter struct {
 	log.Event
 	programCounter uintptr
+}
+
+type precomputedRootLoggerLocation struct {
+	value location.Location
 }
 
 type rootLoggerFacade struct {
@@ -185,7 +190,10 @@ func (instance *rootLoggerFacade) deferLogUntilReady(
 		}
 		location := locationCore.getLocationDiscovery().DiscoverLocation(event, 0)
 		if location != nil {
-			current = current.With(locationCore.getProvider().getFieldKeysSpec().GetLocation(), location)
+			current = current.With(
+				locationCore.getProvider().getFieldKeysSpec().GetLocation(),
+				precomputedRootLoggerLocation{value: location},
+			)
 		}
 		action(current, argsCopy)
 	})
@@ -243,7 +251,7 @@ func (instance *rootLoggerFacade) derive(transform func(log.Logger) log.Logger) 
 func (instance *rootLoggerFacade) Unwrap() log.CoreLogger {
 	current, _, version := instance.snapshot()
 	if version == 0 {
-		return instance
+		return nil
 	}
 	if instance.transform != nil {
 		return instance.current()
@@ -527,6 +535,9 @@ func (instance *rootLoggerEvent) wrap(delegate log.Event) log.Event {
 func (instance *rootLoggerEvent) resolve(source log.Event) (log.Logger, log.Event) {
 	current, version := instance.owner.currentWithVersion()
 	if version == instance.version {
+		if source == instance {
+			return instance.logger, instance.delegate
+		}
 		return instance.logger, source
 	}
 	return current, rematerializeRootLoggerEvent(current, source)
@@ -553,7 +564,10 @@ func rematerializeRootLoggerEvent(target log.Logger, source log.Event) log.Event
 	}
 	result := target.NewEvent(source.GetLevel(), values)
 	if programCounter, ok := rootLoggerEventProgramCounter(source); ok {
-		result = rootLoggerEventWithProgramCounter{Event: result, programCounter: programCounter}
+		candidate := rootLoggerEventWithProgramCounter{Event: result, programCounter: programCounter}
+		if target.Accepts(candidate) {
+			result = candidate
+		}
 	}
 	return result
 }
