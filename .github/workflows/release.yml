@@ -72,6 +72,79 @@ jobs:
           set -euo pipefail
 
           deadline=$((SECONDS + 600))
+          require_successful_ci_run() {
+            local kind
+            local jobs_ok
+            local runs_url
+            local run_id
+            local snapshot
+            local state
+            local value
+            runs_url="repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?event=push&head_sha=${ROOT_COMMIT}&per_page=100"
+
+            while true; do
+              if ! snapshot="$(gh api "$runs_url" --jq '
+                (["state", (
+                  if any(.workflow_runs[]; .status != "completed") then "pending"
+                  elif (.workflow_runs | length) > 0 then "failed"
+                  else "pending"
+                  end
+                )] | @tsv),
+                (.workflow_runs[] | select(.conclusion == "success") | ["run", (.id | tostring)] | @tsv)
+              ')"; then
+                echo "::error::Could not query Continuous Integration runs for ${ROOT_COMMIT}."
+                exit 1
+              fi
+
+              state=""
+              while IFS=$'\t' read -r kind value; do
+                case "$kind" in
+                  state)
+                    state="$value"
+                    ;;
+                  run)
+                    run_id="$value"
+                    if ! jobs_ok="$(gh api \
+                      "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" \
+                      --jq '
+                    any(.jobs[]; .name == "Quality gate" and .conclusion == "success") and
+                    any(.jobs[]; .name == "Finish" and .conclusion == "success")
+                      ')"; then
+                      echo "::error::Could not query jobs for Continuous Integration run ${run_id}."
+                      exit 1
+                    fi
+                    if [[ "$jobs_ok" == "true" ]]; then
+                      echo "Continuous Integration passed the full quality gate for ${ROOT_COMMIT}."
+                      return
+                    fi
+                    ;;
+                  *)
+                    echo "::error::Unexpected Continuous Integration snapshot entry: ${kind}"
+                    exit 1
+                    ;;
+                esac
+              done <<< "$snapshot"
+
+              case "$state" in
+                failed)
+                  echo "::error::Continuous Integration did not pass the full quality gate for ${ROOT_COMMIT}."
+                  exit 1
+                  ;;
+                pending)
+                  if (( SECONDS >= deadline )); then
+                    echo "::error::Timed out waiting for Continuous Integration on ${ROOT_COMMIT}."
+                    exit 1
+                  fi
+                  sleep 10
+                  ;;
+                *)
+                  echo "::error::Unexpected Continuous Integration state: ${state}"
+                  exit 1
+                  ;;
+              esac
+            done
+          }
+
           require_successful_run() {
             local workflow="$1"
             local label="$2"
@@ -111,7 +184,7 @@ jobs:
             done
           }
 
-          require_successful_run ci.yml "Continuous Integration"
+          require_successful_ci_run
           require_successful_run codeql-analysis.yml "CodeQL"
 
   prepare-native-release:

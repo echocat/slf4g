@@ -337,6 +337,10 @@ dir = "{{config_root}}/platform/windows/eventlog"
 tools."go:golang.org/x/vuln/cmd/govulncheck" = "{{vars.govulncheck}}"
 run = "govulncheck ./..."
 
+[tasks."ci:quality"]
+description = "Run checks not covered by the CI lint and test matrices"
+depends = ["build", "format:check", "tidy:check", "vet", "actionlint", "vuln"]
+
 [tasks.check]
 description = "Run the standard local quality gate"
 alias = "ci"
