@@ -30,6 +30,15 @@ type strictCoreLogger struct {
 	logCalls *atomic.Int32
 }
 
+type strictOwnershipCoreLogger struct {
+	log.CoreLogger
+}
+
+type strictOwnershipEvent struct {
+	log.Event
+	owner *strictOwnershipCoreLogger
+}
+
 func (instance *strictCoreLogger) NewEvent(v level.Level, values map[string]any) log.Event {
 	return instance.CoreLogger.NewEvent(v, values).With("strict-owner", instance.token)
 }
@@ -47,6 +56,27 @@ func (instance *strictCoreLogger) Log(event log.Event, skipFrames uint16) {
 		panic("foreign event")
 	}
 	instance.CoreLogger.Log(event.Without("strict-owner"), skipFrames+1)
+}
+
+func (instance *strictOwnershipCoreLogger) NewEvent(v level.Level, values map[string]any) log.Event {
+	return &strictOwnershipEvent{Event: instance.CoreLogger.NewEvent(v, values), owner: instance}
+}
+
+func (instance *strictOwnershipCoreLogger) NewEventWithFields(v level.Level, values fields.ForEachEnabled) log.Event {
+	return &strictOwnershipEvent{Event: log.NewEventWithFields(instance.CoreLogger, v, values), owner: instance}
+}
+
+func (instance *strictOwnershipCoreLogger) Accepts(event log.Event) bool {
+	actual, ok := event.(*strictOwnershipEvent)
+	return ok && actual.owner == instance
+}
+
+func (instance *strictOwnershipCoreLogger) Log(event log.Event, skipFrames uint16) {
+	actual, ok := event.(*strictOwnershipEvent)
+	if !ok || actual.owner != instance {
+		panic("foreign event")
+	}
+	instance.CoreLogger.Log(actual.Event, skipFrames+1)
 }
 
 func Test_Provider_GetName_specified(t *testing.T) {
@@ -696,6 +726,23 @@ func Test_Provider_GetRootLogger_rematerializesEventLoggedDuringCustomization(t 
 	assert.ToBeEqual(t, 1, recorder.Len())
 }
 
+func Test_Provider_GetRootLogger_preservesFinalCoreEventOwnership(t *testing.T) {
+	instance, recorder := newProvider()
+	instance.CoreLoggerCustomizer = func(_ *Provider, logger *CoreLogger) log.CoreLogger {
+		return &strictOwnershipCoreLogger{CoreLogger: logger}
+	}
+	root := instance.GetRootLogger()
+	event := root.NewEvent(level.Info, map[string]any{"field": "value"})
+
+	assert.ToBeEqual(t, true, root.Accepts(event))
+	root.Log(event, 0)
+
+	assert.ToBeEqual(t, 1, recorder.Len())
+	actual, exists := recorder.Get(0).Get("field")
+	assert.ToBeEqual(t, true, exists)
+	assert.ToBeEqual(t, "value", actual)
+}
+
 func Test_Provider_GetRootLogger_preservesOptionalInterfacesAndUnwrap(t *testing.T) {
 	instance, _ := newProvider()
 	expected := &CoreLogger{provider: instance, name: rootLoggerName}
@@ -965,6 +1012,32 @@ func Test_Provider_slogHandlerUsesRecordProgramCounterDuringCustomization(t *tes
 	actual, exists := recorder.Get(0).Get(instance.getFieldKeysSpec().GetLocation())
 	assert.ToBeEqual(t, true, exists)
 	assert.ToBeEqual(t, "github.com/echocat/slf4g/native.programCounterForSlogRecord", actual.(location.Caller).GetFrame().Function)
+}
+
+func Test_Provider_slogHandlerPreservesFinalCoreEventOwnershipDuringCustomization(t *testing.T) {
+	instance, recorder := newProvider()
+	customizerEntered := make(chan struct{})
+	releaseCustomizer := make(chan struct{})
+	instance.CoreLoggerCustomizer = func(_ *Provider, logger *CoreLogger) log.CoreLogger {
+		close(customizerEntered)
+		<-releaseCustomizer
+		return &strictOwnershipCoreLogger{CoreLogger: logger}
+	}
+
+	initialized := make(chan any)
+	go func() {
+		defer func() { initialized <- recover() }()
+		instance.GetRootLogger()
+	}()
+	<-customizerEntered
+
+	handler := slogbridge.NewHandler(instance.GetRootLogger())
+	record := stdslog.NewRecord(time.Now(), stdslog.LevelInfo, "message", programCounterForSlogRecord())
+	assert.ToBeNoError(t, handler.Handle(context.Background(), record))
+	close(releaseCustomizer)
+
+	assert.ToBeEqual(t, nil, <-initialized)
+	assert.ToBeEqual(t, 1, recorder.Len())
 }
 
 func Test_Provider_levelAware(t *testing.T) {

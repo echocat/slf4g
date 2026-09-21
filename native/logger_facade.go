@@ -527,6 +527,9 @@ func (instance *rootLoggerEvent) wrap(delegate log.Event) log.Event {
 func (instance *rootLoggerEvent) resolve(source log.Event) (log.Logger, log.Event) {
 	current, version := instance.owner.currentWithVersion()
 	if version == instance.version {
+		if source == instance {
+			return instance.logger, instance.delegate
+		}
 		return instance.logger, source
 	}
 	return current, rematerializeRootLoggerEvent(current, source)
@@ -553,7 +556,10 @@ func rematerializeRootLoggerEvent(target log.Logger, source log.Event) log.Event
 	}
 	result := target.NewEvent(source.GetLevel(), values)
 	if programCounter, ok := rootLoggerEventProgramCounter(source); ok {
-		result = rootLoggerEventWithProgramCounter{Event: result, programCounter: programCounter}
+		candidate := rootLoggerEventWithProgramCounter{Event: result, programCounter: programCounter}
+		if target.Accepts(candidate) {
+			result = candidate
+		}
 	}
 	return result
 }
