@@ -998,6 +998,7 @@ func Test_Provider_slogHandlerUsesRecordProgramCounter(t *testing.T) {
 	instance.LocationDiscovery = location.NewCallerDiscovery()
 	handler := slogbridge.NewHandler(instance.GetRootLogger())
 	record := stdslog.NewRecord(time.Now(), stdslog.LevelInfo, "message", programCounterForSlogRecord())
+	record.AddAttrs(stdslog.String("location", "untrusted"))
 
 	actualErr := handler.Handle(context.Background(), record)
 
