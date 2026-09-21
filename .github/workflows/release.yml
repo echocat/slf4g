@@ -190,6 +190,8 @@ jobs:
   prepare-native-release:
     needs: validate-release
     runs-on: ubuntu-latest
+    outputs:
+      artifact-id: ${{ steps.native-release-files.outputs.artifact-id }}
 
     steps:
       - name: Checkout validated release commit
@@ -230,13 +232,6 @@ jobs:
           GONOSUMDB=github.com/echocat/slf4g \
             mise -E ci-go123 exec -- go -C native mod verify
 
-          GOWORK=off \
-          GOTOOLCHAIN=local \
-          GOFLAGS=-mod=readonly \
-          GOPROXY=direct \
-          GONOSUMDB=github.com/echocat/slf4g \
-            mise -E ci-go123 exec -- go -C native test -race ./...
-
       - name: Validate native release files
         shell: bash
         run: |
@@ -261,6 +256,7 @@ jobs:
           done < <(git diff --cached --name-only)
 
       - name: Store native release files
+        id: native-release-files
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: native-release-files
@@ -269,6 +265,18 @@ jobs:
             native/go.sum
           retention-days: 1
           if-no-files-found: error
+
+      - name: Test native release files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          GOWORK=off \
+          GOTOOLCHAIN=local \
+          GOFLAGS=-mod=readonly \
+          GOPROXY=direct \
+          GONOSUMDB=github.com/echocat/slf4g \
+            mise -E ci-go123 exec -- go -C native test -race ./...
 
   create-native-tag:
     needs:
@@ -286,10 +294,23 @@ jobs:
           ref: ${{ needs.validate-release.outputs.commit }}
           fetch-depth: 0
 
+      - name: Validate native release artifact identity
+        shell: bash
+        env:
+          ARTIFACT_ID: ${{ needs.prepare-native-release.outputs.artifact-id }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$ARTIFACT_ID" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::Invalid native release artifact ID."
+            exit 1
+          fi
+
       - name: Download native release files
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: native-release-files
+          artifact-ids: ${{ needs.prepare-native-release.outputs.artifact-id }}
+          merge-multiple: true
           path: ${{ runner.temp }}/native-release-files
 
       - name: Install native release files
