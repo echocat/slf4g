@@ -468,6 +468,28 @@ func Test_Provider_GetRootLogger_supportsReentrantCustomizer(t *testing.T) {
 	assert.ToBeEqual(t, 1, recorder.Len())
 }
 
+func Test_Provider_GetRootLogger_supportsFallbackDetectionInReentrantCustomizer(t *testing.T) {
+	instance, _ := newProvider()
+	fallback := make(chan bool, 1)
+	instance.CoreLoggerCustomizer = func(actualProvider *Provider, logger *CoreLogger) log.CoreLogger {
+		fallback <- log.IsFallbackLogger(actualProvider.GetRootLogger())
+		return logger
+	}
+
+	initialized := make(chan struct{})
+	go func() {
+		defer close(initialized)
+		instance.GetRootLogger()
+	}()
+
+	select {
+	case <-initialized:
+		assert.ToBeEqual(t, false, <-fallback)
+	case <-time.After(time.Second):
+		t.Fatal("fallback detection blocked reentrant root logger customization")
+	}
+}
+
 func Test_Provider_GetRootLogger_customizesOnceDuringConcurrentInitialization(t *testing.T) {
 	instance, _ := newProvider()
 	customizerEntered := make(chan struct{})
