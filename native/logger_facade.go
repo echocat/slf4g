@@ -40,8 +40,9 @@ type rootLoggerCache struct {
 }
 
 type rootLoggerEvent struct {
-	state    *rootLoggerState
+	owner    *rootLoggerFacade
 	logger   log.Logger
+	version  uint64
 	delegate log.Event
 }
 
@@ -200,23 +201,28 @@ func (instance *rootLoggerFacade) snapshot() (log.CoreLogger, log.Logger, uint64
 }
 
 func (instance *rootLoggerFacade) current() log.Logger {
+	current, _ := instance.currentWithVersion()
+	return current
+}
+
+func (instance *rootLoggerFacade) currentWithVersion() (log.Logger, uint64) {
 	_, current, version := instance.snapshot()
 	if instance.transform == nil {
-		return current
+		return current, version
 	}
 
 	if cached := instance.cache.Load(); cached != nil && cached.version == version {
-		return cached.logger
+		return cached.logger, version
 	}
 
 	instance.cacheMutex.Lock()
 	defer instance.cacheMutex.Unlock()
 	if cached := instance.cache.Load(); cached != nil && cached.version == version {
-		return cached.logger
+		return cached.logger, version
 	}
 	result := &rootLoggerCache{version: version, logger: instance.transform(current)}
 	instance.cache.Store(result)
-	return result.logger
+	return result.logger, version
 }
 
 func (instance *rootLoggerFacade) derive(transform func(log.Logger) log.Logger) log.Logger {
@@ -250,24 +256,19 @@ func (instance *rootLoggerFacade) Log(event log.Event, skipFrames uint16) {
 		return
 	}
 	if instance.isInitializing() && instance.deferUntilReady(func(current log.Logger) {
-		values, err := fields.AsMap(event)
-		if err != nil {
-			panic(err)
+		if own, ok := rootLoggerEventOf(event); ok && own.owner.state == instance.state {
+			current, rematerialized := own.resolve(event)
+			current.Log(rematerialized, skipFrames+1)
+			return
 		}
-		rematerialized := current.NewEvent(event.GetLevel(), values)
-		if source, ok := event.(interface{ GetProgramCounter() uintptr }); ok {
-			rematerialized = rootLoggerEventWithProgramCounter{
-				Event:          rematerialized,
-				programCounter: source.GetProgramCounter(),
-			}
-		}
+		rematerialized := rematerializeRootLoggerEvent(current, event)
 		current.Log(rematerialized, skipFrames+1)
 	}) {
 		return
 	}
-	if own, ok := event.(*rootLoggerEvent); ok && own.state == instance.state {
-		instance.snapshot()
-		own.logger.Log(own.delegate, skipFrames+1)
+	if own, ok := rootLoggerEventOf(event); ok && own.owner.state == instance.state {
+		current, resolved := own.resolve(event)
+		current.Log(resolved, skipFrames+1)
 		return
 	}
 	instance.current().Log(event, skipFrames+1)
@@ -282,19 +283,19 @@ func (instance *rootLoggerFacade) GetName() string {
 }
 
 func (instance *rootLoggerFacade) NewEvent(v level.Level, values map[string]any) log.Event {
-	current := instance.current()
-	return &rootLoggerEvent{state: instance.state, logger: current, delegate: current.NewEvent(v, values)}
+	current, version := instance.currentWithVersion()
+	return &rootLoggerEvent{owner: instance, logger: current, version: version, delegate: current.NewEvent(v, values)}
 }
 
 func (instance *rootLoggerFacade) NewEventWithFields(v level.Level, values fields.ForEachEnabled) log.Event {
-	current := instance.current()
-	return &rootLoggerEvent{state: instance.state, logger: current, delegate: log.NewEventWithFields(current, v, values)}
+	current, version := instance.currentWithVersion()
+	return &rootLoggerEvent{owner: instance, logger: current, version: version, delegate: log.NewEventWithFields(current, v, values)}
 }
 
 func (instance *rootLoggerFacade) Accepts(event log.Event) bool {
-	if own, ok := event.(*rootLoggerEvent); ok && own.state == instance.state {
-		instance.snapshot()
-		return own.logger.Accepts(own.delegate)
+	if own, ok := rootLoggerEventOf(event); ok && own.owner.state == instance.state {
+		current, resolved := own.resolve(event)
+		return current.Accepts(resolved)
 	}
 	return instance.current().Accepts(event)
 }
@@ -515,11 +516,64 @@ func (instance *rootLoggerEvent) Without(keys ...string) log.Event {
 }
 
 func (instance *rootLoggerEvent) wrap(delegate log.Event) log.Event {
-	return &rootLoggerEvent{state: instance.state, logger: instance.logger, delegate: delegate}
+	return &rootLoggerEvent{
+		owner:    instance.owner,
+		logger:   instance.logger,
+		version:  instance.version,
+		delegate: delegate,
+	}
+}
+
+func (instance *rootLoggerEvent) resolve(source log.Event) (log.Logger, log.Event) {
+	current, version := instance.owner.currentWithVersion()
+	if version == instance.version {
+		return instance.logger, source
+	}
+	return current, rematerializeRootLoggerEvent(current, source)
+}
+
+func rootLoggerEventOf(event log.Event) (*rootLoggerEvent, bool) {
+	for depth := 0; event != nil && depth < 16; depth++ {
+		if own, ok := event.(*rootLoggerEvent); ok {
+			return own, true
+		}
+		unwrapper, ok := event.(interface{ UnwrapEvent() log.Event })
+		if !ok {
+			return nil, false
+		}
+		event = unwrapper.UnwrapEvent()
+	}
+	return nil, false
+}
+
+func rematerializeRootLoggerEvent(target log.Logger, source log.Event) log.Event {
+	values, err := fields.AsMap(source)
+	if err != nil {
+		panic(err)
+	}
+	result := target.NewEvent(source.GetLevel(), values)
+	if programCounter, ok := rootLoggerEventProgramCounter(source); ok {
+		result = rootLoggerEventWithProgramCounter{Event: result, programCounter: programCounter}
+	}
+	return result
+}
+
+func rootLoggerEventProgramCounter(event log.Event) (uintptr, bool) {
+	if source, ok := event.(interface{ GetProgramCounter() uintptr }); ok {
+		return source.GetProgramCounter(), true
+	}
+	if own, ok := event.(*rootLoggerEvent); ok {
+		return rootLoggerEventProgramCounter(own.delegate)
+	}
+	return 0, false
 }
 
 func (instance rootLoggerEventWithProgramCounter) GetProgramCounter() uintptr {
 	return instance.programCounter
+}
+
+func (instance rootLoggerEventWithProgramCounter) UnwrapEvent() log.Event {
+	return instance.Event
 }
 
 func (instance rootLoggerEventWithProgramCounter) With(key string, value any) log.Event {
