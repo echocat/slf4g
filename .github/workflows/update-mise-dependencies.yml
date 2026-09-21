@@ -6,8 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 concurrency:
   group: update-mise-dependencies
@@ -16,12 +15,20 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
+    outputs:
+      commit: ${{ steps.base.outputs.commit }}
+      changed: ${{ steps.update.outputs.changed }}
     steps:
       - name: Checkout default branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
+
+      - name: Record checked out commit
+        id: base
+        shell: bash
+        run: echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Install mise
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4
@@ -58,12 +65,99 @@ jobs:
 
       - name: Check diff
         if: steps.update.outputs.changed == 'true'
-        run: git diff --check
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git diff --check
+          for file in \
+            mise.lock \
+            mise.ci-go118.lock \
+            mise.ci-go122.lock \
+            mise.ci-go123.lock \
+            mise.ci-lint.lock \
+            mise.ci-stable.lock; do
+            if [[ ! -f "$file" || -L "$file" ]]; then
+              echo "::error::Updated lockfile is not a regular file: $file"
+              exit 1
+            fi
+          done
+
+      - name: Store updated lockfiles
+        if: steps.update.outputs.changed == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: mise-lockfiles
+          path: |
+            mise.lock
+            mise.ci-go118.lock
+            mise.ci-go122.lock
+            mise.ci-go123.lock
+            mise.ci-lint.lock
+            mise.ci-stable.lock
+          retention-days: 1
+          if-no-files-found: error
+
+  create-pull-request:
+    needs: update
+    if: needs.update.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Download updated lockfiles
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: mise-lockfiles
+          path: ${{ runner.temp }}/mise-lockfiles
+
+      - name: Install updated lockfiles
+        shell: bash
+        env:
+          ARTIFACT_DIR: ${{ runner.temp }}/mise-lockfiles
+          EXPECTED_COMMIT: ${{ needs.update.outputs.commit }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$(git rev-parse HEAD)" != "$EXPECTED_COMMIT" ]]; then
+            echo "::error::Default branch moved after the lockfiles were verified."
+            exit 1
+          fi
+
+          for file in \
+            mise.lock \
+            mise.ci-go118.lock \
+            mise.ci-go122.lock \
+            mise.ci-go123.lock \
+            mise.ci-lint.lock \
+            mise.ci-stable.lock; do
+            source="${ARTIFACT_DIR}/${file}"
+            if [[ ! -f "$source" || -L "$source" ]]; then
+              echo "::error::Downloaded lockfile is not a regular file: $file"
+              exit 1
+            fi
+            if [[ ! -f "$file" || -L "$file" ]]; then
+              echo "::error::Lockfile target is not a regular file: $file"
+              exit 1
+            fi
+            install -m 0644 -- "$source" "$file"
+          done
+
+          mkdir -p "$RUNNER_TEMP/empty-git-hooks"
+          git config --global core.hooksPath "$RUNNER_TEMP/empty-git-hooks"
 
       - name: Create pull request
-        if: steps.update.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
         with:
+          base: ${{ github.event.repository.default_branch }}
           branch: automation/mise-dependencies
           delete-branch: true
           draft: always-true

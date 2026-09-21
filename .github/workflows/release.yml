@@ -114,11 +114,9 @@ jobs:
           require_successful_run ci.yml "Continuous Integration"
           require_successful_run codeql-analysis.yml "CodeQL"
 
-  create-native-tag:
+  prepare-native-release:
     needs: validate-release
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout validated release commit
@@ -126,6 +124,7 @@ jobs:
         with:
           ref: ${{ needs.validate-release.outputs.commit }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Install mise
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4
@@ -134,16 +133,12 @@ jobs:
           install: true
           install_args: --locked
 
-      - name: Create native release tag
+      - name: Prepare native release files
         shell: bash
         env:
-          ROOT_COMMIT: ${{ needs.validate-release.outputs.commit }}
           TAG: ${{ github.event.release.tag_name }}
         run: |
           set -euo pipefail
-
-          NATIVE_TAG="native/${TAG}"
-          git checkout --detach "$ROOT_COMMIT"
 
           mise -E ci-go123 exec -- go -C native mod edit \
             -dropreplace=github.com/echocat/slf4g \
@@ -169,6 +164,94 @@ jobs:
           GONOSUMDB=github.com/echocat/slf4g \
             mise -E ci-go123 exec -- go -C native test -race ./...
 
+      - name: Validate native release files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for file in native/go.mod native/go.sum; do
+            if [[ ! -f "$file" || -L "$file" ]]; then
+              echo "::error::Native release file is not a regular file: $file"
+              exit 1
+            fi
+          done
+
+          git add -- native/go.mod native/go.sum
+          while IFS= read -r file; do
+            case "$file" in
+              native/go.mod|native/go.sum) ;;
+              *)
+                echo "::error::Unexpected native release file: $file"
+                exit 1
+                ;;
+            esac
+          done < <(git diff --cached --name-only)
+
+      - name: Store native release files
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: native-release-files
+          path: |
+            native/go.mod
+            native/go.sum
+          retention-days: 1
+          if-no-files-found: error
+
+  create-native-tag:
+    needs:
+      - validate-release
+      - prepare-native-release
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+
+    steps:
+      - name: Checkout validated release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.validate-release.outputs.commit }}
+          fetch-depth: 0
+
+      - name: Download native release files
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: native-release-files
+          path: ${{ runner.temp }}/native-release-files
+
+      - name: Install native release files
+        shell: bash
+        env:
+          ARTIFACT_DIR: ${{ runner.temp }}/native-release-files
+        run: |
+          set -euo pipefail
+
+          for file in go.mod go.sum; do
+            source="${ARTIFACT_DIR}/${file}"
+            target="native/${file}"
+            if [[ ! -f "$source" || -L "$source" ]]; then
+              echo "::error::Downloaded native release file is not a regular file: $file"
+              exit 1
+            fi
+            if [[ ! -f "$target" || -L "$target" ]]; then
+              echo "::error::Native release target is not a regular file: $target"
+              exit 1
+            fi
+            install -m 0644 -- "$source" "$target"
+          done
+
+          mkdir -p "$RUNNER_TEMP/empty-git-hooks"
+          git config --global core.hooksPath "$RUNNER_TEMP/empty-git-hooks"
+
+      - name: Create native release tag
+        shell: bash
+        env:
+          ROOT_COMMIT: ${{ needs.validate-release.outputs.commit }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+
+          NATIVE_TAG="native/${TAG}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -- native/go.mod native/go.sum
