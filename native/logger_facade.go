@@ -241,8 +241,8 @@ func (instance *rootLoggerFacade) derive(transform func(log.Logger) log.Logger) 
 }
 
 func (instance *rootLoggerFacade) Unwrap() log.CoreLogger {
-	current, _, _ := instance.snapshot()
-	if instance.state.current.Load().version == 0 {
+	current, _, version := instance.snapshot()
+	if version == 0 {
 		return instance
 	}
 	if instance.transform != nil {

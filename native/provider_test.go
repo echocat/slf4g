@@ -477,6 +477,62 @@ func Test_Provider_GetRootLogger_customizesOnceDuringConcurrentInitialization(t 
 	assert.ToBeEqual(t, int32(1), customizerCalls.Load())
 }
 
+func Test_Provider_GetRootLogger_doesNotExposeProvisionalCoreDuringInitialization(t *testing.T) {
+	for range 1000 {
+		instance, _ := newProvider()
+		customizerEntered := make(chan struct{})
+		releaseCustomizer := make(chan struct{})
+		instance.CoreLoggerCustomizer = func(_ *Provider, logger *CoreLogger) log.CoreLogger {
+			close(customizerEntered)
+			<-releaseCustomizer
+			return &strictCoreLogger{CoreLogger: logger, token: new(int)}
+		}
+
+		initialized := make(chan struct{})
+		go func() {
+			defer close(initialized)
+			instance.GetRootLogger()
+		}()
+		<-customizerEntered
+		root := instance.GetRootLogger()
+
+		stop := make(chan struct{})
+		provisionalExposed := make(chan struct{}, 1)
+		var readers sync.WaitGroup
+		for range 8 {
+			readers.Add(1)
+			go func() {
+				defer readers.Done()
+				for {
+					select {
+					case <-stop:
+						return
+					default:
+					}
+					if _, ok := log.UnwrapCoreLogger(root).(*CoreLogger); ok {
+						select {
+						case provisionalExposed <- struct{}{}:
+						default:
+						}
+						return
+					}
+				}
+			}()
+		}
+
+		runtime.Gosched()
+		close(releaseCustomizer)
+		<-initialized
+		close(stop)
+		readers.Wait()
+		select {
+		case <-provisionalExposed:
+			t.Fatal("UnwrapCoreLogger exposed the provisional root core")
+		default:
+		}
+	}
+}
+
 func Test_Provider_GetRootLogger_boundsPendingLogs(t *testing.T) {
 	stderr, err := os.CreateTemp(t.TempDir(), "stderr")
 	assert.ToBeNoError(t, err)
