@@ -26,7 +26,8 @@ import (
 
 type strictCoreLogger struct {
 	log.CoreLogger
-	token *int
+	token    *int
+	logCalls *atomic.Int32
 }
 
 func (instance *strictCoreLogger) NewEvent(v level.Level, values map[string]any) log.Event {
@@ -39,6 +40,9 @@ func (instance *strictCoreLogger) Accepts(event log.Event) bool {
 }
 
 func (instance *strictCoreLogger) Log(event log.Event, skipFrames uint16) {
+	if instance.logCalls != nil {
+		instance.logCalls.Add(1)
+	}
 	if !instance.Accepts(event) {
 		panic("foreign event")
 	}
@@ -596,8 +600,44 @@ func Test_Provider_GetRootLogger_updatesDerivedLoggerAfterCustomization(t *testi
 	}
 }
 
-func Test_Provider_GetRootLogger_keepsEventWithCreatingLogger(t *testing.T) {
+func Test_Provider_GetRootLogger_rematerializesProvisionalEventAfterCustomization(t *testing.T) {
 	instance, recorder := newProvider()
+	customizerEntered := make(chan struct{})
+	releaseCustomizer := make(chan struct{})
+	var customizedLogCalls atomic.Int32
+	instance.CoreLoggerCustomizer = func(_ *Provider, logger *CoreLogger) log.CoreLogger {
+		close(customizerEntered)
+		<-releaseCustomizer
+		return &strictCoreLogger{CoreLogger: logger, token: new(int), logCalls: &customizedLogCalls}
+	}
+
+	initialized := make(chan struct{})
+	go func() {
+		defer close(initialized)
+		instance.GetRootLogger()
+	}()
+	<-customizerEntered
+	root := instance.GetRootLogger()
+	event := root.NewEvent(level.Info, map[string]any{"initial": "value"}).
+		With("added", "value").
+		Without("initial")
+	close(releaseCustomizer)
+	<-initialized
+
+	assert.ToBeEqual(t, true, root.Accepts(event))
+	root.Log(event, 0)
+	assert.ToBeEqual(t, int32(1), customizedLogCalls.Load())
+	assert.ToBeEqual(t, 1, recorder.Len())
+	actual, exists := recorder.Get(0).Get("added")
+	assert.ToBeEqual(t, true, exists)
+	assert.ToBeEqual(t, "value", actual)
+	_, exists = recorder.Get(0).Get("initial")
+	assert.ToBeEqual(t, false, exists)
+}
+
+func Test_Provider_GetRootLogger_rematerializesWrappedEventAfterAccepts(t *testing.T) {
+	instance, recorder := newProvider()
+	instance.LocationDiscovery = location.NewCallerDiscovery()
 	customizerEntered := make(chan struct{})
 	releaseCustomizer := make(chan struct{})
 	instance.CoreLoggerCustomizer = func(_ *Provider, logger *CoreLogger) log.CoreLogger {
@@ -613,13 +653,23 @@ func Test_Provider_GetRootLogger_keepsEventWithCreatingLogger(t *testing.T) {
 	}()
 	<-customizerEntered
 	root := instance.GetRootLogger()
-	event := root.NewEvent(level.Info, nil)
+	event := rootLoggerEventWithProgramCounter{
+		Event:          root.NewEvent(level.Info, map[string]any{"field": "value"}),
+		programCounter: programCounterForSlogRecord(),
+	}
+	assert.ToBeEqual(t, true, root.Accepts(event))
+
 	close(releaseCustomizer)
 	<-initialized
-
-	assert.ToBeEqual(t, true, root.Accepts(event))
 	root.Log(event, 0)
+
 	assert.ToBeEqual(t, 1, recorder.Len())
+	actual, exists := recorder.Get(0).Get("field")
+	assert.ToBeEqual(t, true, exists)
+	assert.ToBeEqual(t, "value", actual)
+	actual, exists = recorder.Get(0).Get(instance.getFieldKeysSpec().GetLocation())
+	assert.ToBeEqual(t, true, exists)
+	assert.ToBeEqual(t, "github.com/echocat/slf4g/native.programCounterForSlogRecord", actual.(location.Caller).GetFrame().Function)
 }
 
 func Test_Provider_GetRootLogger_rematerializesEventLoggedDuringCustomization(t *testing.T) {

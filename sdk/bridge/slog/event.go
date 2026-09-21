@@ -13,6 +13,10 @@ func (instance eventWithProgramCounter) GetProgramCounter() uintptr {
 	return instance.programCounter
 }
 
+func (instance eventWithProgramCounter) UnwrapEvent() log.Event {
+	return instance.Event
+}
+
 func (instance eventWithProgramCounter) With(key string, value any) log.Event {
 	instance.Event = instance.Event.With(key, value)
 	return instance
