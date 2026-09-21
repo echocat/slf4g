@@ -233,9 +233,12 @@ func (instance *Writer) onAfterLog(event log.Event, source log.CoreLogger) (canC
 
 func (instance *Writer) getInterceptor() interceptor.Interceptor {
 	if v := instance.Interceptor; v != nil {
+		if interceptors, ok := v.(*interceptor.Interceptors); ok {
+			return interceptors.Snapshot()
+		}
 		return v
 	}
-	if v := interceptor.Default; v != nil {
+	if v := interceptor.Default.Snapshot(); v != nil {
 		return v
 	}
 	return interceptor.Noop()
