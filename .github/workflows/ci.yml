@@ -228,10 +228,37 @@ jobs:
       - name: Test
         run: mise run ${{ matrix.go.task }}
 
+  quality:
+    name: Quality gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4
+        with:
+          version: 2026.8.6
+          install: true
+          install_args: --locked
+
+      - name: Cache Go and golangci-lint
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+            ~/.cache/golangci-lint
+          key: quality-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock', '**/go.sum') }}
+
+      - name: Run quality gate
+        run: mise run ci:quality
+
   finish:
     name: Finish
     needs:
       - lint
+      - quality
       - test
       - test-native
       - test-eventlog
@@ -242,15 +269,17 @@ jobs:
         shell: bash
         env:
           LINT_RESULT: ${{ needs.lint.result }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
           TEST_RESULT: ${{ needs.test.result }}
           TEST_NATIVE_RESULT: ${{ needs.test-native.result }}
           TEST_EVENTLOG_RESULT: ${{ needs.test-eventlog.result }}
         run: |
           if [[ "$LINT_RESULT" != "success" ||
+                "$QUALITY_RESULT" != "success" ||
                 "$TEST_RESULT" != "success" ||
                 "$TEST_NATIVE_RESULT" != "success" ||
                 "$TEST_EVENTLOG_RESULT" != "success" ]]; then
-            echo "::error::Required CI jobs did not all succeed: lint=${LINT_RESULT}, test=${TEST_RESULT}, native=${TEST_NATIVE_RESULT}, eventlog=${TEST_EVENTLOG_RESULT}"
+            echo "::error::Required CI jobs did not all succeed: lint=${LINT_RESULT}, quality=${QUALITY_RESULT}, test=${TEST_RESULT}, native=${TEST_NATIVE_RESULT}, eventlog=${TEST_EVENTLOG_RESULT}"
             exit 1
           fi
 
