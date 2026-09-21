@@ -2,7 +2,10 @@ package interceptor
 
 import (
 	"math"
+	"sort"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/echocat/slf4g/fields"
 	"github.com/echocat/slf4g/level"
@@ -61,6 +64,78 @@ func Test_Interceptors_Add_doesNotModifyExistingSnapshot(t *testing.T) {
 		noopInterceptorButSorted(1),
 		noopInterceptorButSorted(2),
 	}, []Interceptor(instance))
+}
+
+func Test_Interceptors_Add_concurrentlyWithSnapshot(t *testing.T) {
+	const count = 100
+	var instance Interceptors
+	start := make(chan struct{})
+	readDone := make(chan struct{})
+	var additions sync.WaitGroup
+	additions.Add(count)
+
+	for i := 0; i < count; i++ {
+		priority := int16(i)
+		go func() {
+			defer additions.Done()
+			<-start
+			instance.Add(noopInterceptorButSorted(priority))
+		}()
+	}
+
+	var reader sync.WaitGroup
+	reader.Add(1)
+	go func() {
+		defer reader.Done()
+		<-start
+		for {
+			select {
+			case <-readDone:
+				return
+			default:
+				if snapshot := instance.Snapshot(); !sort.IsSorted(snapshot) {
+					t.Errorf("observed unsorted interceptor snapshot: %v", snapshot)
+					return
+				}
+			}
+		}
+	}()
+
+	close(start)
+	additions.Wait()
+	close(readDone)
+	reader.Wait()
+
+	actual := instance.Snapshot()
+	assert.ToBeEqual(t, count, len(actual))
+	for i, interceptor := range actual {
+		assert.ToBeEqual(t, int16(i), interceptor.GetPriority())
+	}
+}
+
+func Test_Interceptors_Add_allowsAddToDifferentCollectionWhileResolvingPriority(t *testing.T) {
+	var nested Interceptors
+	nestedDone := make(chan struct{})
+	var once sync.Once
+	reentrant := interceptorWithPriorityFunc(func() int16 {
+		once.Do(func() {
+			go func() {
+				nested.Add(Noop())
+				close(nestedDone)
+			}()
+		})
+		select {
+		case <-nestedDone:
+		case <-time.After(time.Second):
+			t.Fatal("nested Add blocked while resolving interceptor priority")
+		}
+		return 0
+	})
+	instance := Interceptors{noopInterceptorButSorted(1)}
+
+	instance.Add(reentrant)
+
+	assert.ToBeEqual(t, 1, len(nested.Snapshot()))
 }
 
 func Test_Interceptors_OnBeforeLog(t *testing.T) {
@@ -388,6 +463,20 @@ func Test_noop_GetPriority(t *testing.T) {
 }
 
 type noopInterceptorButSorted int16
+
+type interceptorWithPriorityFunc func() int16
+
+func (instance interceptorWithPriorityFunc) OnBeforeLog(event log.Event, _ log.Provider) log.Event {
+	return event
+}
+
+func (instance interceptorWithPriorityFunc) OnAfterLog(log.Event, log.Provider) bool {
+	return true
+}
+
+func (instance interceptorWithPriorityFunc) GetPriority() int16 {
+	return instance()
+}
 
 func (instance noopInterceptorButSorted) OnBeforeLog(log.Event, log.Provider) log.Event {
 	panic("not implemented")

@@ -711,6 +711,52 @@ func Test_Writer_getInterceptor_noop(t *testing.T) {
 	assert.ToBeEqual(t, interceptor.Noop(), actual)
 }
 
+func Test_Writer_getInterceptor_concurrentlyWithDefaultAdd(t *testing.T) {
+	old := interceptor.Default
+	defer func() {
+		interceptor.Default = old
+	}()
+	interceptor.Default = nil
+	instance := NewWriter(io.Discard)
+
+	assertInterceptorSnapshotsWhileAdding(t, &interceptor.Default, instance)
+}
+
+func Test_Writer_getInterceptor_concurrentlyWithExplicitAdd(t *testing.T) {
+	var interceptors interceptor.Interceptors
+	instance := NewWriter(io.Discard, func(writer *Writer) {
+		writer.Interceptor = &interceptors
+	})
+
+	assertInterceptorSnapshotsWhileAdding(t, &interceptors, instance)
+}
+
+func assertInterceptorSnapshotsWhileAdding(t *testing.T, interceptors *interceptor.Interceptors, writer *Writer) {
+	const count = 100
+	start := make(chan struct{})
+	var wait sync.WaitGroup
+	wait.Add(2)
+
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < count; i++ {
+			interceptors.Add(interceptor.Noop())
+		}
+	}()
+	go func() {
+		defer wait.Done()
+		<-start
+		for i := 0; i < count; i++ {
+			writer.getInterceptor().GetPriority()
+		}
+	}()
+
+	close(start)
+	wait.Wait()
+	assert.ToBeEqual(t, count, len(interceptors.Snapshot()))
+}
+
 func Test_Writer_SetFormatter(t *testing.T) {
 	givenOut := new(bytes.Buffer)
 	givenFormatter := formatter.Func(func(event log.Event, provider log.Provider, hints hints.Hints) ([]byte, error) {

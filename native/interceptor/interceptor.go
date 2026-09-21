@@ -6,12 +6,14 @@ package interceptor
 import (
 	"math"
 	"sort"
+	"sync"
 
 	log "github.com/echocat/slf4g"
 )
 
 // Default is the default instance of Interceptors which should cover the most
-// of the cases.
+// of the cases. Use Add and Snapshot for concurrent access; direct assignment
+// is not synchronized.
 var Default Interceptors = Interceptors{}
 
 // Interceptor is used to intercept instances of log.Event that are requested to
@@ -39,15 +41,45 @@ type Interceptor interface {
 // correct order of all interceptors when this one is called.
 type Interceptors []Interceptor
 
+var interceptorsSnapshotMutex sync.RWMutex
+
 // Add appends a given Interceptor to this instance and ensures that everything
-// inside is ordered according to Interceptor.GetPriority().
+// inside is ordered according to Interceptor.GetPriority(). Add can be called
+// concurrently if readers use Snapshot instead of accessing the slice directly.
+// GetPriority implementations must not modify this same collection.
 func (instance *Interceptors) Add(v Interceptor) *Interceptors {
-	updated := make(Interceptors, len(*instance)+1)
-	copy(updated, *instance)
-	updated[len(updated)-1] = v
-	sort.Sort(updated)
-	*instance = updated
-	return instance
+	for {
+		current := instance.Snapshot()
+		updated := make(Interceptors, len(current)+1)
+		copy(updated, current)
+		updated[len(updated)-1] = v
+		sort.Sort(updated)
+
+		interceptorsSnapshotMutex.Lock()
+		if sameInterceptorsSnapshot(*instance, current) {
+			*instance = updated
+			interceptorsSnapshotMutex.Unlock()
+			return instance
+		}
+		interceptorsSnapshotMutex.Unlock()
+	}
+}
+
+func sameInterceptorsSnapshot(left, right Interceptors) bool {
+	if len(left) != len(right) || cap(left) != cap(right) {
+		return false
+	}
+	return len(left) == 0 || &left[0] == &right[0]
+}
+
+// Snapshot returns the current snapshot. Add will not modify its backing array.
+// Callers must not mutate a snapshot while another goroutine might use it.
+func (instance *Interceptors) Snapshot() Interceptors {
+	interceptorsSnapshotMutex.RLock()
+	defer interceptorsSnapshotMutex.RUnlock()
+
+	result := *instance
+	return result
 }
 
 // OnBeforeLog implements Interceptor.OnBeforeLog()
