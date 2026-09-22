@@ -63,11 +63,12 @@ jobs:
           fi
           echo "commit=${ROOT_COMMIT}" >> "$GITHUB_OUTPUT"
 
-      - name: Require successful main checks
+      - name: Require successful release checks
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           ROOT_COMMIT: ${{ steps.release.outputs.commit }}
+          TAG: ${{ github.event.release.tag_name }}
         run: |
           set -euo pipefail
 
@@ -80,17 +81,17 @@ jobs:
             local snapshot
             local state
             local value
-            runs_url="repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?event=push&head_sha=${ROOT_COMMIT}&per_page=100"
+            runs_url="repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?event=release&head_sha=${ROOT_COMMIT}&per_page=100"
 
             while true; do
               if ! snapshot="$(gh api "$runs_url" --jq '
                 (["state", (
-                  if any(.workflow_runs[]; .status != "completed") then "pending"
-                  elif (.workflow_runs | length) > 0 then "failed"
+                  if any(.workflow_runs[]; .head_branch == env.TAG and .status != "completed") then "pending"
+                  elif any(.workflow_runs[]; .head_branch == env.TAG) then "failed"
                   else "pending"
                   end
                 )] | @tsv),
-                (.workflow_runs[] | select(.conclusion == "success") | ["run", (.id | tostring)] | @tsv)
+                (.workflow_runs[] | select(.head_branch == env.TAG and .conclusion == "success") | ["run", (.id | tostring)] | @tsv)
               ')"; then
                 echo "::error::Could not query Continuous Integration runs for ${ROOT_COMMIT}."
                 exit 1
@@ -114,7 +115,7 @@ jobs:
                       exit 1
                     fi
                     if [[ "$jobs_ok" == "true" ]]; then
-                      echo "Continuous Integration passed the full quality gate for ${ROOT_COMMIT}."
+                      echo "Release Continuous Integration passed the full quality gate for ${ROOT_COMMIT}."
                       return
                     fi
                     ;;
@@ -152,11 +153,11 @@ jobs:
 
             while true; do
               state="$(gh api \
-                "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?event=push&head_sha=${ROOT_COMMIT}&per_page=100" \
+                "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?event=release&head_sha=${ROOT_COMMIT}&per_page=100" \
                 --jq '
-                  if any(.workflow_runs[]; .conclusion == "success") then "success"
-                  elif any(.workflow_runs[]; .status != "completed") then "pending"
-                  elif (.workflow_runs | length) > 0 then "failed"
+                  if any(.workflow_runs[]; .head_branch == env.TAG and .conclusion == "success") then "success"
+                  elif any(.workflow_runs[]; .head_branch == env.TAG and .status != "completed") then "pending"
+                  elif any(.workflow_runs[]; .head_branch == env.TAG) then "failed"
                   else "pending"
                   end
                 ')"
