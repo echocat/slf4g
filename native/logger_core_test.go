@@ -194,17 +194,37 @@ func Test_CoreLogger_Log_doesNotRestoreFilteredReservedFields(t *testing.T) {
 	instance := newCoreLoggerWith(givenProvider)
 	timestamp := &countingFilteredValue{value: time.Now()}
 	logger := &countingFilteredValue{value: "secret"}
+	filteredLocation := &countingFilteredValue{value: location.DepthOnly(42)}
 	givenEvent := newEvent(givenProvider, level.Info).
 		With("timestamp", timestamp).
-		With("logger", logger)
+		With("logger", logger).
+		With("location", filteredLocation)
 
 	instance.Log(givenEvent, 0)
 
 	assert.ToBeEqual(t, 1, timestamp.calls)
 	assert.ToBeEqual(t, 1, logger.calls)
+	assert.ToBeEqual(t, 1, filteredLocation.calls)
 	actual := recorder.Get(0)
 	assert.ToBeNil(t, log.GetTimestampOf(actual, givenProvider))
 	assert.ToBeNil(t, log.GetLoggerOf(actual, givenProvider))
+	actualLocation, exists := actual.Get("location")
+	assert.ToBeEqual(t, true, exists)
+	assert.ToBeSame(t, filteredLocation, actualLocation)
+}
+
+func Test_CoreLogger_Log_doesNotRestoreExcludedLocation(t *testing.T) {
+	givenProvider, recorder := newProvider(func(provider *Provider) {
+		provider.LocationDiscovery = location.NewDepthOnlyDiscovery()
+	})
+	instance := newCoreLoggerWith(givenProvider)
+	givenEvent := newEvent(givenProvider, level.Info).With("location", fields.Exclude)
+
+	instance.Log(givenEvent, 0)
+
+	actualLocation, exists := recorder.Get(0).Get("location")
+	assert.ToBeEqual(t, true, exists)
+	assert.ToBeEqual(t, fields.Exclude, actualLocation)
 }
 
 func Test_CoreLogger_Log_appliesDefaultsForInvalidRespectedReservedFields(t *testing.T) {
