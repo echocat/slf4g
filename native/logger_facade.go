@@ -76,9 +76,13 @@ func (instance *rootLoggerFacade) setDelegate(delegate log.CoreLogger) {
 		delegate = own.current()
 	}
 	logger := log.NewLogger(delegate)
+	core := log.UnwrapCoreLogger(logger)
+	if core == nil {
+		core = delegate
+	}
 	previous := instance.state.current.Load()
 	instance.state.current.Store(&rootLoggerSnapshot{
-		core:    log.UnwrapCoreLogger(logger),
+		core:    core,
 		logger:  logger,
 		version: previous.version + 1,
 	})

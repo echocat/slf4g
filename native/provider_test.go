@@ -39,6 +39,19 @@ type strictOwnershipEvent struct {
 	owner *strictOwnershipCoreLogger
 }
 
+type fullLoggerWithoutUnwrap struct {
+	log.Logger
+	currentLevel level.Level
+}
+
+func (instance *fullLoggerWithoutUnwrap) GetLevel() level.Level {
+	return instance.currentLevel
+}
+
+func (instance *fullLoggerWithoutUnwrap) SetLevel(value level.Level) {
+	instance.currentLevel = value
+}
+
 func (instance *strictCoreLogger) NewEvent(v level.Level, values map[string]any) log.Event {
 	return instance.CoreLogger.NewEvent(v, values).With("strict-owner", instance.token)
 }
@@ -835,6 +848,24 @@ func Test_Provider_GetRootLogger_preservesOptionalInterfacesAndUnwrap(t *testing
 	assert.ToBeEqual(t, true, isLoggerFacade)
 	_, isEventFactoryWithFields := actual.(log.EventFactoryWithFields)
 	assert.ToBeEqual(t, true, isEventFactoryWithFields)
+}
+
+func Test_Provider_GetRootLogger_unwrapsFullCustomLoggerWithoutUnwrap(t *testing.T) {
+	instance, _ := newProvider()
+	expected := &fullLoggerWithoutUnwrap{currentLevel: level.Debug}
+	instance.CoreLoggerCustomizer = func(_ *Provider, logger *CoreLogger) log.CoreLogger {
+		expected.Logger = log.NewLogger(logger)
+		return expected
+	}
+
+	actual := instance.GetRootLogger()
+
+	assert.ToBeSame(t, expected, log.UnwrapCoreLogger(actual))
+	actualLevel, ok := level.Get(actual)
+	assert.ToBeEqual(t, true, ok)
+	assert.ToBeEqual(t, level.Debug, actualLevel)
+	assert.ToBeEqual(t, true, level.Set(actual, level.Warn))
+	assert.ToBeEqual(t, level.Warn, expected.currentLevel)
 }
 
 func Test_Provider_GetRootLogger_acceptsReentrantRootAsCustomization(t *testing.T) {
