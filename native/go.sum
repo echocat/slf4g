@@ -1,2 +1,4 @@
+github.com/echocat/slf4g v1.9.1 h1:bzS4btSdr4OaoCS0jhXrTzr03nAUfmf45DegWMW7+Wg=
+github.com/echocat/slf4g v1.9.1/go.mod h1:WhUEWD/lCkvO5jYIXV7Y4Iaam2t2rKfRHUJf73ef3TI=
 golang.org/x/sys v0.35.0 h1:vz1N37gP5bs89s7He8XuIYXpyY0+QlsKmzipCbUtyxI=
 golang.org/x/sys v0.35.0/go.mod h1:BJP2sWEmIv4KK5OTEluFJCKSidICx8ciO85XgH3Ak8k=
